@@ -436,6 +436,7 @@ function setProviderUI(provider) {
 function hideSetup() { document.getElementById('setup-screen').style.display = 'none'; }
 
 function openGoalsModal() {
+  hideSetup();
   document.getElementById('goal-kcal').value = goals.kcal || '';
   document.getElementById('goal-carbs').value = goals.carbs || '';
   document.getElementById('goal-fat').value = goals.fat || '';
@@ -529,9 +530,16 @@ function initEventListeners() {
   document.getElementById('setup-close-btn')?.addEventListener('click', hideSetup);
 
   // Goals modal
+  document.getElementById('summary-goals-btn')?.addEventListener('click', openGoalsModal);
   document.getElementById('settings-goals-btn')?.addEventListener('click', openGoalsModal);
-  document.getElementById('settings-import-btn')?.addEventListener('click', importData);
-  document.getElementById('settings-export-btn')?.addEventListener('click', exportAllData);
+  document.getElementById('settings-import-btn')?.addEventListener('click', () => {
+    hideSetup();
+    importData();
+  });
+  document.getElementById('settings-export-btn')?.addEventListener('click', () => {
+    hideSetup();
+    exportAllData();
+  });
   document.getElementById('cancel-settings')?.addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
   document.getElementById('modal-overlay')?.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
   document.getElementById('save-settings')?.addEventListener('click', () => {
@@ -620,14 +628,6 @@ function initEventListeners() {
   });
 
   document.getElementById('fav-modal')?.addEventListener('click', e => { if (e.target === document.getElementById('fav-modal')) document.getElementById('fav-modal').classList.remove('open'); });
-  document.getElementById('fav-save-btn')?.addEventListener('click', saveFavorite);
-
-  // Inline model select
-  document.getElementById('inline-model-select')?.addEventListener('change', function () {
-    cfg.model = this.value;
-    cfg.claudeKey = (cfg.keys && cfg.keys[cfg.provider]) || cfg.claudeKey;
-    saveCfg(cfg);
-  });
 
   // Dark mode
   document.getElementById('dark-toggle')?.addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));

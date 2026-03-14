@@ -74,9 +74,6 @@ function saveManualEntry() {
 }
 
 export function initManualDayEntry() {
-  // Open
-  document.getElementById('manual-day-btn')?.addEventListener('click', openManualDayModal);
-
   // Save
   document.getElementById('manual-save-btn')?.addEventListener('click', saveManualEntry);
 

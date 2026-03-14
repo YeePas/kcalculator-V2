@@ -555,12 +555,7 @@ Vet: 3.3g"></textarea>
         </div>
         <div class="send-row">
           <span class="status-msg" id="status"></span>
-          <select id="inline-model-select" class="inline-model-select" title="Model voor herkenning"></select>
         </div>
-      </div>
-      <div class="input-actions">
-        <button class="fav-save-btn" id="fav-save-btn">⭐ Als favoriet opslaan</button>
-        <button class="fav-save-btn" id="manual-day-btn" style="background:var(--bg)">📝 Handmatig invoeren</button>
       </div>
       <div class="quick-favs" id="quick-favs"></div>
     </div>
@@ -570,7 +565,15 @@ Vet: 3.3g"></textarea>
 
   <div class="sidebar">
     <div class="summary-card">
-      <h3>Dagoverzicht</h3>
+      <div class="summary-card-header">
+        <h3>Dagoverzicht</h3>
+        <button class="summary-card-action" id="summary-goals-btn" type="button" title="Doelen aanpassen" aria-label="Doelen aanpassen">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M6.7 1.2h2.6l.35 1.9a5.5 5.5 0 011.2.7l1.8-.75 1.3 2.25-1.45 1.2c.06.4.06.82 0 1.2l1.45 1.2-1.3 2.25-1.8-.75a5.5 5.5 0 01-1.2.7l-.35 1.9H6.7l-.35-1.9a5.5 5.5 0 01-1.2-.7l-1.8.75L2.05 8.7l1.45-1.2a5.5 5.5 0 010-1.2L2.05 5.1l1.3-2.25 1.8.75c.37-.28.77-.52 1.2-.7l.35-1.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+            <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </button>
+      </div>
 
       <div class="cal-ring-wrap">
         <div class="cal-ring">
