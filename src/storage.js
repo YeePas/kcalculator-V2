@@ -5,6 +5,22 @@ import {
   DEFAULT_GOALS, SUPABASE_URL, SUPABASE_ANON_KEY,
 } from './constants.js';
 
+function cleanString(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim().replace(/^['"]+|['"]+$/g, '');
+}
+
+function normalizeSupabaseUrl(value) {
+  const cleaned = cleanString(value).replace(/\/+$/, '');
+  if (!cleaned) return '';
+  try {
+    const url = new URL(cleaned);
+    return url.origin;
+  } catch {
+    return cleaned;
+  }
+}
+
 // ── Generic helpers ───────────────────────────────────────
 export function getLocalStorage() {
   try { return globalThis.localStorage || null; }
@@ -52,7 +68,7 @@ export function loadCfg() {
   const raw = safeParse(CFG_KEY, {});
   const sessionSecrets = safeParseFromStorage(getSessionStorage(), CFG_SESSION_KEY, {});
   const secrets = {
-    claudeKey: sessionSecrets.claudeKey || raw.claudeKey || '',
+    claudeKey: cleanString(sessionSecrets.claudeKey || raw.claudeKey || ''),
     keys: sessionSecrets.keys || raw.keys || {},
   };
 
@@ -65,8 +81,8 @@ export function loadCfg() {
   }
 
   return {
-    sbUrl: raw.sbUrl || SUPABASE_URL,
-    sbKey: raw.sbKey || SUPABASE_ANON_KEY,
+    sbUrl: normalizeSupabaseUrl(raw.sbUrl || SUPABASE_URL),
+    sbKey: cleanString(raw.sbKey || SUPABASE_ANON_KEY),
     claudeKey: secrets.claudeKey,
     keys: secrets.keys,
     provider: raw.provider || 'claude',

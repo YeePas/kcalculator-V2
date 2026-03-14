@@ -6,6 +6,17 @@ import { getLocalStorage, getSessionStorage, safeParseFromStorage, safeRemove, s
 
 const AUTH_KEY = 'eetdagboek_auth_v1';
 
+function assertAuthConfig() {
+  if (!cfg.sbUrl || !cfg.sbKey) {
+    throw new Error('Supabase is niet goed ingesteld.');
+  }
+  try {
+    new URL(cfg.sbUrl);
+  } catch {
+    throw new Error('Supabase URL is ongeldig.');
+  }
+}
+
 function readStoredAuth() {
   const sessionStorageRef = getSessionStorage();
   const localStorageRef = getLocalStorage();
@@ -21,6 +32,7 @@ function readStoredAuth() {
 }
 
 export async function sbAuthRegister(email, password) {
+  assertAuthConfig();
   const r = await fetch(`${cfg.sbUrl}/auth/v1/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'apikey': cfg.sbKey },
@@ -32,6 +44,7 @@ export async function sbAuthRegister(email, password) {
 }
 
 export async function sbAuthLogin(email, password) {
+  assertAuthConfig();
   const r = await fetch(`${cfg.sbUrl}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'apikey': cfg.sbKey },
@@ -43,6 +56,7 @@ export async function sbAuthLogin(email, password) {
 }
 
 export async function sbAuthRefresh(refreshToken) {
+  assertAuthConfig();
   try {
     const r = await fetch(`${cfg.sbUrl}/auth/v1/token?grant_type=refresh_token`, {
       method: 'POST',
