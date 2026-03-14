@@ -123,35 +123,8 @@
       <div class="setup-status" id="setup-status"></div>
 
       <div style="border-top:1px solid var(--border);margin-top:1rem;padding-top:0.8rem;display:flex;gap:1rem;flex-wrap:wrap">
-        <button style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;padding:0" id="show-admin-btn">🔧 Admin-instellingen</button>
         <button style="background:none;border:none;color:var(--danger);font-size:0.78rem;cursor:pointer;padding:0" id="logout-settings-btn" class="logout-btn-settings">Uitloggen</button>
       </div>
-    </div>
-
-    <!-- STATE 3: Admin panel -->
-    <div id="setup-admin" style="display:none">
-      <h2>🔧 Admin</h2>
-      <p>Database-configuratie. Alleen zichtbaar voor beheerders.</p>
-
-      <div class="setup-field">
-        <label>Supabase Project URL</label>
-        <input type="text" id="setup-sb-url" placeholder="https://xxxx.supabase.co">
-      </div>
-      <div class="setup-field">
-        <label>Supabase Anon Key</label>
-        <input type="password" id="setup-sb-key" placeholder="eyJ…">
-      </div>
-      <div class="setup-field">
-        <label>Admin wachtwoord</label>
-        <input type="password" id="admin-pass-input" placeholder="Voer admin wachtwoord in">
-        <div class="setup-hint">Dit wachtwoord beschermt de admin-instellingen.</div>
-      </div>
-
-      <div style="display:flex;gap:0.5rem;margin-top:1rem">
-        <button class="btn-secondary" style="flex:1;padding:0.65rem" id="admin-back-btn">← Terug</button>
-        <button class="setup-save-btn" style="flex:1" id="admin-save-btn">Opslaan</button>
-      </div>
-      <div class="setup-status" id="admin-status"></div>
     </div>
   </div>
 </div>

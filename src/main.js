@@ -12,10 +12,9 @@ import {
   setNevoData, setOffReady,
 } from './state.js';
 import {
-  SUPABASE_URL, SUPABASE_ANON_KEY,
   CFG_KEY, GOALS_KEY, LOCAL_KEY, VIS_KEY, FAV_KEY, DARK_KEY, CUSTOM_KEY,
   DEFAULT_GOALS, MEAL_NAMES, MEAL_LABELS, PROVIDER_MODELS,
-  ADMIN_PASS_KEY, ENERGY_LOCAL_KEY,
+  ENERGY_LOCAL_KEY,
 } from './constants.js';
 import {
   dateKey, formatDate, emptyDay, normalizeDayData,
@@ -127,23 +126,6 @@ window.switchDashPeriod = function(numDays, btn) {
   if (btn) btn.classList.add('active');
   renderDashboard(numDays);
 };
-
-async function hashAdminPassword(password) {
-  const bytes = new TextEncoder().encode(password);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  const hashHex = Array.from(new Uint8Array(digest))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  return 'sha256:' + hashHex;
-}
-
-async function verifyAdminPassword(input, stored) {
-  if (!stored) return false;
-  if (stored.startsWith('sha256:')) {
-    return (await hashAdminPassword(input)) === stored;
-  }
-  return btoa(input) === stored;
-}
 
 // ══════════════════════════════════════════════════════════════
 // Export/Import
@@ -410,20 +392,10 @@ function showSetup(panel) {
   if (closeBtn) closeBtn.style.display = authUser ? '' : 'none';
   const authEl = document.getElementById('setup-auth');
   const userEl = document.getElementById('setup-user');
-  const adminEl = document.getElementById('setup-admin');
   if (authEl) authEl.style.display = 'none';
   if (userEl) userEl.style.display = 'none';
-  if (adminEl) adminEl.style.display = 'none';
-  const adminBtn = document.getElementById('show-admin-btn');
-  if (adminBtn && SUPABASE_URL) adminBtn.style.display = 'none';
 
-  if (panel === 'admin') {
-    document.getElementById('setup-sb-url').value = cfg.sbUrl || '';
-    document.getElementById('setup-sb-key').value = cfg.sbKey || '';
-    const api = document.getElementById('admin-pass-input'); if (api) api.value = '';
-    const as2 = document.getElementById('admin-status'); if (as2) as2.textContent = '';
-    if (adminEl) adminEl.style.display = '';
-  } else if (panel === 'user' || authUser) {
+  if (panel === 'user' || authUser) {
     document.getElementById('setup-key-claude').value = cfg.keys?.claude || cfg.claudeKey || '';
     document.getElementById('setup-key-gemini').value = cfg.keys?.gemini || '';
     document.getElementById('setup-key-openai').value = cfg.keys?.openai || '';
@@ -445,13 +417,10 @@ function showSetup(panel) {
     const ae = document.getElementById('auth-email'); if (ae) ae.value = '';
     const ap = document.getElementById('auth-pass'); if (ap) ap.value = '';
     if (!cfg.sbUrl || !cfg.sbKey) {
-      if (userEl) userEl.style.display = '';
-      setProviderUI(cfg.provider || 'claude');
-      const g2 = document.getElementById('setup-user-greeting'); if (g2) g2.textContent = 'Geen database geconfigureerd.';
-      const lb3 = document.getElementById('logout-settings-btn'); if (lb3) lb3.style.display = 'none';
-    } else {
-      if (authEl) authEl.style.display = '';
+      authSt.textContent = 'Inloggen is nu niet beschikbaar. Je kunt wel lokaal verder zonder account.';
+      authSt.className = 'setup-status';
     }
+    if (authEl) authEl.style.display = '';
   }
 }
 
@@ -692,36 +661,6 @@ function initEventListeners() {
 
   // Open config
   document.getElementById('open-config')?.addEventListener('click', () => showSetup('user'));
-
-  // Admin
-  document.getElementById('show-admin-btn')?.addEventListener('click', async () => {
-    const savedHash = localStorage.getItem(ADMIN_PASS_KEY);
-    if (!savedHash) {
-      const pw = prompt('Stel een admin-wachtwoord in (minimaal 4 tekens):');
-      if (!pw || pw.length < 4) return;
-      localStorage.setItem(ADMIN_PASS_KEY, await hashAdminPassword(pw));
-      showSetup('admin');
-    } else {
-      const pw = prompt('Voer het admin-wachtwoord in:');
-      if (!pw || !(await verifyAdminPassword(pw, savedHash))) { alert('Onjuist wachtwoord.'); return; }
-      // Migrate legacy base64 value to hashed format after first successful check.
-      if (!savedHash.startsWith('sha256:')) {
-        localStorage.setItem(ADMIN_PASS_KEY, await hashAdminPassword(pw));
-      }
-      showSetup('admin');
-    }
-  });
-  document.getElementById('admin-save-btn')?.addEventListener('click', async () => {
-    const sbUrl = document.getElementById('setup-sb-url').value.trim();
-    const sbKey = document.getElementById('setup-sb-key').value.trim();
-    const adminPass = document.getElementById('admin-pass-input').value.trim();
-    if (adminPass && adminPass.length >= 4) localStorage.setItem(ADMIN_PASS_KEY, await hashAdminPassword(adminPass));
-    setCfg({ ...cfg, sbUrl, sbKey }); saveCfg(cfg);
-    const statusEl = document.getElementById('admin-status');
-    statusEl.textContent = '✓ Supabase-instellingen opgeslagen!'; statusEl.className = 'setup-status ok';
-    setTimeout(() => showSetup('auth'), 800);
-  });
-  document.getElementById('admin-back-btn')?.addEventListener('click', () => showSetup('user'));
 
   // Skip login
   document.getElementById('skip-login-btn')?.addEventListener('click', () => showSetup('user'));
@@ -965,9 +904,8 @@ function initEventListeners() {
       setSyncStatus(authUser ? 'synced' : 'offline', authUser ? 'verbonden' : 'lokaal');
       renderQuickFavs();
       await renderMeals();
-    } else if (cfg.sbUrl && cfg.sbKey) {
-      showSetup('auth');
     } else {
+      showSetup('auth');
       setSyncStatus('offline', 'lokaal');
       renderQuickFavs();
       await renderMeals();
