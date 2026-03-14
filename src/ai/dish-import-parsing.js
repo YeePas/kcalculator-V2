@@ -1,5 +1,7 @@
 /* ── Dish Import Parsing Helpers ─────────────────────────── */
 
+import { cfg } from '../state.js';
+
 function avgFromRange(raw) {
   const m = String(raw || '').match(/(\d+(?:[.,]\d+)?)\s*[–-]\s*(\d+(?:[.,]\d+)?)/);
   if (!m) return null;
@@ -42,8 +44,31 @@ function stripHtml(html) {
     .trim();
 }
 
+async function fetchViaSupabaseProxy(url) {
+  if (!cfg?.sbUrl || !cfg?.sbKey) return { text: '', source: 'none' };
+  try {
+    const proxyUrl = `${cfg.sbUrl}/functions/v1/url-import-proxy?url=${encodeURIComponent(url)}`;
+    const r = await fetch(proxyUrl, {
+      headers: {
+        apikey: cfg.sbKey,
+        Authorization: 'Bearer ' + cfg.sbKey,
+      },
+    });
+    if (!r.ok) return { text: '', source: 'none' };
+    const data = await r.json();
+    const text = String(data?.text || '').replace(/\s+/g, ' ').trim().slice(0, 16000);
+    if (!text) return { text: '', source: 'none' };
+    return { text, source: data?.source || 'supabase-proxy' };
+  } catch {
+    return { text: '', source: 'none' };
+  }
+}
+
 export async function fetchUrlContentForImport(url) {
   const clean = String(url || '').trim();
+  const proxied = await fetchViaSupabaseProxy(clean);
+  if (proxied.text) return proxied;
+
   try {
     const direct = await fetch(clean);
     if (direct.ok) {

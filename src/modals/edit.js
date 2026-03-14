@@ -53,10 +53,12 @@ export function openEditModal(meal, idx) {
   // Populate move-meal dropdown (all meals except current)
   const moveSelect = document.getElementById('edit-move-meal');
   if (moveSelect) {
-    moveSelect.innerHTML = MEAL_NAMES
-      .filter(m => m !== meal)
-      .map(m => `<option value="${m}">${MEAL_LABELS[m] || m}</option>`)
-      .join('');
+    moveSelect.innerHTML = [
+      `<option value="" selected>Huidig: ${MEAL_LABELS[meal] || meal}</option>`,
+      ...MEAL_NAMES
+        .filter(m => m !== meal)
+        .map(m => `<option value="${m}">${MEAL_LABELS[m] || m}</option>`),
+    ].join('');
   }
 
   document.getElementById('edit-modal').classList.add('open');
@@ -83,8 +85,12 @@ export function openEditRecipeGroupModal(meal, groupId) {
 
   document.getElementById('edit-recipe-name').value = groupItems[0]._recipeName || 'Gerecht';
   const mealSelect = document.getElementById('edit-recipe-meal');
-  mealSelect.innerHTML = MEAL_NAMES.map(m => `<option value="${m}">${MEAL_LABELS[m] || m}</option>`).join('');
-  mealSelect.value = meal;
+  mealSelect.innerHTML = [
+    `<option value="" selected>Huidig: ${MEAL_LABELS[meal] || meal}</option>`,
+    ...MEAL_NAMES
+      .filter(m => m !== meal)
+      .map(m => `<option value="${m}">${MEAL_LABELS[m] || m}</option>`),
+  ].join('');
 
   document.getElementById('edit-recipe-modal').classList.add('open');
   trapFocus(document.getElementById('edit-recipe-modal'));

@@ -10,6 +10,8 @@ import { saveDay } from '../supabase/data.js';
 import { syncFavoritesToSupabase } from '../supabase/sync.js';
 import { _renderDayUI } from '../ui/render.js';
 import { renderQuickFavs } from '../ui/misc.js';
+import { searchNevo } from '../products/database.js';
+import { buildMealItem } from '../products/matcher.js';
 
 export function openFavModal() {
   document.getElementById('fav-modal').classList.add('open');
@@ -167,6 +169,69 @@ export async function addFavToMeal(idx) {
 /* ── Edit Favourite Modal ─────────────────────────────────── */
 let editFavIdx = null;
 
+function setEditFavRowNutrition(row, item) {
+  if (!row || !item) return;
+  row.dataset.kcal = item.kcal || 0;
+  row.dataset.carbs = item.koolhydraten_g || 0;
+  row.dataset.fiber = item.vezels_g || 0;
+  row.dataset.fat = item.vetten_g || 0;
+  row.dataset.prot = item.eiwitten_g || 0;
+  row.dataset.ml = item.ml || 0;
+  row.dataset.portie = item.portie || '';
+  row.dataset.gram = item._gram || '';
+  const kcalInput = row.querySelector('.editfav-si-kcal');
+  if (kcalInput) kcalInput.value = Math.round(item.kcal || 0);
+}
+
+function renderEditFavSearchResults(row, query) {
+  const dropdown = row?.querySelector('.editfav-si-dropdown');
+  if (!dropdown) return;
+  const val = String(query || '').trim();
+  if (val.length < 2) {
+    dropdown.innerHTML = '';
+    dropdown.classList.remove('open');
+    return;
+  }
+
+  const results = searchNevo(val).slice(0, 6);
+  const terms = val.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!results.length) {
+    dropdown.innerHTML = '<div class="editfav-si-empty">Geen producten gevonden</div>';
+    dropdown.classList.add('open');
+    return;
+  }
+
+  dropdown.innerHTML = results.map((result, idx) => `
+    <button type="button" class="editfav-si-option" data-result-idx="${idx}">
+      <span class="editfav-si-option-main">
+        <span class="editfav-si-option-name">${terms.reduce((name, term) => name.replace(new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig'), '<mark>$1</mark>'), esc(result.n || ''))}</span>
+        <span class="editfav-si-option-group">${esc(result._group || '')}</span>
+      </span>
+      <span class="editfav-si-option-macros">${Math.round(result.k || 0)} kcal · E${r1(result.e || 0)} · V${r1(result.v || 0)} · K${r1(result.kh || 0)}</span>
+    </button>
+  `).join('');
+  row._editFavSearchResults = results;
+  dropdown.classList.add('open');
+}
+
+function applyEditFavSearchSelection(row, resultIdx) {
+  const results = row?._editFavSearchResults || [];
+  const result = results[resultIdx];
+  if (!row || !result) return;
+
+  const currentGram = parseFloat(row.dataset.gram) || 100;
+  const currentPortie = row.dataset.portie || (currentGram === 100 ? '100g' : `${currentGram}g`);
+  const mapped = buildMealItem(result.n, result, currentGram, false);
+  mapped.portie = currentPortie;
+  mapped._gram = currentGram;
+
+  const nameInput = row.querySelector('.editfav-si-naam');
+  if (nameInput) nameInput.value = mapped.naam;
+  setEditFavRowNutrition(row, mapped);
+  row.querySelector('.editfav-si-dropdown')?.classList.remove('open');
+  recalcEditFavTotals();
+}
+
 export function openEditFavModal(idx) {
   const favs = loadFavs();
   const f = favs[idx];
@@ -181,9 +246,12 @@ export function openEditFavModal(idx) {
   if (isRecipe) {
     // Show editable sub-items
     container.innerHTML = `<label style="display:block;font-size:0.72rem;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem;margin-top:0.5rem">Ingrediënten</label>` +
-      f.items.map((si, i) => `<div class="editfav-subitem" data-si="${i}">
-        <div style="display:flex;gap:0.4rem;align-items:center;margin-bottom:0.3rem">
-          <input type="text" class="editfav-si-naam" value="${esc(si.naam || '')}" style="flex:1;border:1.5px solid var(--border);border-radius:6px;padding:0.35rem 0.5rem;font-size:0.82rem;font-family:var(--font-body);background:var(--bg);color:var(--text)">
+      f.items.map((si, i) => `<div class="editfav-subitem" data-si="${i}" data-kcal="${si.kcal || 0}" data-carbs="${si.koolhydraten_g || 0}" data-fiber="${si.vezels_g || 0}" data-fat="${si.vetten_g || 0}" data-prot="${si.eiwitten_g || 0}" data-ml="${si.ml || 0}" data-portie="${esc(si.portie || '')}" data-gram="${si._gram || ''}">
+        <div style="display:flex;gap:0.4rem;align-items:flex-start;margin-bottom:0.3rem">
+          <div class="editfav-si-search">
+            <input type="text" class="editfav-si-naam" value="${esc(si.naam || '')}" autocomplete="off" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:0.35rem 0.5rem;font-size:0.82rem;font-family:var(--font-body);background:var(--bg);color:var(--text)">
+            <div class="editfav-si-dropdown"></div>
+          </div>
           <input type="number" class="editfav-si-kcal" value="${si.kcal || 0}" min="0" style="width:70px;border:1.5px solid var(--border);border-radius:6px;padding:0.35rem 0.5rem;font-size:0.82rem;text-align:right;font-family:var(--font-body);background:var(--bg);color:var(--text)" title="kcal">
           <span style="font-size:0.7rem;color:var(--muted)">kcal</span>
           <button class="item-delete" onclick="this.closest('.editfav-subitem').remove();recalcEditFavTotals()" title="Verwijder ingrediënt" style="font-size:0.8rem">✕</button>
@@ -208,11 +276,20 @@ export function openEditFavModal(idx) {
 
 export function recalcEditFavTotals() {
   const items = document.querySelectorAll('.editfav-subitem');
-  let totalKcal = 0;
+  let totalKcal = 0, totalCarbs = 0, totalFiber = 0, totalFat = 0, totalProt = 0;
   items.forEach(el => {
-    totalKcal += parseFloat(el.querySelector('.editfav-si-kcal')?.value) || 0;
+    const kcalVal = parseFloat(el.querySelector('.editfav-si-kcal')?.value);
+    totalKcal += Number.isFinite(kcalVal) ? kcalVal : (parseFloat(el.dataset.kcal) || 0);
+    totalCarbs += parseFloat(el.dataset.carbs) || 0;
+    totalFiber += parseFloat(el.dataset.fiber) || 0;
+    totalFat += parseFloat(el.dataset.fat) || 0;
+    totalProt += parseFloat(el.dataset.prot) || 0;
   });
   document.getElementById('editfav-kcal').value = Math.round(totalKcal);
+  document.getElementById('editfav-carbs').value = r1(totalCarbs);
+  document.getElementById('editfav-fiber').value = r1(totalFiber);
+  document.getElementById('editfav-fat').value = r1(totalFat);
+  document.getElementById('editfav-prot').value = r1(totalProt);
 }
 
 export function initEditFavModalListeners() {
@@ -239,6 +316,13 @@ export function initEditFavModalListeners() {
           ...origItem,
           naam: el.querySelector('.editfav-si-naam')?.value.trim() || origItem.naam,
           kcal: parseFloat(el.querySelector('.editfav-si-kcal')?.value) || 0,
+          koolhydraten_g: parseFloat(el.dataset.carbs) || 0,
+          vezels_g: parseFloat(el.dataset.fiber) || 0,
+          vetten_g: parseFloat(el.dataset.fat) || 0,
+          eiwitten_g: parseFloat(el.dataset.prot) || 0,
+          ml: parseFloat(el.dataset.ml) || 0,
+          portie: el.dataset.portie || origItem.portie,
+          _gram: parseFloat(el.dataset.gram) || origItem._gram,
         });
       });
       f.items = newItems;
@@ -283,6 +367,38 @@ export function initEditFavModalListeners() {
     if (e.target === document.getElementById('edit-fav-modal')) {
       document.getElementById('edit-fav-modal').classList.remove('open');
       editFavIdx = null;
+    }
+  });
+
+  document.getElementById('editfav-items-container')?.addEventListener('input', e => {
+    const row = e.target.closest('.editfav-subitem');
+    if (!row) return;
+    if (e.target.classList.contains('editfav-si-naam')) {
+      renderEditFavSearchResults(row, e.target.value);
+    }
+    if (e.target.classList.contains('editfav-si-kcal')) {
+      row.dataset.kcal = e.target.value || '0';
+      recalcEditFavTotals();
+    }
+  });
+
+  document.getElementById('editfav-items-container')?.addEventListener('focusin', e => {
+    const row = e.target.closest('.editfav-subitem');
+    if (row && e.target.classList.contains('editfav-si-naam')) {
+      renderEditFavSearchResults(row, e.target.value);
+    }
+  });
+
+  document.getElementById('editfav-items-container')?.addEventListener('click', e => {
+    const option = e.target.closest('.editfav-si-option');
+    if (!option) return;
+    const row = option.closest('.editfav-subitem');
+    applyEditFavSearchSelection(row, parseInt(option.dataset.resultIdx, 10));
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.editfav-si-search')) {
+      document.querySelectorAll('.editfav-si-dropdown.open').forEach(el => el.classList.remove('open'));
     }
   });
 }
