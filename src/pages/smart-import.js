@@ -17,7 +17,8 @@ import {
 } from '../ai/dish-import-service.js';
 import { handlePhotoUpload } from './smart-import-photo.js';
 import { handleUrlImport } from './smart-import-url.js';
-import { renderManageList, openEditProduct, deleteProduct } from './smart-import-manage.js';
+import { renderManageList, openEditProduct, deleteProduct, deleteFavoriteFromManage } from './smart-import-manage.js';
+import { openEditFavModal } from '../modals/favourites.js';
 
 let activeTab = 'dish_name';
 
@@ -135,6 +136,8 @@ function switchTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.smart-import-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('#smart-import-body > .smart-section').forEach(s => s.style.display = s.dataset.section === tab ? '' : 'none');
+  const mealSelector = document.getElementById('smart-import-meal-selector');
+  if (mealSelector) mealSelector.style.display = tab === 'manage' ? 'none' : '';
   if (tab === 'manage') renderManageList();
 }
 
@@ -242,6 +245,10 @@ export function initSmartImportListeners() {
     if (eb) return openEditProduct(Number(eb.dataset.idx), switchTab);
     const db = e.target.closest('.smart-manage-delete');
     if (db) return deleteProduct(Number(db.dataset.idx));
+    const feb = e.target.closest('.smart-manage-fav-edit');
+    if (feb) return openEditFavModal(Number(feb.dataset.favIdx));
+    const fdb = e.target.closest('.smart-manage-fav-delete');
+    if (fdb) return deleteFavoriteFromManage(Number(fdb.dataset.favIdx));
   });
 
   document.getElementById('smart-import-body')?.addEventListener('click', e => {

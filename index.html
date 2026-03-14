@@ -114,6 +114,18 @@
 
       <div class="setup-field" style="margin-top:1rem">
         <label style="display:flex;align-items:center;justify-content:space-between">
+          <span>Appbeheer</span>
+        </label>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="btn-secondary" id="settings-goals-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem">🎯 Doelen</button>
+          <button class="btn-secondary" id="settings-import-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem">📥 Apple Health</button>
+          <button class="btn-secondary" id="settings-export-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem">📤 Exporteer data</button>
+        </div>
+        <div class="setup-hint">Beheer doelen en importeer of exporteer je gegevens vanuit een centrale plek.</div>
+      </div>
+
+      <div class="setup-field" style="margin-top:1rem">
+        <label style="display:flex;align-items:center;justify-content:space-between">
           <span>Gegevens beheren</span>
           <button class="btn-secondary" id="open-data-mgmt-btn" style="padding:0.3rem 0.7rem;font-size:0.75rem">🗑️ Data verwijderen</button>
         </label>
@@ -503,12 +515,8 @@ Vet: 3.3g"></textarea>
     <button class="sync-indicator" id="sync-btn" title="Klik om te synchroniseren" type="button"><div class="sync-dot offline" id="sync-dot"></div><span id="sync-label">lokaal</span></button>
     <button class="icon-btn" id="dark-toggle" title="Dark mode" aria-label="Schakel donkere modus">🌙</button>
     <button class="icon-btn" id="week-btn" title="Weekoverzicht" aria-label="Weekoverzicht openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="6" width="3" height="9" rx="1" fill="currentColor" opacity="0.4"/><rect x="6" y="3" width="3" height="12" rx="1" fill="currentColor" opacity="0.65"/><rect x="11" y="1" width="3" height="14" rx="1" fill="currentColor"/></svg></button>
-    <button class="icon-btn" id="fav-btn" title="Producten & favorieten" aria-label="Favorieten openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l2 4 4.5.7-3.2 3.2.8 4.4L8 11.5l-4.1 2.3.8-4.4L1.5 6.2 6 5.5z" fill="currentColor"/><path d="M12.5 1v3M11 2.5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
     <button class="icon-btn icon-btn-beta" id="smart-import-header-btn" title="Product of gerecht toevoegen (BETA)" aria-label="Product of gerecht toevoegen (BETA)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 8h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 2.5v11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.2"/></svg></button>
     <button class="icon-btn" id="advies-header-btn" title="Advies & analyse" aria-label="Advies en analyse openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.7 1 2 3.5 2 6.5c0 1.8 1 3.4 2.5 4.3V13a1 1 0 001 1h5a1 1 0 001-1v-2.2C13 9.9 14 8.3 14 6.5 14 3.5 11.3 1 8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M6 14.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="1" fill="currentColor"/><path d="M8 7v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
-    <button class="icon-btn" id="open-settings" title="Doelen" aria-label="Dagelijkse doelen instellen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="4.5" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><path d="M12 2l-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M11 1h3v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <button class="icon-btn" id="import-btn" title="Apple Health XML importeren" aria-label="Apple Health data importeren"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 10V2M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <button class="icon-btn" id="export-btn" title="Exporteer data" aria-label="Data exporteren"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button class="icon-btn" id="open-config" title="Instellingen" aria-label="Instellingen openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.7 1.2h2.6l.35 1.9a5.5 5.5 0 011.2.7l1.8-.75 1.3 2.25-1.45 1.2c.06.4.06.82 0 1.2l1.45 1.2-1.3 2.25-1.8-.75a5.5 5.5 0 01-1.2.7l-.35 1.9H6.7l-.35-1.9a5.5 5.5 0 01-1.2-.7l-1.8.75L2.05 8.7l1.45-1.2a5.5 5.5 0 010-1.2L2.05 5.1l1.3-2.25 1.8.75c.37-.28.77-.52 1.2-.7l.35-1.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/></svg></button>
     <button class="icon-btn" id="account-btn" style="display:none"></button>
   </div>
@@ -688,18 +696,19 @@ Vet: 3.3g"></textarea>
       <button class="smart-import-tab" data-tab="manage">📦 Beheer</button>
     </div>
 
+    <div class="meal-selector smart-import-meal-selector" id="smart-import-meal-selector" aria-label="Kies maaltijd voor Smart Import">
+      <button class="meal-btn smart-import-meal-btn active" data-meal="ontbijt">🌅 Ontbijt</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="ochtendsnack">🍎 Ochtendsnack</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="lunch">☀️ Lunch</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="middagsnack">🍪 Middagsnack</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="avondeten">🌙 Avondeten</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="avondsnack">🌜 Avondsnack</button>
+      <button class="meal-btn smart-import-meal-btn drink-btn" data-meal="drinken">💧 Drinken</button>
+    </div>
+
     <div class="smart-import-body" id="smart-import-body">
       <!-- TAB: Herkennen -->
       <section class="smart-section" data-section="dish_name">
-        <div class="meal-selector smart-import-meal-selector" id="smart-import-meal-selector" aria-label="Kies maaltijd voor Smart Import">
-          <button class="meal-btn smart-import-meal-btn active" data-meal="ontbijt">🌅 Ontbijt</button>
-          <button class="meal-btn smart-import-meal-btn" data-meal="ochtendsnack">🍎 Ochtendsnack</button>
-          <button class="meal-btn smart-import-meal-btn" data-meal="lunch">☀️ Lunch</button>
-          <button class="meal-btn smart-import-meal-btn" data-meal="middagsnack">🍪 Middagsnack</button>
-          <button class="meal-btn smart-import-meal-btn" data-meal="avondeten">🌙 Avondeten</button>
-          <button class="meal-btn smart-import-meal-btn" data-meal="avondsnack">🌜 Avondsnack</button>
-          <button class="meal-btn smart-import-meal-btn drink-btn" data-meal="drinken">💧 Drinken</button>
-        </div>
         <div class="smart-form-row">
           <label for="smart-dish-input">Gerecht, vraag of macro-tekst</label>
           <textarea id="smart-dish-input" rows="4" placeholder="Bijv. erwtensoep, 'mag ik de calorieen voor pasta alla norma?', of geplakte macro's"></textarea>

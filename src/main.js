@@ -435,6 +435,16 @@ function setProviderUI(provider) {
 
 function hideSetup() { document.getElementById('setup-screen').style.display = 'none'; }
 
+function openGoalsModal() {
+  document.getElementById('goal-kcal').value = goals.kcal || '';
+  document.getElementById('goal-carbs').value = goals.carbs || '';
+  document.getElementById('goal-fat').value = goals.fat || '';
+  document.getElementById('goal-prot').value = goals.prot || '';
+  document.getElementById('goal-fiber').value = goals.fiber || '';
+  document.getElementById('goal-water').value = goals.water || '';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
 // ══════════════════════════════════════════════════════════════
 // Manual Sync
 // ══════════════════════════════════════════════════════════════
@@ -519,15 +529,9 @@ function initEventListeners() {
   document.getElementById('setup-close-btn')?.addEventListener('click', hideSetup);
 
   // Goals modal
-  document.getElementById('open-settings')?.addEventListener('click', () => {
-    document.getElementById('goal-kcal').value = goals.kcal || '';
-    document.getElementById('goal-carbs').value = goals.carbs || '';
-    document.getElementById('goal-fat').value = goals.fat || '';
-    document.getElementById('goal-prot').value = goals.prot || '';
-    document.getElementById('goal-fiber').value = goals.fiber || '';
-    document.getElementById('goal-water').value = goals.water || '';
-    document.getElementById('modal-overlay').classList.add('open');
-  });
+  document.getElementById('settings-goals-btn')?.addEventListener('click', openGoalsModal);
+  document.getElementById('settings-import-btn')?.addEventListener('click', importData);
+  document.getElementById('settings-export-btn')?.addEventListener('click', exportAllData);
   document.getElementById('cancel-settings')?.addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
   document.getElementById('modal-overlay')?.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
   document.getElementById('save-settings')?.addEventListener('click', () => {
@@ -615,8 +619,6 @@ function initEventListeners() {
     btn.addEventListener('click', () => switchDOPeriod(parseInt(btn.dataset.days), btn));
   });
 
-  // Favourites
-  document.getElementById('fav-btn')?.addEventListener('click', openFavModal);
   document.getElementById('fav-modal')?.addEventListener('click', e => { if (e.target === document.getElementById('fav-modal')) document.getElementById('fav-modal').classList.remove('open'); });
   document.getElementById('fav-save-btn')?.addEventListener('click', saveFavorite);
 
@@ -753,10 +755,6 @@ function initEventListeners() {
       }
     } else { showSetup('auth'); }
   });
-
-  // Export/Import
-  document.getElementById('export-btn')?.addEventListener('click', exportAllData);
-  document.getElementById('import-btn')?.addEventListener('click', importData);
 
   // Sync button
   document.getElementById('sync-btn')?.addEventListener('click', manualSync);
