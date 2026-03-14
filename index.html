@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kcalculator">
+<meta name="theme-color" content="#1db954">
+<meta name="description" content="Kcalculator is een slimme voedingstracker met productdatabase, favorieten, sync en AI-ondersteunde import.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="shortcut icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Kcalculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- SETUP / LOGIN SCREEN -->
+<div id="setup-screen" role="dialog" aria-modal="true" aria-label="Instellingen en inloggen">
+  <div class="setup-box" id="setup-box">
+    <button id="setup-close-btn" style="position:absolute;top:0.75rem;right:0.75rem;background:none;border:none;font-size:1.4rem;color:var(--muted);cursor:pointer;padding:0.25rem;line-height:1;display:none" aria-label="Sluiten">✕</button>
+
+    <!-- STATE 1: Login / Register -->
+    <div id="setup-auth">
+      <h2 style="font-family:var(--font-display);font-weight:700;font-size:2.2rem;letter-spacing:-0.03em;line-height:1.1"><span style="color:var(--accent)">K</span>calculator</h2>
+      <p style="color:var(--muted);font-size:0.9rem">Log in om te beginnen met bijhouden.</p>
+
+      <div class="setup-field">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="je@email.nl" autocomplete="email">
+      </div>
+      <div class="setup-field">
+        <label>Wachtwoord</label>
+        <input type="password" id="auth-pass" placeholder="minimaal 6 tekens" autocomplete="current-password">
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:1rem">
+        <button class="setup-save-btn" style="flex:1" id="auth-login-btn">Inloggen</button>
+        <button class="btn-secondary" style="flex:1;padding:0.8rem" id="auth-register-btn">Registreren</button>
+      </div>
+
+      <button style="background:none;border:none;color:var(--accent);font-size:0.78rem;margin-top:0.6rem;cursor:pointer;padding:0" id="auth-magic-btn">🔗 Stuur magic link (inloggen zonder wachtwoord)</button>
+      <button style="background:none;border:none;color:var(--muted);font-size:0.78rem;margin-top:0.3rem;cursor:pointer;padding:0" id="auth-forgot-btn">Wachtwoord vergeten?</button>
+
+      <div class="setup-status" id="auth-status"></div>
+
+      <div style="border-top:1px solid var(--border);margin-top:1.2rem;padding-top:1rem">
+        <button style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;padding:0" id="skip-login-btn">
+          ↳ Zonder account verder (alleen lokaal, geen sync)
+        </button>
+      </div>
+    </div>
+
+    <!-- STATE 2: User settings (AI providers) -->
+    <div id="setup-user" style="display:none">
+      <h2>⚙️ Instellingen</h2>
+      <p id="setup-user-greeting"></p>
+
+      <div class="setup-field">
+        <label>AI Provider <span style="font-weight:300;text-transform:none">(optioneel, voor advies-functie)</span></label>
+        <div class="provider-picker" id="provider-picker">
+          <button class="provider-btn active" data-provider="claude">
+            <span class="provider-check"></span>
+            <span class="provider-text">
+              <span class="provider-name">Claude</span>
+              <span class="provider-sub">Anthropic · betaald</span>
+            </span>
+          </button>
+          <button class="provider-btn" data-provider="gemini">
+            <span class="provider-check"></span>
+            <span class="provider-text">
+              <span class="provider-name">Gemini 2.5 Flash</span>
+              <span class="provider-sub">Google · <strong>gratis</strong></span>
+            </span>
+          </button>
+          <button class="provider-btn" data-provider="openai">
+            <span class="provider-check"></span>
+            <span class="provider-text">
+              <span class="provider-name">GPT-4o mini</span>
+              <span class="provider-sub">OpenAI · betaald</span>
+            </span>
+          </button>
+        </div>
+      </div>
+      <div class="setup-field" id="key-field-claude">
+        <label>Claude API Key</label>
+        <input type="password" id="setup-key-claude" placeholder="sk-ant-…">
+        <div class="setup-hint">Via <a href="https://console.anthropic.com" target="_blank" rel="noreferrer noopener">console.anthropic.com</a> · alleen nodig voor AI-advies</div>
+      </div>
+      <div class="setup-field" id="key-field-gemini" style="display:none">
+        <label>Gemini API Key <span style="font-weight:300;color:var(--green)">(gratis)</span></label>
+        <input type="password" id="setup-key-gemini" placeholder="AIza…">
+        <div class="setup-hint">Gratis via <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer noopener">aistudio.google.com/apikey</a></div>
+      </div>
+      <div class="setup-field" id="key-field-openai" style="display:none">
+        <label>OpenAI API Key</label>
+        <input type="password" id="setup-key-openai" placeholder="sk-…">
+        <div class="setup-hint">Via <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer noopener">platform.openai.com/api-keys</a></div>
+      </div>
+
+      <button class="setup-save-btn" id="setup-save-btn">Opslaan &amp; beginnen</button>
+
+      <div class="setup-field" style="margin-top:1rem">
+        <label style="display:flex;align-items:center;justify-content:space-between">
+          <span>Productdatabase</span>
+          <button class="btn-secondary" id="refresh-db-btn" style="padding:0.3rem 0.7rem;font-size:0.75rem">🔄 Vernieuw cache</button>
+        </label>
+        <div class="setup-hint">Wis de lokale cache om de nieuwste producten te laden.</div>
+      </div>
+
+      <div class="setup-field" style="margin-top:1rem">
+        <label style="display:flex;align-items:center;justify-content:space-between">
+          <span>Gegevens beheren</span>
+          <button class="btn-secondary" id="open-data-mgmt-btn" style="padding:0.3rem 0.7rem;font-size:0.75rem">🗑️ Data verwijderen</button>
+        </label>
+        <div class="setup-hint">Verwijder voedingsdata per datum of alles in één keer.</div>
+      </div>
+
+      <div class="setup-status" id="setup-status"></div>
+
+      <div style="border-top:1px solid var(--border);margin-top:1rem;padding-top:0.8rem;display:flex;gap:1rem;flex-wrap:wrap">
+        <button style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;padding:0" id="show-admin-btn">🔧 Admin-instellingen</button>
+        <button style="background:none;border:none;color:var(--danger);font-size:0.78rem;cursor:pointer;padding:0" id="logout-settings-btn" class="logout-btn-settings">Uitloggen</button>
+      </div>
+    </div>
+
+    <!-- STATE 3: Admin panel -->
+    <div id="setup-admin" style="display:none">
+      <h2>🔧 Admin</h2>
+      <p>Database-configuratie. Alleen zichtbaar voor beheerders.</p>
+
+      <div class="setup-field">
+        <label>Supabase Project URL</label>
+        <input type="text" id="setup-sb-url" placeholder="https://xxxx.supabase.co">
+      </div>
+      <div class="setup-field">
+        <label>Supabase Anon Key</label>
+        <input type="password" id="setup-sb-key" placeholder="eyJ…">
+      </div>
+      <div class="setup-field">
+        <label>Admin wachtwoord</label>
+        <input type="password" id="admin-pass-input" placeholder="Voer admin wachtwoord in">
+        <div class="setup-hint">Dit wachtwoord beschermt de admin-instellingen.</div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:1rem">
+        <button class="btn-secondary" style="flex:1;padding:0.65rem" id="admin-back-btn">← Terug</button>
+        <button class="setup-save-btn" style="flex:1" id="admin-save-btn">Opslaan</button>
+      </div>
+      <div class="setup-status" id="admin-status"></div>
+    </div>
+  </div>
+</div>
+
+<!-- GOALS MODAL -->
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-label="Dagelijkse doelen instellen">
+  <div class="modal">
+    <h3>Dagelijkse doelen</h3>
+    <div class="goal-field"><label>Calorieën</label><input type="number" id="goal-kcal" min="0" step="50" placeholder="2000"><div class="goal-unit">kcal / dag</div></div>
+    <div class="goal-field"><label>Koolhydraten</label><input type="number" id="goal-carbs" min="0" step="5" placeholder="250"><div class="goal-unit">gram / dag</div></div>
+    <div class="goal-field"><label>Vetten</label><input type="number" id="goal-fat" min="0" step="5" placeholder="70"><div class="goal-unit">gram / dag</div></div>
+    <div class="goal-field"><label>Eiwitten</label><input type="number" id="goal-prot" min="0" step="5" placeholder="80"><div class="goal-unit">gram / dag</div></div>
+    <div class="goal-field"><label>Vezels</label><input type="number" id="goal-fiber" min="0" step="2" placeholder="30"><div class="goal-unit">gram / dag</div></div>
+    <div class="goal-field"><label>Drinken / water</label><input type="number" id="goal-water" min="0" step="100" placeholder="2000"><div class="goal-unit">ml / dag</div></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" id="cancel-settings">Annuleren</button>
+      <button class="btn-primary" id="save-settings">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEEK MODAL -->
+<div class="modal-overlay" id="week-modal" role="dialog" aria-modal="true" aria-label="Dashboard weekoverzicht">
+  <div class="modal" style="max-width:560px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">📊 Dashboard</h3>
+      <button onclick="document.getElementById('week-modal').classList.remove('open')" style="background:none;border:none;font-size:1.2rem;color:var(--muted);cursor:pointer">✕</button>
+    </div>
+    <div class="dash-period-tabs">
+      <button class="dash-tab active" onclick="switchDashPeriod(7,this)">Week</button>
+      <button class="dash-tab" onclick="switchDashPeriod(14,this)">2 weken</button>
+      <button class="dash-tab" onclick="switchDashPeriod(30,this)">Maand</button>
+    </div>
+    <div class="dash-toggle-row">
+      <label class="dash-toggle active" data-macro="kcal"><span class="dash-dot" style="background:var(--accent)"></span>Kcal</label>
+      <label class="dash-toggle active" data-macro="carbs"><span class="dash-dot" style="background:var(--blue)"></span>Koolh</label>
+      <label class="dash-toggle active" data-macro="fat"><span class="dash-dot" style="background:var(--danger)"></span>Vet</label>
+      <label class="dash-toggle active" data-macro="prot"><span class="dash-dot" style="background:var(--green)"></span>Eiwit</label>
+    </div>
+    <div id="week-body"><div style="text-align:center;padding:1.5rem;color:var(--muted)">Laden…</div></div>
+    <div class="modal-btns" style="margin-top:1rem">
+      <button class="btn-secondary" onclick="document.getElementById('week-modal').classList.remove('open')">Sluiten</button>
+    </div>
+  </div>
+</div>
+
+<!-- FAVORIETEN MODAL -->
+<div class="modal-overlay" id="fav-modal" role="dialog" aria-modal="true" aria-label="Favorieten beheren">
+  <div class="modal" style="max-width:480px">
+    <h3>⭐ Favorieten</h3>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.5rem">Klik op een favoriet om het toe te voegen aan de huidige maaltijd.</p>
+    <div class="fav-list" id="fav-list"></div>
+
+    <div id="fav-add-section" style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem">
+      <button class="btn-secondary" id="fav-add-new-btn" style="width:100%;padding:0.5rem;font-size:0.82rem" onclick="document.getElementById('fav-modal').classList.remove('open');openSmartImportPage()">➕ Nieuw favoriet of product toevoegen (BETA)</button>
+    </div>
+
+    <div class="modal-btns" style="margin-top:1rem">
+      <button class="btn-secondary" onclick="document.getElementById('fav-modal').classList.remove('open')">Sluiten</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT FAVOURITE MODAL -->
+<div class="modal-overlay" id="edit-fav-modal" role="dialog" aria-modal="true" aria-label="Favoriet bewerken">
+  <div class="modal" style="max-width:460px">
+    <h3>✏️ Favoriet bewerken</h3>
+    <div class="edit-field"><label>Naam</label><input type="text" id="editfav-naam"></div>
+    <div id="editfav-items-container"></div>
+    <div class="edit-grid" id="editfav-totals" style="margin-top:0.8rem;padding-top:0.6rem;border-top:1px solid var(--border)">
+      <div class="edit-field"><label>Totaal kcal</label><input type="number" id="editfav-kcal" min="0"></div>
+      <div class="edit-field"><label>Koolhydraten (g)</label><input type="number" id="editfav-carbs" min="0" step="0.1"></div>
+      <div class="edit-field"><label>Vezels (g)</label><input type="number" id="editfav-fiber" min="0" step="0.1"></div>
+      <div class="edit-field"><label>Vetten (g)</label><input type="number" id="editfav-fat" min="0" step="0.1"></div>
+      <div class="edit-field"><label>Eiwitten (g)</label><input type="number" id="editfav-prot" min="0" step="0.1"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" id="editfav-cancel-btn">Annuleren</button>
+      <button class="btn-primary" id="editfav-save-btn">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- DATA MANAGEMENT MODAL -->
+<div class="modal-overlay" id="data-mgmt-modal" role="dialog" aria-modal="true" aria-label="Gegevens beheren">
+  <div class="modal" style="max-width:460px">
+    <h3>🗑️ Gegevens beheren</h3>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem">Verwijder opgeslagen data. Dit kan niet ongedaan worden gemaakt.</p>
+
+    <!-- Delete specific date -->
+    <div class="edit-field">
+      <label>Verwijder data van een specifieke datum</label>
+      <input type="date" id="delete-date-input" style="width:100%;margin-bottom:0.5rem;border:1.5px solid var(--border);border-radius:8px;padding:0.5rem;background:var(--bg);color:var(--text);font-family:var(--font-body)">
+      <div style="display:flex;gap:0.5rem">
+        <button class="btn-secondary" id="delete-date-food-btn" style="flex:1;color:var(--danger);font-size:0.8rem;padding:0.45rem">🍎 Voeding</button>
+        <button class="btn-secondary" id="delete-date-energy-btn" style="flex:1;color:var(--danger);font-size:0.8rem;padding:0.45rem">🔥 Activiteit</button>
+        <button class="btn-secondary" id="delete-date-both-btn" style="flex:1;color:var(--danger);font-size:0.8rem;padding:0.45rem">🗑️ Beide</button>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div style="border-top:1px solid var(--border);margin-top:1.2rem;padding-top:1rem">
+      <label style="display:block;font-size:0.72rem;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--danger);margin-bottom:0.6rem">⚠️ Gevaarzone</label>
+      <div style="display:flex;flex-direction:column;gap:0.5rem">
+        <button class="btn-secondary" id="delete-all-food-btn" style="width:100%;color:var(--danger);border-color:var(--danger)">🗑️ Verwijder alle voedingsdata</button>
+        <button class="btn-secondary" id="delete-all-energy-btn" style="width:100%;color:var(--danger);border-color:var(--danger)">🔥 Verwijder alle activiteitsdata</button>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem">Verwijdert alles, zowel lokaal als in de cloud.</div>
+
+      <!-- Typed confirmation area (hidden by default) -->
+      <div id="delete-confirm-area" style="display:none;margin-top:1rem;padding:1rem;background:var(--bg);border:1.5px solid var(--danger);border-radius:8px">
+        <p style="font-size:0.82rem;margin-bottom:0.5rem;color:var(--text)" id="delete-confirm-msg">Type <strong>VERWIJDER</strong> om te bevestigen:</p>
+        <div style="display:flex;gap:0.5rem">
+          <input type="text" id="delete-confirm-input" placeholder="Type VERWIJDER" autocomplete="off" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:0.5rem;font-size:0.85rem;background:var(--surface);color:var(--text);font-family:var(--font-body)">
+          <button class="btn-secondary" id="delete-confirm-exec" disabled style="color:white;background:var(--danger);border-color:var(--danger);white-space:nowrap;flex:none;opacity:0.5">Verwijderen</button>
+        </div>
+        <button class="btn-secondary" id="delete-confirm-cancel" style="width:100%;margin-top:0.5rem;font-size:0.8rem">Annuleren</button>
+      </div>
+    </div>
+
+    <div class="setup-status" id="data-mgmt-status"></div>
+
+    <div class="modal-btns" style="margin-top:1rem">
+      <button class="btn-secondary" onclick="document.getElementById('data-mgmt-modal').classList.remove('open')">Sluiten</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL DAY ENTRY MODAL -->
+<div class="modal-overlay" id="manual-day-modal" role="dialog" aria-modal="true" aria-label="Handmatige dag invoer">
+  <div class="modal" style="max-width:420px">
+    <h3>📝 Handmatige dag invoer</h3>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem">Vul de totalen in voor de hele dag. Dit voegt één item toe aan de geselecteerde maaltijd.</p>
+
+    <div class="edit-field">
+      <label>Naam</label>
+      <input type="text" id="manual-naam" value="Handmatige invoer" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:0.55rem 0.85rem;font-size:0.9rem;background:var(--bg);color:var(--text);font-family:var(--font-body)">
+    </div>
+    <div class="edit-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem">
+      <div class="edit-field"><label>Calorieën (kcal)</label><input type="number" id="manual-kcal" min="0" step="1" placeholder="0"></div>
+      <div class="edit-field"><label>Koolhydraten (g)</label><input type="number" id="manual-carbs" min="0" step="0.1" placeholder="0"></div>
+      <div class="edit-field"><label>Vezels (g)</label><input type="number" id="manual-fiber" min="0" step="0.1" placeholder="0"></div>
+      <div class="edit-field"><label>Vetten (g)</label><input type="number" id="manual-fat" min="0" step="0.1" placeholder="0"></div>
+      <div class="edit-field"><label>Eiwitten (g)</label><input type="number" id="manual-prot" min="0" step="0.1" placeholder="0"></div>
+    </div>
+    <div class="edit-field" style="margin-top:0.5rem">
+      <label>Toevoegen aan maaltijd</label>
+      <select id="manual-meal-select" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:0.55rem 0.85rem;font-size:0.9rem;background:var(--bg);color:var(--text);font-family:var(--font-body)"></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" id="manual-cancel-btn">Annuleren</button>
+      <button class="btn-primary" id="manual-save-btn">✓ Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal" role="dialog" aria-modal="true" aria-label="Item bewerken">
+  <div class="modal" style="max-width:420px">
+    <h3>✏️ Item bewerken</h3>
+    <div class="edit-item-name" id="edit-item-name"></div>
+    <div class="edit-field"><label>Naam</label><input type="text" id="edit-naam"></div>
+    <div class="edit-field">
+      <label>Portiegrootte (gram)</label>
+      <input type="number" id="edit-gram" min="1" step="10" placeholder="100">
+      <div style="font-size:0.7rem;color:var(--tertiary);margin-top:0.2rem" id="edit-recalc-hint"></div>
+    </div>
+    <div class="edit-grid">
+      <div class="edit-field"><label>Calorieën (kcal)</label><input type="number" id="edit-kcal" min="0"></div>
+      <div class="edit-field"><label>Koolhydraten (g)</label><input type="number" id="edit-carbs" min="0" step="0.1"></div>
+      <div class="edit-field"><label>Vezels (g)</label><input type="number" id="edit-fiber" min="0" step="0.1"></div>
+      <div class="edit-field"><label>Vetten (g)</label><input type="number" id="edit-fat" min="0" step="0.1"></div>
+      <div class="edit-field"><label>Eiwitten (g)</label><input type="number" id="edit-prot" min="0" step="0.1"></div>
+      <div class="edit-field" id="edit-ml-field" style="display:none"><label>Milliliter (ml)</label><input type="number" id="edit-ml" min="0"></div>
+    </div>
+    <div class="edit-field edit-move-field">
+      <label>Verplaats naar ander moment</label>
+      <div style="display:flex;gap:0.5rem">
+        <select id="edit-move-meal" class="edit-select"></select>
+        <button class="btn-secondary" id="edit-move-btn" style="white-space:nowrap">↗️ Verplaats</button>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeEditModal()">Annuleren</button>
+      <button class="btn-secondary" id="edit-fav-btn" style="flex:0.6">⭐ Favoriet</button>
+      <button class="btn-primary" id="edit-save-btn">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM PRODUCT MODAL -->
+<div class="modal-overlay" id="custom-product-modal" role="dialog" aria-modal="true" aria-label="Nieuw product toevoegen">
+  <div class="modal">
+    <h3>➕ Nieuw product of gerecht</h3>
+    <div class="modal-scroll-body">
+      <div class="custom-field full">
+        <label>Snel gerecht herkennen</label>
+        <input type="text" id="custom-dish-input" placeholder="Bijv. linzensoep, Caesar salad, Ottolenghi bloemkooltaart of plak een receptlink">
+        <div class="custom-import-row" style="margin-top:0.45rem">
+          <button class="btn-secondary" id="custom-dish-analyze-btn" onclick="analyzeCustomDishInput()">🔎 Analyseer gerecht</button>
+        </div>
+
+        <div class="custom-suggestion-card" id="custom-dish-result" style="display:none">
+          <div class="custom-suggestion-head">
+            <div>
+              <div class="custom-suggestion-title" id="custom-dish-detected">—</div>
+              <div class="custom-suggestion-meta" id="custom-dish-meta"></div>
+            </div>
+            <div class="custom-confidence" id="custom-dish-confidence">Confidence</div>
+          </div>
+
+          <div class="custom-suggestion-portion">
+            <strong>Voorgestelde portie:</strong> <span id="custom-dish-portion">—</span>
+            <div class="custom-size-quick">
+              <button class="btn-secondary" onclick="setCustomDishPortionSize('klein')">Klein</button>
+              <button class="btn-secondary" onclick="setCustomDishPortionSize('normaal')">Normaal</button>
+              <button class="btn-secondary" onclick="setCustomDishPortionSize('groot')">Groot</button>
+              <button class="btn-secondary" onclick="applyCustomDishAlternative('veg')">Vegetarisch</button>
+            </div>
+          </div>
+
+          <div class="custom-suggestion-macros">
+            <span id="custom-sug-kcal">0 kcal</span>
+            <span id="custom-sug-e">0 g eiwitten</span>
+            <span id="custom-sug-kh">0 g koolhydraten</span>
+            <span id="custom-sug-v">0 g vetten</span>
+            <span id="custom-sug-vz">0 g vezels</span>
+          </div>
+
+          <details class="custom-assumptions-wrap" open>
+            <summary>Aannames bekijken / bewerken</summary>
+            <textarea id="custom-assumptions-edit" class="custom-assumptions-edit" rows="5" placeholder="Aannames verschijnen hier…"></textarea>
+          </details>
+
+          <div class="custom-suggestion-actions">
+            <button class="btn-secondary" onclick="applyCustomDishSuggestion()">Gebruik voorstel</button>
+            <button class="btn-primary" onclick="quickSaveCustomDishSuggestion()">⚡ 1-klik opslaan</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="custom-field full">
+        <label>Plak voedingswaarden of voer naam in</label>
+        <textarea id="custom-paste" class="custom-paste-area" rows="3" placeholder="Plak hier voedingsinfo van een recept of verpakking, bijv.:
+Calorieën: 92 kcal
+Eiwit: 10.7g
+Koolhydraten: 6.4g
+Vet: 3.3g"></textarea>
+        <div class="custom-import-row">
+          <button class="btn-secondary" id="custom-parse-btn" onclick="parseNutritionText()">📋 Herken</button>
+          <button class="btn-secondary" id="custom-photo-btn" onclick="document.getElementById('custom-photo-input').click()">📸 Foto</button>
+          <select id="custom-photo-model" class="custom-model-select" title="AI model voor fotoherkenning"></select>
+          <input type="file" id="custom-photo-input" accept="image/*" capture="environment" style="display:none">
+        </div>
+        <img id="custom-photo-preview" class="custom-photo-preview">
+      </div>
+      <div class="custom-field full">
+        <label>Productnaam</label>
+        <input type="text" id="custom-naam" placeholder="bijv. Proteïne shake vanille">
+      </div>
+      <div class="custom-field full">
+        <label style="font-size:0.75rem;color:var(--muted)">Of importeer via URL</label>
+        <div style="display:flex;gap:0.4rem">
+          <input type="text" id="custom-url" placeholder="URL van openfoodfacts.org, ah.nl of jumbo.com" style="flex:1;font-size:0.8rem">
+          <button class="btn-secondary" onclick="importFromOFF()" style="flex:none;padding:0.4rem 0.7rem;font-size:0.78rem" id="custom-url-btn">Importeer</button>
+        </div>
+      </div>
+      <div class="custom-grid">
+        <div class="custom-field">
+          <label>Calorieën (kcal)</label>
+          <input type="number" id="custom-kcal" min="0" step="1" placeholder="0">
+          <div class="field-hint">per 100g</div>
+        </div>
+        <div class="custom-field">
+          <label>Koolhydraten (g)</label>
+          <input type="number" id="custom-kh" min="0" step="0.1" placeholder="0">
+          <div class="field-hint">per 100g</div>
+        </div>
+        <div class="custom-field">
+          <label>Vezels (g)</label>
+          <input type="number" id="custom-vz" min="0" step="0.1" placeholder="0">
+          <div class="field-hint">per 100g</div>
+        </div>
+        <div class="custom-field">
+          <label>Vetten (g)</label>
+          <input type="number" id="custom-v" min="0" step="0.1" placeholder="0">
+          <div class="field-hint">per 100g</div>
+        </div>
+        <div class="custom-field">
+          <label>Eiwitten (g)</label>
+          <input type="number" id="custom-e" min="0" step="0.1" placeholder="0">
+          <div class="field-hint">per 100g</div>
+        </div>
+        <div class="custom-field">
+          <label>Portie (gram)</label>
+          <input type="number" id="custom-portie" min="1" step="10" value="100" placeholder="100">
+          <div class="field-hint">hoeveel gram eet je?</div>
+        </div>
+      </div>
+      <div class="custom-save-options">
+        <span class="custom-save-label">Opslaan als:</span>
+        <label class="custom-save-check">
+          <input type="checkbox" id="custom-save-to-db" checked>
+          Eigen product <span class="save-hint">(autocomplete)</span>
+        </label>
+        <label class="custom-save-check">
+          <input type="checkbox" id="custom-save-to-fav">
+          Favoriet gerecht <span class="save-hint">(⭐ snelkeuze)</span>
+        </label>
+      </div>
+      <div class="custom-count" id="custom-count"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeCustomModal()">Annuleren</button>
+      <button class="btn-secondary" onclick="aiFilLCustomProduct()" style="border-color:var(--blue);color:var(--blue)" id="custom-ai-btn">🤖 Vul in met AI</button>
+      <button class="btn-primary" id="custom-add-btn">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- DATABASE MATCH REVIEW MODAL -->
+<div class="modal-overlay" id="match-modal" role="dialog" aria-modal="true" aria-label="Producten koppelen">
+  <div class="modal">
+    <h3>🔍 Producten koppelen</h3>
+    <p class="match-intro">Hieronder zie je de herkende items. Controleer de matches en pas aan waar nodig.</p>
+    <div class="match-list" id="match-list"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeMatchModal()">Annuleren</button>
+      <button class="btn-primary" id="match-confirm-btn">✓ Toevoegen</button>
+      <button class="btn-primary" id="match-add-and-save-btn" style="background:var(--green)">✓ Toevoegen én opslaan als gerecht</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="import-modal" role="dialog" aria-modal="true" aria-label="Apple Health importeren">
+  <div class="modal">
+    <h3>📥 Apple Health importeren</h3>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem">Importeer je verbruiksdata (actieve + rustverbranding) uit een Apple Health XML-export.</p>
+    <div class="import-field">
+      <label>Bestand</label>
+      <label class="import-file-label" id="import-file-label">
+        <span id="import-file-text">📄 Kies een XML-bestand…</span>
+        <input type="file" accept=".xml" class="import-file-input" id="import-file-input">
+      </label>
+    </div>
+    <div class="import-field">
+      <label>Importeer vanaf datum <span style="font-weight:300;text-transform:none">(optioneel)</span></label>
+      <input type="date" class="import-date-input" id="import-from-date">
+      <div class="import-hint">Laat leeg om alle data te importeren</div>
+    </div>
+    <div id="import-progress">
+      <div class="import-progress-bar"><div class="import-progress-fill" id="import-progress-fill"></div></div>
+      <div class="import-status-text" id="import-status-text">Bezig…</div>
+    </div>
+    <div class="modal-btns" id="import-modal-btns">
+      <button class="btn-secondary" id="import-cancel-btn">Annuleren</button>
+      <button class="btn-primary" id="import-start-btn" disabled>🚀 Importeren</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <div class="brand-mark">
+      <img src="icon-192.png" alt="Kcalculator" width="34" height="34" style="border-radius:8px">
+    </div>
+    <div>
+      <h1>Kcal<span style="color:var(--accent)">culator</span></h1>
+      <span class="subtitle">VOEDINGSTRACKER</span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span id="streak-display"></span>
+    <button class="sync-indicator" id="sync-btn" title="Klik om te synchroniseren" type="button"><div class="sync-dot offline" id="sync-dot"></div><span id="sync-label">lokaal</span></button>
+    <button class="icon-btn" id="dark-toggle" title="Dark mode" aria-label="Schakel donkere modus">🌙</button>
+    <button class="icon-btn" id="week-btn" title="Weekoverzicht" aria-label="Weekoverzicht openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="6" width="3" height="9" rx="1" fill="currentColor" opacity="0.4"/><rect x="6" y="3" width="3" height="12" rx="1" fill="currentColor" opacity="0.65"/><rect x="11" y="1" width="3" height="14" rx="1" fill="currentColor"/></svg></button>
+    <button class="icon-btn" id="fav-btn" title="Producten & favorieten" aria-label="Favorieten openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l2 4 4.5.7-3.2 3.2.8 4.4L8 11.5l-4.1 2.3.8-4.4L1.5 6.2 6 5.5z" fill="currentColor"/><path d="M12.5 1v3M11 2.5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+    <button class="icon-btn icon-btn-beta" id="smart-import-header-btn" title="Product of gerecht toevoegen (BETA)" aria-label="Product of gerecht toevoegen (BETA)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 8h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 2.5v11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.2"/></svg></button>
+    <button class="icon-btn" id="advies-header-btn" title="Advies & analyse" aria-label="Advies en analyse openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.7 1 2 3.5 2 6.5c0 1.8 1 3.4 2.5 4.3V13a1 1 0 001 1h5a1 1 0 001-1v-2.2C13 9.9 14 8.3 14 6.5 14 3.5 11.3 1 8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M6 14.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="1" fill="currentColor"/><path d="M8 7v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+    <button class="icon-btn" id="open-settings" title="Doelen" aria-label="Dagelijkse doelen instellen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="4.5" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><path d="M12 2l-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M11 1h3v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="icon-btn" id="import-btn" title="Apple Health XML importeren" aria-label="Apple Health data importeren"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 10V2M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="icon-btn" id="export-btn" title="Exporteer data" aria-label="Data exporteren"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="icon-btn" id="open-config" title="Instellingen" aria-label="Instellingen openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.7 1.2h2.6l.35 1.9a5.5 5.5 0 011.2.7l1.8-.75 1.3 2.25-1.45 1.2c.06.4.06.82 0 1.2l1.45 1.2-1.3 2.25-1.8-.75a5.5 5.5 0 01-1.2.7l-.35 1.9H6.7l-.35-1.9a5.5 5.5 0 01-1.2-.7l-1.8.75L2.05 8.7l1.45-1.2a5.5 5.5 0 010-1.2L2.05 5.1l1.3-2.25 1.8.75c.37-.28.77-.52 1.2-.7l.35-1.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/></svg></button>
+    <button class="icon-btn" id="account-btn" style="display:none"></button>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<a href="#food-input" class="skip-nav">Ga naar invoer</a>
+<div class="layout">
+  <div class="main-col">
+    <div class="day-nav">
+      <button id="prev-day" aria-label="Vorige dag">‹</button>
+      <button id="today-btn" title="Spring naar vandaag" aria-label="Spring naar vandaag">Vandaag</button>
+      <span id="day-label">Vandaag</span>
+      <button id="next-day" aria-label="Volgende dag">›</button>
+    </div>
+
+    <div class="input-area">
+      <div class="meal-selector">
+        <button class="meal-btn active" data-meal="ontbijt">🌅 Ontbijt</button>
+        <button class="meal-btn" data-meal="ochtendsnack">🍎 Ochtendsnack</button>
+        <button class="meal-btn" data-meal="lunch">☀️ Lunch</button>
+        <button class="meal-btn" data-meal="middagsnack">🍪 Middagsnack</button>
+        <button class="meal-btn" data-meal="avondeten">🌙 Avondeten</button>
+        <button class="meal-btn" data-meal="avondsnack">🌜 Avondsnack</button>
+        <button class="meal-btn drink-btn" data-meal="drinken">💧 Drinken</button>
+      </div>
+      <div class="input-row">
+        <div class="input-with-ac">
+          <div class="search-bar">
+            <textarea id="food-input" placeholder="Wat heb je gegeten?" rows="1" aria-label="Voedsel invoeren"></textarea>
+            <button class="search-bar-btn" id="send-btn" title="Voeg toe">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="ac-dropdown" id="ac-dropdown"></div>
+        </div>
+        <div class="send-row">
+          <span class="status-msg" id="status"></span>
+          <select id="inline-model-select" class="inline-model-select" title="Model voor herkenning"></select>
+        </div>
+      </div>
+      <div class="input-actions">
+        <button class="fav-save-btn" id="fav-save-btn">⭐ Als favoriet opslaan</button>
+        <button class="fav-save-btn" id="manual-day-btn" style="background:var(--bg)">📝 Handmatig invoeren</button>
+      </div>
+      <div class="quick-favs" id="quick-favs"></div>
+    </div>
+
+    <div id="meals-container"></div>
+  </div>
+
+  <div class="sidebar">
+    <div class="summary-card">
+      <h3>Dagoverzicht</h3>
+
+      <div class="cal-ring-wrap">
+        <div class="cal-ring">
+          <svg viewBox="0 0 110 110">
+            <circle class="ring-bg" cx="55" cy="55" r="47"/>
+            <circle class="ring-fill green" cx="55" cy="55" r="47" id="cal-ring-fill"
+              stroke-dasharray="295.3" stroke-dashoffset="295.3"/>
+          </svg>
+          <div class="cal-ring-center">
+            <div class="cal-ring-number" id="total-cals">0</div>
+            <div class="cal-ring-label" id="cal-ring-label">kcal</div>
+          </div>
+        </div>
+        <div class="cal-ring-info">
+          <div class="cal-ring-info-row" id="ring-info-rest"></div>
+          <div class="cal-ring-info-row" id="ring-info-prot"></div>
+          <div class="cal-ring-info-row" id="ring-info-fat"></div>
+        </div>
+      </div>
+
+      <div class="macro-donut-wrap" id="macro-donut-wrap">
+        <div class="macro-donut">
+          <svg viewBox="0 0 80 80" id="macro-donut-svg">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="var(--border)" stroke-width="10"/>
+          </svg>
+          <div class="macro-donut-center">
+            <div class="macro-donut-total" id="donut-total">0g</div>
+            <div class="macro-donut-label">macros</div>
+          </div>
+        </div>
+        <div class="macro-donut-legend" id="donut-legend"></div>
+      </div>
+
+      <div class="macro-toggles">
+        <button class="macro-toggle on" data-macro="carbs"><span class="chip-dot" style="background:var(--blue)"></span>Koolhydraten</button>
+        <button class="macro-toggle on" data-macro="fat"><span class="chip-dot" style="background:var(--danger)"></span>Vetten</button>
+        <button class="macro-toggle on" data-macro="prot"><span class="chip-dot" style="background:var(--green)"></span>Eiwitten</button>
+        <button class="macro-toggle on" data-macro="fiber"><span class="chip-dot" style="background:var(--fiber)"></span>Vezels</button>
+        <button class="macro-toggle on" data-macro="water"><span class="chip-dot" style="background:var(--water)"></span>Drinken</button>
+      </div>
+
+      <div class="macro-bars">
+        <div id="row-carbs">
+          <div class="macro-row-header"><span class="macro-row-name">Koolhydraten</span><span class="macro-row-val" id="total-carbs">0g</span></div>
+          <div class="bar-track"><div class="bar-fill bar-c" id="bar-c" style="width:0%"></div></div>
+          <div id="row-fiber" class="fiber-subrow">
+            <div class="macro-row-header"><span class="macro-row-name fiber-sub-label">↳ w.v. vezels</span><span class="macro-row-val" id="total-fiber" style="font-size:0.72rem">0g</span></div>
+            <div class="bar-track fiber-sub-bar"><div class="bar-fill bar-f" id="bar-f" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div id="row-fat">
+          <div class="macro-row-header"><span class="macro-row-name">Vetten</span><span class="macro-row-val" id="total-fat">0g</span></div>
+          <div class="bar-track"><div class="bar-fill bar-v" id="bar-v" style="width:0%"></div></div>
+        </div>
+        <div id="row-prot">
+          <div class="macro-row-header"><span class="macro-row-name">Eiwitten</span><span class="macro-row-val" id="total-prot">0g</span></div>
+          <div class="bar-track"><div class="bar-fill bar-e" id="bar-e" style="width:0%"></div></div>
+        </div>
+        <div class="water-divider" id="row-water">
+          <div class="macro-row-header"><span class="macro-row-name">💧 Drinken</span><span class="macro-row-val" id="total-water">0 ml</span></div>
+          <div class="bar-track"><div class="bar-fill bar-w" id="bar-w" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="viz-card">
+      <h3>Afgelopen 7 dagen</h3>
+      <div class="week-spark" id="week-spark"></div>
+    </div>
+  </div>
+
+  <!-- DATA-OVERZICHT -->
+  <div class="data-col" id="data-overzicht">
+    <div class="do-header">
+      <h2>📊 Data-overzicht</h2>
+      <button class="do-back" id="do-back-btn">← Terug</button>
+    </div>
+    <div class="do-period-tabs" id="do-period-tabs">
+      <button class="do-period-tab active" data-days="7">Week</button>
+      <button class="do-period-tab" data-days="30">Maand</button>
+      <button class="do-period-tab" data-days="365">Jaar</button>
+    </div>
+    <div id="do-content">
+      <div class="do-empty">Laden…</div>
+    </div>
+  </div>
+
+  <!-- ADVIES & ANALYSE PAGE -->
+  <div class="advies-col" id="advies-page">
+    <div class="advies-page-header">
+      <h2>💡 Advies & Analyse</h2>
+      <button class="do-back" id="advies-back-btn">← Terug</button>
+    </div>
+    <div class="advies-page-tabs">
+      <button class="advies-tab active" data-tab="schijf">🥗 Schijf van 5</button>
+      <button class="advies-tab" data-tab="weekrapport">📊 Weekrapport</button>
+      <button class="advies-tab" data-tab="avond">🍽️ Avondeten</button>
+      <button class="advies-tab" data-tab="dag">📋 Daganalyse</button>
+      <button class="advies-tab" data-tab="week">📈 AI Week</button>
+    </div>
+    <div class="advies-page-toolbar">
+      <select id="advies-model-select" title="Model voor advies"></select>
+      <button class="btn-primary" id="advies-refresh-btn">🔄 Vernieuwen</button>
+    </div>
+    <div class="advies-page-body" id="advies-body">
+      <div class="advies-loading"><span class="spin">⏳</span> Laden…</div>
+    </div>
+  </div>
+
+  <!-- SMART IMPORT PAGE -->
+  <div class="smart-import-col" id="smart-import-page">
+    <div class="smart-import-header">
+      <h2>➕ Product of gerecht</h2>
+      <div class="smart-import-header-right">
+        <button class="do-back" id="smart-import-back-btn">← Terug</button>
+      </div>
+    </div>
+
+    <div class="smart-import-tabs" id="smart-import-tabs">
+      <button class="smart-import-tab active" data-tab="dish_name">🍽️ Herkennen</button>
+      <button class="smart-import-tab" data-tab="manual_nutrition">📋 Invullen</button>
+      <button class="smart-import-tab" data-tab="url_import">🔗 URL</button>
+      <button class="smart-import-tab" data-tab="manage">📦 Beheer</button>
+    </div>
+
+    <div class="smart-import-body" id="smart-import-body">
+      <!-- TAB: Herkennen -->
+      <section class="smart-section" data-section="dish_name">
+        <div class="meal-selector smart-import-meal-selector" id="smart-import-meal-selector" aria-label="Kies maaltijd voor Smart Import">
+          <button class="meal-btn smart-import-meal-btn active" data-meal="ontbijt">🌅 Ontbijt</button>
+          <button class="meal-btn smart-import-meal-btn" data-meal="ochtendsnack">🍎 Ochtendsnack</button>
+          <button class="meal-btn smart-import-meal-btn" data-meal="lunch">☀️ Lunch</button>
+          <button class="meal-btn smart-import-meal-btn" data-meal="middagsnack">🍪 Middagsnack</button>
+          <button class="meal-btn smart-import-meal-btn" data-meal="avondeten">🌙 Avondeten</button>
+          <button class="meal-btn smart-import-meal-btn" data-meal="avondsnack">🌜 Avondsnack</button>
+          <button class="meal-btn smart-import-meal-btn drink-btn" data-meal="drinken">💧 Drinken</button>
+        </div>
+        <div class="smart-form-row">
+          <label for="smart-dish-input">Gerecht, vraag of macro-tekst</label>
+          <textarea id="smart-dish-input" rows="4" placeholder="Bijv. erwtensoep, 'mag ik de calorieen voor pasta alla norma?', of geplakte macro's"></textarea>
+        </div>
+        <div class="smart-actions">
+          <button class="btn-primary" id="smart-dish-analyze-btn">🔎 Analyseer</button>
+          <label class="btn-secondary smart-photo-label" id="smart-photo-label">
+            📸 Foto
+            <input type="file" id="smart-photo-input" accept="image/*" capture="environment" style="display:none" />
+          </label>
+          <select id="smart-import-provider-select" title="AI-provider" class="smart-inline-select"></select>
+          <select id="smart-import-model-select" title="Model" class="smart-inline-select"></select>
+        </div>
+        <img id="smart-photo-preview" class="smart-photo-preview" style="display:none" alt="Foto preview" />
+        <div class="smart-result" id="smart-dish-result"></div>
+      </section>
+
+      <!-- TAB: Plakken -->
+      <section class="smart-section" data-section="manual_nutrition" style="display:none">
+        <div class="smart-form-row">
+          <label for="smart-manual-paste">Plak voedingswaarden</label>
+          <textarea id="smart-manual-paste" rows="5" placeholder="Calorieën ±214 kcal&#10;Koolhydraten ±46 g&#10;Eiwit ±8,7 g&#10;Vet ±1,2 g&#10;Vezels ±7-8 g"></textarea>
+        </div>
+        <div class="smart-actions">
+          <button class="btn-primary" id="smart-manual-parse-btn">📋 Herkennen &gt; Invullen</button>
+        </div>
+        <div class="smart-form-grid">
+          <div class="smart-form-row"><label for="smart-manual-title">Titel</label><input id="smart-manual-title" type="text" placeholder="Bijv. Linzensoep" /></div>
+          <div class="smart-form-row"><label for="smart-manual-kcal">kcal</label><input id="smart-manual-kcal" type="number" min="0" step="1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-protein">eiwit g</label><input id="smart-manual-protein" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-carbs">koolh. g</label><input id="smart-manual-carbs" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fat">vet g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fiber">vezels g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-portion">portie g</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" /></div>
+        </div>
+        <div class="smart-actions">
+          <button class="btn-primary" id="smart-manual-create-btn">Toon voorstel</button>
+        </div>
+        <div class="smart-result" id="smart-manual-result"></div>
+      </section>
+
+      <!-- TAB: URL -->
+      <section class="smart-section" data-section="url_import" style="display:none">
+        <div class="smart-form-row">
+          <label for="smart-url-input">Product- of recept-URL</label>
+          <input id="smart-url-input" type="url" placeholder="https://www.ah.nl/producten/... of openfoodfacts.org/..." />
+        </div>
+        <div class="smart-actions">
+          <button class="btn-primary" id="smart-url-import-btn">🔗 Importeer</button>
+        </div>
+        <div class="smart-result" id="smart-url-result"></div>
+      </section>
+
+      <!-- TAB: Beheer -->
+      <section class="smart-section" data-section="manage" style="display:none">
+        <div class="smart-manage-search">
+          <input id="smart-manage-search" type="text" placeholder="Zoek in eigen producten…" />
+        </div>
+        <div class="smart-manage-list" id="smart-manage-list"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE TAB BAR -->
+<div class="mobile-tab-bar">
+  <div class="mobile-tab-bar-inner">
+    <button class="mobile-tab active" data-view="invoer">
+      <span class="mobile-tab-icon">✏️</span>
+      Invoer
+    </button>
+    <button class="mobile-tab" data-view="overzicht">
+      <span class="mobile-tab-icon">🍕</span>
+      Dag
+    </button>
+    <button class="mobile-tab" data-view="data">
+      <span class="mobile-tab-icon">📊</span>
+      Data
+    </button>
+    <button class="mobile-tab" data-view="advies">
+      <span class="mobile-tab-icon">💡</span>
+      Advies
+    </button>
+    <button class="mobile-tab" data-view="import">
+      <span class="mobile-tab-icon">🧠</span>
+      Import
+    </button>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

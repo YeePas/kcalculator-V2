@@ -1,0 +1,96 @@
+/* ── Mobile Tab Bar ────────────────────────────────────────── */
+
+.mobile-tab-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: transparent; padding: 0.3rem 0.8rem calc(0.3rem + env(safe-area-inset-bottom, 0px)); }
+.mobile-tab-bar-inner { display: flex; gap: 0.3rem; max-width: 560px; margin: 0 auto; padding: 0.35rem; border-radius: 26px; background: color-mix(in srgb, var(--surface-strong) 72%, transparent); border: 1px solid var(--border); backdrop-filter: blur(20px) saturate(1.2); -webkit-backdrop-filter: blur(20px) saturate(1.2); box-shadow: var(--shadow-lg); }
+.mobile-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.14rem; background: none; border: none; padding: 0.46rem 0; border-radius: 18px; font-family: var(--font-body); font-size: 0.62rem; color: var(--muted); cursor: pointer; transition: all 0.15s; font-weight: 700; }
+.mobile-tab.active { color: var(--accent); background: var(--surface-strong); box-shadow: var(--shadow-sm); }
+.mobile-tab-icon { font-size: 1.1rem; }
+
+/* ── Mobile Responsive ────────────────────────────────────── */
+
+@media (max-width: 780px) {
+  .mobile-tab-bar { display: block; }
+  .layout { padding-bottom: 6rem; }
+  .layout.mobile-view-overzicht .main-col { display: none; }
+  .layout.mobile-view-overzicht .sidebar { display: block; }
+  .layout.mobile-view-overzicht .data-col { display: none; }
+  .layout.mobile-view-invoer .sidebar { display: none; }
+  .layout.mobile-view-invoer .main-col { display: block; }
+  .layout.mobile-view-invoer .data-col { display: none; }
+  .layout.mobile-view-data .main-col { display: none; }
+  .layout.mobile-view-data .sidebar { display: none; }
+  .layout.mobile-view-data .data-col { display: block; }
+  .layout.mobile-view-advies .main-col { display: none; }
+  .layout.mobile-view-advies .sidebar { display: none; }
+  .layout.mobile-view-advies .data-col { display: none; }
+  .layout.mobile-view-advies .advies-col { display: block; }
+  .layout.mobile-view-import .main-col { display: none; }
+  .layout.mobile-view-import .sidebar { display: none; }
+  .layout.mobile-view-import .data-col { display: none; }
+  .layout.mobile-view-import .advies-col { display: none; }
+  .layout.mobile-view-import .smart-import-col { display: block; }
+}
+
+/* ── Enhanced Mobile UX ───────────────────────────────────── */
+
+@media (max-width: 600px) {
+  /* Compact header */
+  header { padding: calc(0.55rem + var(--safe-top)) 0.85rem 0.55rem; gap: 0.45rem; }
+  header h1 { font-size: 1.05rem; }
+  .subtitle { display: none; }
+  .brand-mark img { width: 28px; height: 28px; }
+  .header-actions { gap: 0.18rem; }
+  .icon-btn { padding: 0.3rem; min-width: 36px; min-height: 36px; }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .sync-indicator { font-size: 0.68rem; padding: 0 0.55rem; height: 36px; }
+
+  /* Larger touch targets */
+  textarea#food-input { min-height: 24px; }
+  .search-bar { padding: 0.42rem 0.42rem 0.42rem 0.95rem; }
+  .search-bar-btn { width: 38px; height: 38px; }
+  .meal-btn { min-height: 38px; padding: 0.45rem 0.9rem; font-size: 0.82rem; }
+  .input-area { padding: 1.05rem; }
+  .day-nav { padding: 0.35rem; gap: 0.35rem; }
+  .day-nav button { width: 38px; height: 38px; }
+  #today-btn { min-width: 82px; }
+  #day-label { font-size: 1.2rem; }
+
+  /* Bigger portie quick-select buttons */
+  .ac-portie-quicks { gap: 0.4rem; padding: 0.6rem 0.9rem 0.2rem; }
+  .ac-portie-quick { padding: 0.5rem 0.8rem; font-size: 0.82rem; min-height: 38px; border-radius: var(--radius-sm); }
+  .ac-portie-manual { padding: 0.4rem 0.9rem 0.6rem; }
+  .ac-portie-input { font-size: 1rem; padding: 0.5rem; min-height: 38px; }
+  .ac-portie-add { min-height: 38px; min-width: 44px; font-size: 1.1rem; }
+
+  /* Autocomplete items larger */
+  .ac-item { padding: 0.65rem 0.9rem; min-height: 44px; }
+
+  /* Summary card compact */
+  .summary-card,
+  .viz-card,
+  .history-card,
+  .do-section,
+  .advies-page-body,
+  .smart-import-body { padding: 1rem; }
+  .cal-ring-wrap { padding: 1rem; gap: 0.85rem; }
+
+  /* Quick favs */
+  .quick-favs { gap: 0.4rem; }
+  .quick-fav-chip { padding: 0.45rem 0.8rem; font-size: 0.8rem; min-height: 36px; }
+
+  /* Match items in review modal */
+  .match-manual-btn { padding: 0.35rem 0.6rem; min-height: 32px; }
+
+  /* Meal items - bigger delete button */
+  .item-delete { width: 32px; height: 32px; font-size: 0.9rem; }
+}
+
+/* ── Extra Small Screens (iPhone SE, etc) ─────────────────── */
+
+@media (max-width: 375px) {
+  .layout { padding: 0.65rem 0.65rem 5.5rem; }
+  .input-area { padding: 0.8rem; }
+  header h1 { font-size: 0.95rem; }
+  .header-actions { gap: 0.05rem; }
+  .mobile-tab-bar { padding-left: 0.55rem; padding-right: 0.55rem; }
+}

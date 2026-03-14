@@ -1,0 +1,71 @@
+/* ── Portion Quick-Select ──────────────────────────────────── */
+
+.ac-portie-quicks { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.5rem 0.9rem 0; }
+.ac-portie-quick { background: var(--border-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: 0.75rem; color: var(--text); cursor: pointer; font-family: var(--font-body); transition: all 0.15s; }
+.ac-portie-quick:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+.ac-portie-manual { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; }
+
+/* ── Database Autocomplete ────────────────────────────────── */
+
+.input-with-ac { position: relative; flex: 1; }
+.ac-dropdown {
+  display: none; position: absolute; left: 0; right: 0; top: 100%;
+  margin-top: 4px; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+  max-height: 340px; overflow-y: auto; z-index: 90;
+}
+.ac-dropdown.open { display: block; }
+.ac-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.6rem 0.9rem; cursor: pointer; gap: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.1s;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.selected { background: var(--accent-light); }
+.ac-item-name { font-size: 0.85rem; font-weight: 500; flex: 1; min-width: 0; }
+.ac-item-name mark { background: transparent; color: var(--accent); font-weight: 600; }
+.ac-item-group { font-size: 0.65rem; color: var(--tertiary); margin-top: 0.1rem; }
+.ac-item-macros {
+  font-size: 0.7rem; color: var(--muted); white-space: nowrap;
+  display: flex; gap: 0.4rem; flex-shrink: 0;
+}
+.ac-item-kcal { font-weight: 600; color: var(--text); }
+.ac-hint {
+  padding: 0.5rem 0.9rem; font-size: 0.72rem; color: var(--tertiary);
+  border-bottom: 1px solid var(--border-subtle); display: flex;
+  align-items: center; gap: 0.4rem; background: var(--bg);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.ac-hint-badge {
+  background: var(--green); color: white; font-size: 0.6rem;
+  padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600;
+}
+.ac-portie-row {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.9rem;
+  background: var(--accent-light); border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+.ac-portie-row label { color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+.ac-portie-input {
+  width: 60px; border: 1.5px solid var(--border); border-radius: 6px;
+  padding: 0.3rem 0.5rem; font-size: 0.85rem; text-align: center;
+  background: var(--surface); color: var(--text);
+}
+.ac-portie-input:focus { outline: none; border-color: var(--accent); }
+.ac-portie-unit { color: var(--muted); font-size: 0.75rem; }
+.ac-portie-add {
+  margin-left: auto; background: var(--accent); color: white;
+  border: none; border-radius: 6px; padding: 0.3rem 0.8rem;
+  font-size: 0.82rem; font-weight: 500; white-space: nowrap;
+}
+.ac-portie-add:hover { background: var(--accent-hover); }
+.ac-manual-btn {
+  display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  padding: 0.6rem 0.9rem; border: none; background: var(--bg);
+  font-size: 0.82rem; color: var(--accent); cursor: pointer;
+  font-weight: 500; transition: background 0.1s;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+.ac-manual-btn:hover { background: var(--accent-light); }

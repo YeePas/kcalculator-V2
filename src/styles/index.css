@@ -1,0 +1,13 @@
+/* ── CSS Entry Point ─────────────────────────────────────────
+   Imports all style modules in dependency order.
+   ──────────────────────────────────────────────────────────── */
+
+@import './variables.css';
+@import './base.css';
+@import './layout.css';
+@import './components.css';
+@import './meals.css';
+@import './sidebar.css';
+@import './autocomplete.css';
+@import './pages.css';
+@import './mobile.css';

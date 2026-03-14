@@ -1,0 +1,1026 @@
+/* ── Main Entry Point ─────────────────────────────────────── */
+import './styles/index.css';
+
+// ── State & Constants ────────────────────────────────────────
+import {
+  cfg, goals, localData, currentDate, selMeal, vis, authUser,
+  activeAdviesTab, setActiveAdviesTab, showDrinks,
+  nevoData, nevoReady, setNevoReady,
+  acSelectedIdx, acSelectedItem,
+  setLocalData, setGoals, setSelMeal, setCfg,
+  setCurrentDate, setAuthUser as setAuthUserState,
+  setNevoData, setOffReady,
+} from './state.js';
+import {
+  SUPABASE_URL, SUPABASE_ANON_KEY,
+  CFG_KEY, GOALS_KEY, LOCAL_KEY, VIS_KEY, FAV_KEY, DARK_KEY, CUSTOM_KEY,
+  DEFAULT_GOALS, MEAL_NAMES, MEAL_LABELS, PROVIDER_MODELS,
+  ADMIN_PASS_KEY, ENERGY_LOCAL_KEY,
+} from './constants.js';
+import {
+  dateKey, formatDate, emptyDay, normalizeDayData,
+  esc, r1, dayTotals,
+} from './utils.js';
+import {
+  safeParse, loadCfg, saveCfg, loadGoals, saveGoals,
+  loadFavs, saveFavs, loadVis, loadCustomProducts, saveCustomProducts,
+} from './storage.js';
+
+// ── Supabase ─────────────────────────────────────────────────
+import { sbHeaders } from './supabase/config.js';
+import {
+  sbAuthRegister, sbAuthLogin, sbAuthRefresh,
+  setAuthUser, updateAccountUI, restoreAuth,
+} from './supabase/auth.js';
+import { initSupabase, loadDay, saveDay } from './supabase/data.js';
+import {
+  syncFavoritesToSupabase,
+  syncCustomProductsToSupabase,
+  syncUserPrefs,
+  loadUserPrefs,
+} from './supabase/sync.js';
+
+// ── Products ─────────────────────────────────────────────────
+import { loadNevo, searchNevo } from './products/database.js';
+import { parseTextToItems, matchItemToNevo } from './products/matcher.js';
+import {
+  openCustomModal, closeCustomModal, updatePhotoModelSelect,
+  parseNutritionText, importFromOFF, aiFilLCustomProduct,
+  handleCustomPhoto, saveCustomProduct,
+  analyzeCustomDishInput, applyCustomDishSuggestion,
+  quickSaveCustomDishSuggestion, setCustomDishPortionSize,
+  applyCustomDishAlternative,
+} from './products/custom.js';
+
+// ── AI ───────────────────────────────────────────────────────
+import { updateInlineModelSelect } from './ai/providers.js';
+import { parseFood } from './ai/parser.js';
+
+// ── UI ───────────────────────────────────────────────────────
+import { renderMeals, _renderDayUI, toggleMealSection, renderMealItems, renderItem } from './ui/render.js';
+import { renderSummary } from './ui/summary.js';
+import { renderDashboard, renderWeekSpark, renderMacroDonut } from './ui/charts.js';
+import { setSyncStatus } from './ui/sync-status.js';
+import {
+  renderHistory, renderQuickFavs, updateStreak,
+  applyDark, applyVis, deleteItem, deleteRecipeGroup, moveRecipeGroupToMeal,
+  goToDay, switchMobileView,
+} from './ui/misc.js';
+import {
+  initAutocomplete, closeAcDropdown,
+  selectAcItem, setPortie, addNevoItem,
+} from './ui/autocomplete.js';
+
+// ── Modals ───────────────────────────────────────────────────
+import {
+  openFavModal, renderFavList, saveFavorite,
+  saveItemAsFavorite, deleteFav, saveMealAsRecipe,
+  toggleFavExpand, addFavToMeal,
+  openEditFavModal, initEditFavModalListeners, recalcEditFavTotals,
+} from './modals/favourites.js';
+import {
+  openMatchModal, closeMatchModal, renderMatchList,
+  updateMatchNevo, updateMatchGram, toggleManualMode,
+  addMatchToFavs, aiLookupMatch, initMatchModalListeners,
+} from './modals/match.js';
+import {
+  openEditModal, closeEditModal, initEditModalListeners, moveItemToMeal,
+} from './modals/edit.js';
+import { initDataManagement } from './modals/data-management.js';
+import { initManualDayEntry } from './modals/manual-day.js';
+
+// ── Pages ────────────────────────────────────────────────────
+import {
+  openWeekModal, closeDataOverzicht, switchDOPeriod,
+  renderDataOverzicht,
+} from './pages/data-overview.js';
+import {
+  openAdviesModal, closeAdviesPage, showAdviesContent,
+  updateAdviesModelSelect, runAdvies, initAdviesListeners,
+} from './pages/advies.js';
+import {
+  openSmartImportPage, closeSmartImportPage, initSmartImportListeners,
+} from './pages/smart-import.js';
+
+// ══════════════════════════════════════════════════════════════
+// Expose functions needed by inline onclick handlers
+// ══════════════════════════════════════════════════════════════
+Object.assign(window, {
+  toggleMealSection, saveMealAsRecipe, deleteRecipeGroup, moveRecipeGroupToMeal, moveRecipeGroupToMeal,
+  saveItemAsFavorite, openEditModal, deleteItem,
+  addFavToMeal, toggleFavExpand, deleteFav, openEditFavModal, recalcEditFavTotals,
+  selectAcItem, setPortie, addNevoItem, openSmartImportPage, closeCustomModal,
+  goToDay,
+  updateMatchNevo, updateMatchGram, toggleManualMode,
+  addMatchToFavs, aiLookupMatch,
+  runAdvies, switchMobileView,
+  closeEditModal, closeMatchModal, moveItemToMeal,
+  parseNutritionText, importFromOFF, aiFilLCustomProduct,
+  analyzeCustomDishInput, applyCustomDishSuggestion,
+  quickSaveCustomDishSuggestion, setCustomDishPortionSize,
+  applyCustomDishAlternative,
+});
+
+// switchDashPeriod for week modal dash-tab buttons
+window.switchDashPeriod = function(numDays, btn) {
+  document.querySelectorAll('.dash-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderDashboard(numDays);
+};
+
+async function hashAdminPassword(password) {
+  const bytes = new TextEncoder().encode(password);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const hashHex = Array.from(new Uint8Array(digest))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  return 'sha256:' + hashHex;
+}
+
+async function verifyAdminPassword(input, stored) {
+  if (!stored) return false;
+  if (stored.startsWith('sha256:')) {
+    return (await hashAdminPassword(input)) === stored;
+  }
+  return btoa(input) === stored;
+}
+
+// ══════════════════════════════════════════════════════════════
+// Export/Import
+// ══════════════════════════════════════════════════════════════
+function exportAllData() {
+  const allLocal = safeParse(LOCAL_KEY, {});
+  const favs = loadFavs();
+  const customs = safeParse('eetdagboek_custom_v1', []);
+  const exportObj = {
+    exportDatum: new Date().toISOString(),
+    versie: 'eetdagboek-v2',
+    doelen: goals,
+    dagen: allLocal,
+    favorieten: favs,
+    eigenProducten: customs,
+  };
+  const csvRows = ['Datum,Maaltijd,Naam,Portie,Kcal,Koolhydraten_g,Vezels_g,Vetten_g,Eiwitten_g,ML'];
+  for (const [date, day] of Object.entries(allLocal).sort()) {
+    for (const meal of MEAL_NAMES) {
+      for (const item of (day[meal] || [])) {
+        csvRows.push([
+          date, meal, `"${(item.naam || '').replace(/"/g, '""')}"`,
+          `"${item.portie || ''}"`, item.kcal || 0, item.koolhydraten_g || 0,
+          item.vezels_g || 0, item.vetten_g || 0, item.eiwitten_g || 0, item.ml || 0
+        ].join(','));
+      }
+    }
+  }
+  const jsonBlob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+  const csvBlob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const today = dateKey(new Date());
+  const a1 = document.createElement('a');
+  a1.href = URL.createObjectURL(jsonBlob);
+  a1.download = `eetdagboek-export-${today}.json`;
+  a1.click();
+  setTimeout(() => {
+    const a2 = document.createElement('a');
+    a2.href = URL.createObjectURL(csvBlob);
+    a2.download = `eetdagboek-export-${today}.csv`;
+    a2.click();
+  }, 500);
+}
+
+function importData() {
+  if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) {
+    alert('Je moet ingelogd zijn en Supabase gekoppeld hebben om te importeren.');
+    return;
+  }
+  const modal = document.getElementById('import-modal');
+  const fileInput = document.getElementById('import-file-input');
+  const fileLabel = document.getElementById('import-file-label');
+  const fileText = document.getElementById('import-file-text');
+  const dateInput = document.getElementById('import-from-date');
+  const startBtn = document.getElementById('import-start-btn');
+  const cancelBtn = document.getElementById('import-cancel-btn');
+  const progressEl = document.getElementById('import-progress');
+  const progressFill = document.getElementById('import-progress-fill');
+  const statusText = document.getElementById('import-status-text');
+  const btnsEl = document.getElementById('import-modal-btns');
+
+  fileInput.value = ''; dateInput.value = '';
+  fileInput.disabled = false; dateInput.disabled = false;
+  fileLabel.classList.remove('has-file');
+  fileText.textContent = '📄 Kies een XML-bestand…';
+  startBtn.disabled = true; startBtn.textContent = '🚀 Importeren';
+  startBtn.style.display = '';
+  cancelBtn.textContent = 'Annuleren';
+  progressEl.classList.remove('active'); progressFill.style.width = '0%';
+  statusText.textContent = ''; statusText.className = 'import-status-text';
+  btnsEl.style.display = '';
+  modal.classList.add('open');
+
+  fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (file && file.name.toLowerCase().endsWith('.xml')) {
+      fileLabel.classList.add('has-file');
+      fileText.textContent = `✓ ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+      startBtn.disabled = false;
+    } else {
+      fileLabel.classList.remove('has-file');
+      fileText.textContent = '📄 Kies een XML-bestand…';
+      startBtn.disabled = true;
+    }
+  };
+
+  cancelBtn.onclick = () => modal.classList.remove('open');
+  modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('open'); };
+
+  startBtn.onclick = () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const fromDate = dateInput.value || null;
+    startBtn.disabled = true; startBtn.textContent = '⏳ Bezig…';
+    fileInput.disabled = true; dateInput.disabled = true;
+    progressEl.classList.add('active');
+    statusText.textContent = 'Bestand verwerken…'; statusText.className = 'import-status-text';
+
+    const CHUNK = 8 * 1024 * 1024;
+    let offset = 0, remainder = '';
+    const dailyActive = {}, dailyBasal = {};
+    let skippedRecords = 0;
+
+    function processRecordPart(part) {
+      if (part.includes('ActiveEnergyBurned')) {
+        const val = part.match(/value="([^"]+)/), date = part.match(/startDate="(\d{4}-\d{2}-\d{2})/);
+        if (val && date) {
+          const d = date[1];
+          if (fromDate && d < fromDate) { skippedRecords++; return; }
+          const v = parseFloat(val[1]);
+          if (!isNaN(v)) dailyActive[d] = (dailyActive[d] || 0) + v;
+        }
+      }
+      if (part.includes('BasalEnergyBurned')) {
+        const val = part.match(/value="([^"]+)/), date = part.match(/startDate="(\d{4}-\d{2}-\d{2})/);
+        if (val && date) {
+          const d = date[1];
+          if (fromDate && d < fromDate) { skippedRecords++; return; }
+          const v = parseFloat(val[1]);
+          if (!isNaN(v)) dailyBasal[d] = (dailyBasal[d] || 0) + v;
+        }
+      }
+    }
+
+    function processChunk() {
+      const slice = file.slice(offset, offset + CHUNK);
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        let text = remainder + e.target.result;
+        const parts = text.split('<Record'); remainder = parts.pop();
+        for (const part of parts) processRecordPart(part);
+        offset += CHUNK;
+        progressFill.style.width = Math.min(100, Math.round(offset / file.size * 100)) + '%';
+        statusText.textContent = `Bestand verwerken… ${Math.min(100, Math.round(offset / file.size * 100))}%`;
+        if (offset < file.size) {
+          setTimeout(processChunk, 0);
+        } else {
+          if (remainder) processRecordPart(remainder);
+          finishImport();
+        }
+      };
+      reader.onerror = function () {
+        statusText.textContent = '✗ Fout bij lezen bestand'; statusText.className = 'import-status-text error';
+        startBtn.textContent = '🚀 Importeren'; startBtn.disabled = false; fileInput.disabled = false; dateInput.disabled = false;
+      };
+      reader.readAsText(slice);
+    }
+
+    async function finishImport() {
+      const allDates = new Set([...Object.keys(dailyActive), ...Object.keys(dailyBasal)]);
+      if (allDates.size === 0) {
+        statusText.textContent = fromDate ? `ℹ Geen energy-data gevonden vanaf ${fromDate}` : 'ℹ Geen energy-data gevonden in dit bestand';
+        statusText.className = 'import-status-text error';
+        startBtn.textContent = '🚀 Importeren'; startBtn.disabled = false; fileInput.disabled = false; dateInput.disabled = false;
+        return;
+      }
+      progressFill.style.width = '100%';
+      statusText.textContent = `Opslaan naar database… (${allDates.size} dagen)`;
+      const records = [];
+      for (const date of allDates) {
+        const active = Math.round(dailyActive[date] || 0), resting = Math.round(dailyBasal[date] || 0);
+        // tdee_kcal is een generated column in Supabase, dus niet meesturen in writes.
+        records.push({ user_id: authUser.id, date, active_kcal: active, resting_kcal: resting, source: 'apple_health' });
+      }
+      // Strategie: delete bestaande rijen voor deze datums, dan vers invoegen.
+      // Dit werkt ook zonder unieke constraint op (user_id, date).
+      const BATCH = 100; let saved = 0, errors = 0;
+      let firstErrorMsg = '';
+      for (let i = 0; i < records.length; i += BATCH) {
+        const batch = records.slice(i, i + BATCH);
+        const dateList = batch.map(r => r.date).join(',');
+        try {
+          // 1) Verwijder eventueel bestaande rijen voor deze datums
+          await fetch(
+            `${cfg.sbUrl}/rest/v1/daily_energy_stats?user_id=eq.${authUser.id}&date=in.(${dateList})`,
+            { method: 'DELETE', headers: sbHeaders(true) }
+          );
+          // 2) Voeg nieuwe rijen in
+          const r = await fetch(`${cfg.sbUrl}/rest/v1/daily_energy_stats`, {
+            method: 'POST',
+            headers: { ...sbHeaders(true), 'Prefer': 'return=minimal' },
+            body: JSON.stringify(batch),
+          });
+          if (r.ok) {
+            saved += batch.length;
+          } else {
+            errors += batch.length;
+            if (!firstErrorMsg) {
+              const body = await r.text();
+              firstErrorMsg = body || `HTTP ${r.status}`;
+            }
+          }
+        } catch (e) {
+          errors += batch.length;
+          if (!firstErrorMsg) firstErrorMsg = e?.message || 'Netwerkfout';
+        }
+        statusText.textContent = `Opslaan… ${saved}/${records.length} dagen`;
+      }
+      // Update local energy cache
+      const localEnergy = safeParse(ENERGY_LOCAL_KEY, safeParse('eetdagboek_energy_v1', {}));
+      records.forEach(rec => {
+        localEnergy[rec.date] = {
+          active_kcal: rec.active_kcal,
+          resting_kcal: rec.resting_kcal,
+          tdee_kcal: Math.round((rec.active_kcal || 0) + (rec.resting_kcal || 0)),
+          date: rec.date,
+        };
+      });
+      try {
+        localStorage.setItem(ENERGY_LOCAL_KEY, JSON.stringify(localEnergy));
+        // Legacy key voor backward compatibility
+        localStorage.setItem('eetdagboek_energy_v1', JSON.stringify(localEnergy));
+      } catch (e) { /* ignore */ }
+      const datesSorted = [...allDates].sort();
+      let msg = `✓ ${saved} dagen geïmporteerd (${datesSorted[0]} t/m ${datesSorted[datesSorted.length - 1]})`;
+      if (skippedRecords > 0) msg += ` · ${skippedRecords} records overgeslagen`;
+      if (errors > 0) msg += ` · ${errors} dagen mislukt`;
+      if (firstErrorMsg) msg += ` · fout: ${String(firstErrorMsg).slice(0, 180)}`;
+      statusText.textContent = msg; statusText.className = 'import-status-text done';
+      cancelBtn.textContent = 'Sluiten'; startBtn.style.display = 'none';
+    }
+
+    processChunk();
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// Auth Redirect Handler
+// ══════════════════════════════════════════════════════════════
+function handleAuthRedirect() {
+  const hash = window.location.hash;
+  if (!hash || !hash.includes('access_token=')) return false;
+  const params = new URLSearchParams(hash.substring(1));
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  const type = params.get('type');
+  if (!accessToken) return false;
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1]));
+    setAuthUser({ access_token: accessToken, refresh_token: refreshToken, user: { id: payload.sub, email: payload.email } });
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    if (type === 'recovery') {
+      setTimeout(() => {
+        const newPass = prompt('Kies een nieuw wachtwoord (minimaal 6 tekens):');
+        if (newPass && newPass.length >= 6) {
+          fetch(`${cfg.sbUrl}/auth/v1/user`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'apikey': cfg.sbKey, 'Authorization': 'Bearer ' + accessToken },
+            body: JSON.stringify({ password: newPass }),
+          }).then(r => { if (r.ok) alert('✓ Wachtwoord gewijzigd!'); else alert('Fout bij wijzigen wachtwoord.'); });
+        }
+      }, 500);
+    }
+    return true;
+  } catch (e) { console.error('Auth redirect parse error:', e); return false; }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Setup Screen
+// ══════════════════════════════════════════════════════════════
+function showSetup(panel) {
+  const screen = document.getElementById('setup-screen');
+  screen.style.display = 'flex';
+  const closeBtn = document.getElementById('setup-close-btn');
+  if (closeBtn) closeBtn.style.display = authUser ? '' : 'none';
+  const authEl = document.getElementById('setup-auth');
+  const userEl = document.getElementById('setup-user');
+  const adminEl = document.getElementById('setup-admin');
+  if (authEl) authEl.style.display = 'none';
+  if (userEl) userEl.style.display = 'none';
+  if (adminEl) adminEl.style.display = 'none';
+  const adminBtn = document.getElementById('show-admin-btn');
+  if (adminBtn && SUPABASE_URL) adminBtn.style.display = 'none';
+
+  if (panel === 'admin') {
+    document.getElementById('setup-sb-url').value = cfg.sbUrl || '';
+    document.getElementById('setup-sb-key').value = cfg.sbKey || '';
+    const api = document.getElementById('admin-pass-input'); if (api) api.value = '';
+    const as2 = document.getElementById('admin-status'); if (as2) as2.textContent = '';
+    if (adminEl) adminEl.style.display = '';
+  } else if (panel === 'user' || authUser) {
+    document.getElementById('setup-key-claude').value = cfg.keys?.claude || cfg.claudeKey || '';
+    document.getElementById('setup-key-gemini').value = cfg.keys?.gemini || '';
+    document.getElementById('setup-key-openai').value = cfg.keys?.openai || '';
+    document.getElementById('setup-status').textContent = '';
+    setProviderUI(cfg.provider || 'claude');
+    const greeting = document.getElementById('setup-user-greeting');
+    if (greeting) {
+      if (authUser) {
+        greeting.textContent = 'Ingelogd als ' + authUser.email;
+        const lb = document.getElementById('logout-settings-btn'); if (lb) lb.style.display = '';
+      } else {
+        greeting.textContent = 'Lokale modus (geen sync).';
+        const lb2 = document.getElementById('logout-settings-btn'); if (lb2) lb2.style.display = 'none';
+      }
+    }
+    if (userEl) userEl.style.display = '';
+  } else {
+    const authSt = document.getElementById('auth-status'); if (authSt) authSt.textContent = '';
+    const ae = document.getElementById('auth-email'); if (ae) ae.value = '';
+    const ap = document.getElementById('auth-pass'); if (ap) ap.value = '';
+    if (!cfg.sbUrl || !cfg.sbKey) {
+      if (userEl) userEl.style.display = '';
+      setProviderUI(cfg.provider || 'claude');
+      const g2 = document.getElementById('setup-user-greeting'); if (g2) g2.textContent = 'Geen database geconfigureerd.';
+      const lb3 = document.getElementById('logout-settings-btn'); if (lb3) lb3.style.display = 'none';
+    } else {
+      if (authEl) authEl.style.display = '';
+    }
+  }
+}
+
+function setProviderUI(provider) {
+  document.querySelectorAll('.provider-btn').forEach(b => b.classList.toggle('active', b.dataset.provider === provider));
+  ['claude', 'gemini', 'openai'].forEach(p => {
+    const el = document.getElementById('key-field-' + p);
+    if (el) el.style.display = (p === provider) ? '' : 'none';
+  });
+  updateInlineModelSelect(provider);
+}
+
+function hideSetup() { document.getElementById('setup-screen').style.display = 'none'; }
+
+// ══════════════════════════════════════════════════════════════
+// Manual Sync
+// ══════════════════════════════════════════════════════════════
+async function manualSync() {
+  if (!authUser?.id || !cfg.sbUrl) {
+    alert('Niet ingelogd. Log eerst in om te synchroniseren.');
+    return;
+  }
+  setSyncStatus('syncing', 'synchroniseren…');
+  try {
+    const test = await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?limit=1', { headers: sbHeaders() });
+    if (!test.ok) {
+      const session = await sbAuthRefresh(authUser.refresh_token);
+      if (session && session.access_token) { setAuthUser(session); }
+      else { setSyncStatus('error', 'sessie verlopen'); alert('Sessie verlopen. Log opnieuw in.'); return; }
+    }
+    const day = localData[currentDate] || emptyDay();
+    await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
+      method: 'POST', headers: { ...sbHeaders(true), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ user_id: authUser.id, date: currentDate, data: day }),
+    });
+    const prefsRecord = {
+      user_id: authUser.id, date: '9999-01-01',
+      data: { favs: loadFavs(), goals: loadGoals(), custom: loadCustomProducts(), provider: cfg.provider || '', vis, showDrinks },
+    };
+    await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
+      method: 'POST', headers: { ...sbHeaders(true), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(prefsRecord),
+    });
+    await loadUserPrefs();
+    setGoals(loadGoals());
+    renderQuickFavs();
+    const fresh = await loadDay(currentDate);
+    setLocalData(currentDate, fresh);
+    _renderDayUI(fresh);
+    setSyncStatus('synced', 'gesynchroniseerd ✓');
+  } catch (e) {
+    console.error('[ManualSync] Error:', e);
+    setSyncStatus('error', 'sync mislukt');
+    alert('Sync mislukt: ' + e.message);
+  }
+}
+
+function refreshProductDB() {
+  const btn = document.getElementById('refresh-db-btn');
+  btn.textContent = '⏳ Laden...'; btn.disabled = true;
+  localStorage.removeItem('kcalculator_products_v2');
+  localStorage.removeItem('eetdagboek_nevo_v1');
+  localStorage.removeItem('kcalculator_off_v1');
+  loadNevo().then(() => {
+    btn.textContent = '✓ Producten geladen'; btn.style.color = 'var(--green)'; btn.disabled = false;
+    setTimeout(() => { btn.textContent = '🔄 Vernieuw cache'; btn.style.color = ''; }, 3000);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// Submit (main input handler)
+// ══════════════════════════════════════════════════════════════
+export async function submit() {
+  const input = document.getElementById('food-input');
+  const status = document.getElementById('status');
+  const text = input.value.trim();
+  if (!text) return;
+  const parsed = parseTextToItems(text);
+  if (parsed.length > 0) {
+    const matches = parsed.map(p => ({ parsed: p, match: matchItemToNevo(p) }));
+    const matchCount = matches.filter(m => m.match).length;
+    status.textContent = '🔍 ' + matchCount + '/' + parsed.length + ' producten herkend in database';
+    status.className = 'status-msg';
+    openMatchModal(parsed);
+  } else {
+    status.textContent = 'Kon geen producten herkennen — probeer specifieker';
+    status.className = 'status-msg error';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Event Listeners
+// ══════════════════════════════════════════════════════════════
+function initEventListeners() {
+  // Setup close
+  document.getElementById('setup-close-btn')?.addEventListener('click', hideSetup);
+
+  // Goals modal
+  document.getElementById('open-settings')?.addEventListener('click', () => {
+    document.getElementById('goal-kcal').value = goals.kcal || '';
+    document.getElementById('goal-carbs').value = goals.carbs || '';
+    document.getElementById('goal-fat').value = goals.fat || '';
+    document.getElementById('goal-prot').value = goals.prot || '';
+    document.getElementById('goal-fiber').value = goals.fiber || '';
+    document.getElementById('goal-water').value = goals.water || '';
+    document.getElementById('modal-overlay').classList.add('open');
+  });
+  document.getElementById('cancel-settings')?.addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
+  document.getElementById('modal-overlay')?.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
+  document.getElementById('save-settings')?.addEventListener('click', () => {
+    const newGoals = {
+      kcal: parseInt(document.getElementById('goal-kcal').value) || 0,
+      carbs: parseInt(document.getElementById('goal-carbs').value) || 0,
+      fat: parseInt(document.getElementById('goal-fat').value) || 0,
+      prot: parseInt(document.getElementById('goal-prot').value) || 0,
+      fiber: parseInt(document.getElementById('goal-fiber').value) || 0,
+      water: parseInt(document.getElementById('goal-water').value) || 0,
+    };
+    setGoals(newGoals);
+    saveGoals(newGoals);
+    document.getElementById('modal-overlay').classList.remove('open');
+    if (localData[currentDate]) renderSummary(localData[currentDate]);
+  });
+
+  // Meal selector
+  document.querySelectorAll('.meal-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.meal-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    setSelMeal(btn.dataset.meal);
+  }));
+
+  // Submit & input
+  document.getElementById('send-btn')?.addEventListener('click', submit);
+  document.getElementById('food-input')?.addEventListener('keydown', e => {
+    const dd = document.getElementById('ac-dropdown');
+    if (dd && dd.classList.contains('open') && ['ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    if (dd && dd.classList.contains('open') && e.key === 'Escape') return;
+    if (dd && dd.classList.contains('open') && e.key === 'Enter' && acSelectedIdx >= 0) return;
+    if (acSelectedItem && e.key === 'Enter') return;
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); closeAcDropdown(); submit(); }
+  });
+
+  // Day navigation
+  document.getElementById('prev-day')?.addEventListener('click', () => {
+    const d = new Date(currentDate + 'T12:00:00'); d.setDate(d.getDate() - 1);
+    setCurrentDate(dateKey(d)); renderMeals();
+  });
+  document.getElementById('next-day')?.addEventListener('click', () => {
+    const d = new Date(currentDate + 'T12:00:00'); d.setDate(d.getDate() + 1);
+    setCurrentDate(dateKey(d)); renderMeals();
+  });
+  document.getElementById('today-btn')?.addEventListener('click', () => {
+    setCurrentDate(dateKey(new Date())); renderMeals();
+  });
+
+  // Brand mark (home)
+  document.querySelector('.brand-mark')?.addEventListener('click', () => {
+    const layout = document.querySelector('.layout');
+    if (!layout) return;
+    layout.classList.remove('show-data', 'show-advies', 'show-import');
+    if (window.innerWidth < 781) {
+      layout.classList.remove('mobile-view-overzicht', 'mobile-view-data', 'mobile-view-advies', 'mobile-view-import');
+      layout.classList.add('mobile-view-invoer');
+      document.querySelectorAll('.mobile-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+    }
+  });
+
+  // Advies
+  document.getElementById('advies-btn')?.addEventListener('click', openAdviesModal);
+  document.getElementById('advies-header-btn')?.addEventListener('click', openAdviesModal);
+  document.querySelectorAll('.advies-page-tabs .advies-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      setActiveAdviesTab(tab.dataset.tab);
+      document.querySelectorAll('.advies-page-tabs .advies-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === activeAdviesTab));
+      showAdviesContent();
+    });
+  });
+  document.getElementById('advies-refresh-btn')?.addEventListener('click', () => runAdvies(activeAdviesTab));
+  document.getElementById('advies-back-btn')?.addEventListener('click', closeAdviesPage);
+  initAdviesListeners();
+
+  // Smart import
+  document.getElementById('smart-import-header-btn')?.addEventListener('click', () => openSmartImportPage());
+  document.getElementById('smart-import-back-btn')?.addEventListener('click', closeSmartImportPage);
+  initSmartImportListeners();
+
+  // Week / Data overview
+  document.getElementById('week-btn')?.addEventListener('click', openWeekModal);
+  document.getElementById('week-modal')?.addEventListener('click', e => { if (e.target === document.getElementById('week-modal')) document.getElementById('week-modal').classList.remove('open'); });
+  document.getElementById('do-back-btn')?.addEventListener('click', closeDataOverzicht);
+  document.querySelectorAll('.do-period-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchDOPeriod(parseInt(btn.dataset.days), btn));
+  });
+
+  // Favourites
+  document.getElementById('fav-btn')?.addEventListener('click', openFavModal);
+  document.getElementById('fav-modal')?.addEventListener('click', e => { if (e.target === document.getElementById('fav-modal')) document.getElementById('fav-modal').classList.remove('open'); });
+  document.getElementById('fav-save-btn')?.addEventListener('click', saveFavorite);
+
+  // Inline model select
+  document.getElementById('inline-model-select')?.addEventListener('change', function () {
+    cfg.model = this.value;
+    cfg.claudeKey = (cfg.keys && cfg.keys[cfg.provider]) || cfg.claudeKey;
+    saveCfg(cfg);
+  });
+
+  // Dark mode
+  document.getElementById('dark-toggle')?.addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));
+
+  // Macro toggles
+  document.querySelectorAll('.macro-toggle').forEach(btn => {
+    btn.addEventListener('click', () => { vis[btn.dataset.macro] = !vis[btn.dataset.macro]; applyVis(); });
+  });
+
+  // Provider buttons
+  document.querySelectorAll('.provider-btn').forEach(btn => {
+    btn.addEventListener('click', () => setProviderUI(btn.dataset.provider));
+  });
+
+  // Setup save
+  document.getElementById('setup-save-btn')?.addEventListener('click', async () => {
+    const provider = document.querySelector('.provider-btn.active')?.dataset.provider || 'claude';
+    const keys = {
+      claude: document.getElementById('setup-key-claude').value.trim(),
+      gemini: document.getElementById('setup-key-gemini').value.trim(),
+      openai: document.getElementById('setup-key-openai').value.trim(),
+    };
+    const claudeKey = keys[provider];
+    const statusEl = document.getElementById('setup-status');
+    setCfg({ ...cfg, claudeKey, keys, provider, model: cfg.model });
+    saveCfg(cfg);
+    if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');
+    else if (!cfg.sbUrl) setSyncStatus('offline', 'lokaal');
+    statusEl.textContent = claudeKey ? '✓ Opgeslagen!' : '✓ Opgeslagen (zonder AI-advies)';
+    statusEl.className = 'setup-status ok';
+    setTimeout(() => { hideSetup(); renderMeals(); }, 600);
+  });
+
+  // Open config
+  document.getElementById('open-config')?.addEventListener('click', () => showSetup('user'));
+
+  // Admin
+  document.getElementById('show-admin-btn')?.addEventListener('click', async () => {
+    const savedHash = localStorage.getItem(ADMIN_PASS_KEY);
+    if (!savedHash) {
+      const pw = prompt('Stel een admin-wachtwoord in (minimaal 4 tekens):');
+      if (!pw || pw.length < 4) return;
+      localStorage.setItem(ADMIN_PASS_KEY, await hashAdminPassword(pw));
+      showSetup('admin');
+    } else {
+      const pw = prompt('Voer het admin-wachtwoord in:');
+      if (!pw || !(await verifyAdminPassword(pw, savedHash))) { alert('Onjuist wachtwoord.'); return; }
+      // Migrate legacy base64 value to hashed format after first successful check.
+      if (!savedHash.startsWith('sha256:')) {
+        localStorage.setItem(ADMIN_PASS_KEY, await hashAdminPassword(pw));
+      }
+      showSetup('admin');
+    }
+  });
+  document.getElementById('admin-save-btn')?.addEventListener('click', async () => {
+    const sbUrl = document.getElementById('setup-sb-url').value.trim();
+    const sbKey = document.getElementById('setup-sb-key').value.trim();
+    const adminPass = document.getElementById('admin-pass-input').value.trim();
+    if (adminPass && adminPass.length >= 4) localStorage.setItem(ADMIN_PASS_KEY, await hashAdminPassword(adminPass));
+    setCfg({ ...cfg, sbUrl, sbKey }); saveCfg(cfg);
+    const statusEl = document.getElementById('admin-status');
+    statusEl.textContent = '✓ Supabase-instellingen opgeslagen!'; statusEl.className = 'setup-status ok';
+    setTimeout(() => showSetup('auth'), 800);
+  });
+  document.getElementById('admin-back-btn')?.addEventListener('click', () => showSetup('user'));
+
+  // Skip login
+  document.getElementById('skip-login-btn')?.addEventListener('click', () => showSetup('user'));
+
+  // Auth buttons
+  document.getElementById('auth-login-btn')?.addEventListener('click', async () => {
+    const email = document.getElementById('auth-email').value.trim();
+    const pass = document.getElementById('auth-pass').value;
+    const statusEl = document.getElementById('auth-status');
+    if (!email || !pass) { statusEl.textContent = 'Vul email en wachtwoord in.'; statusEl.style.color = 'var(--danger)'; return; }
+    statusEl.textContent = 'Inloggen…'; statusEl.style.color = '';
+    try {
+      const session = await sbAuthLogin(email, pass);
+      localStorage.removeItem(LOCAL_KEY); localStorage.removeItem(FAV_KEY);
+      localStorage.removeItem(GOALS_KEY); localStorage.removeItem(CUSTOM_KEY); localStorage.removeItem(VIS_KEY);
+      setLocalData(null); setGoals({ ...DEFAULT_GOALS });
+      setAuthUser(session);
+      setSyncStatus('synced', 'verbonden');
+      statusEl.textContent = '✓ Ingelogd!'; statusEl.style.color = 'var(--green)';
+      setTimeout(async () => {
+        hideSetup();
+        if (cfg.sbUrl && cfg.sbKey) await initSupabase();
+        await loadUserPrefs(); setGoals(loadGoals()); syncUserPrefs();
+        renderQuickFavs(); await renderMeals();
+      }, 400);
+    } catch (e) { statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--danger)'; }
+  });
+
+  document.getElementById('auth-register-btn')?.addEventListener('click', async () => {
+    const email = document.getElementById('auth-email').value.trim();
+    const pass = document.getElementById('auth-pass').value;
+    const statusEl = document.getElementById('auth-status');
+    if (!email || !pass) { statusEl.textContent = 'Vul email en wachtwoord in.'; statusEl.style.color = 'var(--danger)'; return; }
+    if (pass.length < 6) { statusEl.textContent = 'Wachtwoord moet minimaal 6 tekens zijn.'; statusEl.style.color = 'var(--danger)'; return; }
+    statusEl.textContent = 'Registreren…'; statusEl.style.color = '';
+    try {
+      const result = await sbAuthRegister(email, pass);
+      if (result.access_token) {
+        localStorage.removeItem(LOCAL_KEY); localStorage.removeItem(FAV_KEY);
+        localStorage.removeItem(GOALS_KEY); localStorage.removeItem(CUSTOM_KEY); localStorage.removeItem(VIS_KEY);
+        setLocalData(null); setGoals({ ...DEFAULT_GOALS });
+        setAuthUser(result); setSyncStatus('synced', 'verbonden');
+        statusEl.textContent = '✓ Account aangemaakt!'; statusEl.style.color = 'var(--green)';
+        setTimeout(async () => { hideSetup(); if (cfg.sbUrl && cfg.sbKey) await initSupabase(); await loadUserPrefs(); renderQuickFavs(); await renderMeals(); }, 400);
+      } else {
+        statusEl.textContent = '✓ Bevestigingsmail verzonden — check je inbox.'; statusEl.style.color = 'var(--green)';
+      }
+    } catch (e) { statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--danger)'; }
+  });
+
+  document.getElementById('auth-magic-btn')?.addEventListener('click', async () => {
+    const email = document.getElementById('auth-email').value.trim();
+    const statusEl = document.getElementById('auth-status');
+    if (!email) { statusEl.textContent = 'Vul je email in.'; statusEl.style.color = 'var(--danger)'; return; }
+    if (!cfg.sbUrl || !cfg.sbKey) { statusEl.textContent = 'Supabase niet geconfigureerd.'; statusEl.style.color = 'var(--danger)'; return; }
+    statusEl.textContent = 'Magic link verzenden…'; statusEl.style.color = '';
+    try {
+      const r = await fetch(`${cfg.sbUrl}/auth/v1/magiclink`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': cfg.sbKey }, body: JSON.stringify({ email }) });
+      if (!r.ok) { const d = await r.json(); throw new Error(d.error_description || d.msg || 'Fout bij verzenden'); }
+      statusEl.textContent = '✓ Magic link verzonden — check je inbox!'; statusEl.style.color = 'var(--green)';
+    } catch (e) { statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--danger)'; }
+  });
+
+  document.getElementById('auth-forgot-btn')?.addEventListener('click', async () => {
+    const email = document.getElementById('auth-email').value.trim();
+    const statusEl = document.getElementById('auth-status');
+    if (!email) { statusEl.textContent = 'Vul je email in.'; statusEl.style.color = 'var(--danger)'; return; }
+    statusEl.textContent = 'Reset-link verzenden…'; statusEl.style.color = '';
+    try {
+      const siteUrl = window.location.origin + window.location.pathname;
+      const r = await fetch(`${cfg.sbUrl}/auth/v1/recover`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': cfg.sbKey }, body: JSON.stringify({ email, redirect_to: siteUrl }) });
+      if (!r.ok) { const d = await r.json(); throw new Error(d.error_description || d.msg || 'Fout bij verzenden'); }
+      statusEl.textContent = '✓ Reset-link verzonden — check je inbox!'; statusEl.style.color = 'var(--green)';
+    } catch (e) { statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--danger)'; }
+  });
+
+  document.getElementById('logout-settings-btn')?.addEventListener('click', () => {
+    setAuthUser(null);
+    localStorage.removeItem(LOCAL_KEY); localStorage.removeItem(FAV_KEY);
+    localStorage.removeItem(GOALS_KEY); localStorage.removeItem(CUSTOM_KEY); localStorage.removeItem(VIS_KEY);
+    setLocalData(null); setGoals({ ...DEFAULT_GOALS });
+    setSyncStatus('offline', 'uitgelogd');
+    showSetup('auth');
+  });
+
+  document.getElementById('account-btn')?.addEventListener('click', () => {
+    if (authUser) {
+      if (confirm('Ingelogd als ' + authUser.email + '\n\nWil je uitloggen?')) {
+        setAuthUser(null); setSyncStatus('offline', 'uitgelogd'); showSetup('auth');
+      }
+    } else { showSetup('auth'); }
+  });
+
+  // Export/Import
+  document.getElementById('export-btn')?.addEventListener('click', exportAllData);
+  document.getElementById('import-btn')?.addEventListener('click', importData);
+
+  // Sync button
+  document.getElementById('sync-btn')?.addEventListener('click', manualSync);
+  document.getElementById('refresh-db-btn')?.addEventListener('click', refreshProductDB);
+
+  // Mobile tabs
+  document.querySelectorAll('.mobile-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const view = tab.dataset.view;
+      switchMobileView(view, tab);
+    });
+  });
+
+  // Custom product modal
+  document.getElementById('custom-photo-input')?.addEventListener('change', e => {
+    if (e.target.files[0]) handleCustomPhoto(e.target.files[0]);
+  });
+  document.getElementById('custom-product-modal')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('custom-product-modal')) closeCustomModal();
+  });
+  document.getElementById('custom-dish-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      analyzeCustomDishInput();
+    }
+  });
+  document.getElementById('custom-add-btn')?.addEventListener('click', () => {
+    const naam = document.getElementById('custom-naam').value.trim();
+    if (!naam) { document.getElementById('custom-naam').focus(); return; }
+
+    const per100 = {
+      k:  parseFloat(document.getElementById('custom-kcal').value) || 0,
+      kh: parseFloat(document.getElementById('custom-kh').value) || 0,
+      vz: parseFloat(document.getElementById('custom-vz').value) || 0,
+      v:  parseFloat(document.getElementById('custom-v').value) || 0,
+      e:  parseFloat(document.getElementById('custom-e').value) || 0,
+    };
+    const gram = parseFloat(document.getElementById('custom-portie').value) || 100;
+    const factor = gram / 100;
+
+    // Save to custom products list if checked
+    if (document.getElementById('custom-save-to-db').checked) {
+      const customs = loadCustomProducts();
+      const existing = customs.findIndex(c => c.n.toLowerCase() === naam.toLowerCase());
+      const entry = { n: naam, g: -1, k: per100.k, kh: per100.kh, vz: per100.vz, v: per100.v, e: per100.e };
+      if (existing >= 0) customs[existing] = entry;
+      else customs.push(entry);
+      saveCustomProducts(customs);
+      syncCustomProductsToSupabase(true);
+    }
+
+    // Save to favourites if checked
+    if (document.getElementById('custom-save-to-fav')?.checked) {
+      const favItem = {
+        naam,
+        tekst: `${naam} (${gram}g)`,
+        maaltijd: selMeal,
+        item: {
+          naam,
+          portie: gram === 100 ? '100g' : `${gram}g`,
+          kcal: Math.round(per100.k * factor),
+          koolhydraten_g: r1(per100.kh * factor),
+          vezels_g: r1(per100.vz * factor),
+          vetten_g: r1(per100.v * factor),
+          eiwitten_g: r1(per100.e * factor),
+          ml: 0,
+        },
+      };
+      const favs = loadFavs();
+      favs.push(favItem);
+      saveFavs(favs);
+      syncFavoritesToSupabase();
+      renderQuickFavs();
+    }
+
+    // Add to current meal
+    const isDrink = selMeal === 'drinken';
+    const item = {
+      naam,
+      kcal: Math.round(per100.k * factor),
+      koolhydraten_g: r1(per100.kh * factor),
+      vezels_g: r1(per100.vz * factor),
+      vetten_g: r1(per100.v * factor),
+      eiwitten_g: r1(per100.e * factor),
+      portie: gram === 100 ? '100g' : `${gram}g`,
+      ml: isDrink ? Math.round(gram) : 0,
+    };
+
+    const day = localData[currentDate] || emptyDay();
+    MEAL_NAMES.forEach(m => { if (!day[m]) day[m] = []; });
+    day[selMeal].push(item);
+    setLocalData(currentDate, day);
+    saveDay(currentDate, day);
+
+    document.getElementById('food-input').value = '';
+    closeCustomModal();
+
+    const savedDb = document.getElementById('custom-save-to-db').checked;
+    const savedFav = document.getElementById('custom-save-to-fav')?.checked;
+    let savedText = '';
+    if (savedDb && savedFav) savedText = ' + opgeslagen als product & favoriet';
+    else if (savedDb) savedText = ' + opgeslagen in productenlijst';
+    else if (savedFav) savedText = ' + opgeslagen als favoriet';
+    document.getElementById('status').textContent = `✓ ${item.naam} (${item.portie}) toegevoegd${savedText}`;
+    document.getElementById('status').className = 'status-msg';
+    _renderDayUI(day);
+  });
+
+  // Match & Edit modal listeners
+  initMatchModalListeners();
+  initEditModalListeners();
+  initEditFavModalListeners();
+  initDataManagement();
+  initManualDayEntry();
+
+  // Autocomplete
+  initAutocomplete();
+}
+
+// ══════════════════════════════════════════════════════════════
+// Boot Sequence
+// ══════════════════════════════════════════════════════════════
+(async () => {
+  try {
+    console.log('[Boot] Starting...');
+    applyDark(localStorage.getItem(DARK_KEY) === '1');
+    applyVis();
+    setCfg(loadCfg());
+    initEventListeners();
+
+    await loadNevo();
+
+    const handledRedirect = handleAuthRedirect();
+
+    if (!handledRedirect && cfg.sbUrl && cfg.sbKey) {
+      try { await restoreAuth(); } catch (e) { console.error('[Boot] restoreAuth error:', e); }
+    }
+    updateAccountUI();
+
+    if (handledRedirect || authUser) {
+      if (cfg.sbUrl && cfg.sbKey) await initSupabase();
+      await loadUserPrefs();
+      setGoals(loadGoals());
+      syncUserPrefs();
+      setSyncStatus(authUser ? 'synced' : 'offline', authUser ? 'verbonden' : 'lokaal');
+      renderQuickFavs();
+      await renderMeals();
+    } else if (cfg.sbUrl && cfg.sbKey) {
+      showSetup('auth');
+    } else {
+      setSyncStatus('offline', 'lokaal');
+      renderQuickFavs();
+      await renderMeals();
+    }
+    console.log('[Boot] Done ✓');
+  } catch (bootError) {
+    console.error('[Boot] Fatal error:', bootError);
+    try { setSyncStatus('error', 'opstartfout'); renderQuickFavs(); await renderMeals(); } catch (_) { /* ignore */ }
+  }
+})();
+
+// ── Visibility change: re-sync on foreground ─────────────────
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible') return;
+  if (!authUser?.refresh_token || !cfg.sbUrl) return;
+  try {
+    const session = await sbAuthRefresh(authUser.refresh_token);
+    if (session && session.access_token) {
+      setAuthUser(session);
+      await loadUserPrefs();
+      renderQuickFavs();
+      const fresh = await loadDay(currentDate);
+      if (fresh) { setLocalData(currentDate, fresh); _renderDayUI(fresh); }
+      setSyncStatus('synced', 'gesynchroniseerd');
+    } else {
+      setAuthUser(null); setSyncStatus('offline', 'sessie verlopen'); showSetup('auth');
+    }
+  } catch (e) { console.error('Visibility sync error:', e); }
+});
+
+// ── Service Worker ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  // In development kan een oude SW stale CSS/JS serveren.
+  // Daarom ruimen we SW + caches op en registreren we alleen in productie.
+  if (import.meta.env.DEV) {
+    navigator.serviceWorker.getRegistrations()
+      .then(regs => Promise.all(regs.map(r => r.unregister())))
+      .catch(() => { });
+    if ('caches' in window) {
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => { });
+    }
+  } else {
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(reg => {
+      reg.update();
+      setInterval(() => reg.update(), 30000);
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) newSW.postMessage('skipWaiting');
+        });
+      });
+    }).catch(() => { });
+    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+  }
+}

@@ -1,0 +1,62 @@
+/* ── Design Tokens & Theme ─────────────────────────────────── */
+
+:root {
+  --bg: #eff3f0;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-strong: #ffffff;
+  --surface-soft: #edf3ee;
+  --surface-muted: #e6ece7;
+  --border: rgba(17, 26, 20, 0.1);
+  --border-strong: rgba(17, 26, 20, 0.16);
+  --border-subtle: rgba(17, 26, 20, 0.06);
+  --text: #101914;
+  --muted: #5a6c62;
+  --tertiary: #8c9d93;
+  --accent: #1db954;
+  --accent-light: #e8f8ee;
+  --accent-hover: #179846;
+  --accent-wash: rgba(29, 185, 84, 0.14);
+  --danger: #d44040;
+  --green: #1db954;
+  --blue: #2da8b8;
+  --blue-wash: rgba(45, 168, 184, 0.12);
+  --water: #2097a8;
+  --fiber: #7c6aad;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 30px;
+  --shadow-sm: 0 10px 24px rgba(16, 25, 20, 0.05);
+  --shadow-md: 0 20px 52px rgba(16, 25, 20, 0.08), 0 2px 8px rgba(16, 25, 20, 0.04);
+  --shadow-lg: 0 36px 96px rgba(16, 25, 20, 0.14), 0 10px 30px rgba(16, 25, 20, 0.08);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Nunito', sans-serif;
+}
+
+body.dark {
+  --bg: #09100c;
+  --surface: rgba(17, 26, 20, 0.76);
+  --surface-strong: #101814;
+  --surface-soft: #151f19;
+  --surface-muted: #1a261f;
+  --border: rgba(228, 237, 231, 0.1);
+  --border-strong: rgba(228, 237, 231, 0.17);
+  --border-subtle: rgba(228, 237, 231, 0.06);
+  --text: #e6eee8;
+  --muted: #88a392;
+  --tertiary: #587162;
+  --accent: #22c35a;
+  --accent-light: rgba(34, 195, 90, 0.12);
+  --accent-hover: #30d06a;
+  --accent-wash: rgba(34, 195, 90, 0.18);
+  --danger: #ef6666;
+  --green: #22c35a;
+  --blue: #37bbcf;
+  --blue-wash: rgba(55, 187, 207, 0.18);
+  --water: #30abbe;
+  --fiber: #a48ad4;
+  --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 22px 56px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 42px 110px rgba(0, 0, 0, 0.46);
+}

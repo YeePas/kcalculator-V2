@@ -1,0 +1,94 @@
+/* ── Sidebar ───────────────────────────────────────────────── */
+
+.sidebar { display: flex; flex-direction: column; gap: 1.2rem; }
+@media (min-width: 981px) {
+  .sidebar { position: sticky; top: 6rem; }
+}
+.summary-card, .history-card, .viz-card { background: color-mix(in srgb, var(--surface-strong) 84%, transparent); border-radius: calc(var(--radius-lg) - 2px); border: 1px solid var(--border); padding: 1.45rem; box-shadow: var(--shadow-md); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.summary-card h3, .history-card h3, .viz-card h3 { font-family: var(--font-display); font-size: 1.12rem; margin-bottom: 1rem; line-height: 1.05; letter-spacing: -0.03em; }
+
+/* ── Calorie Ring ─────────────────────────────────────────── */
+
+.cal-ring-wrap { display: flex; align-items: center; gap: 1.2rem; padding: 1.4rem; background: linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 90%, transparent), color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong))); border-radius: calc(var(--radius-lg) - 4px); border: 1px solid var(--border-subtle); margin-bottom: 1rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.68); }
+.cal-ring { position: relative; flex-shrink: 0; width: 118px; height: 118px; }
+.cal-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg   { fill: none; stroke: var(--border); stroke-width: 8; }
+.ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease, stroke 0.4s; }
+.ring-fill.green  { stroke: var(--green); }
+.ring-fill.orange { stroke: var(--accent); }
+.ring-fill.red    { stroke: var(--danger); }
+.cal-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.cal-ring-number { font-size: 1.55rem; font-weight: 700; line-height: 1; letter-spacing: -0.05em; }
+.cal-ring-number.over { color: var(--danger); }
+.cal-ring-label  { font-size: 0.62rem; color: var(--muted); text-align: center; line-height: 1.3; margin-top: 0.2rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.cal-ring-info { flex: 1; font-size: 0.83rem; }
+.cal-ring-info-row { margin-bottom: 0.4rem; color: var(--muted); }
+.cal-ring-info-row strong { color: var(--text); }
+
+/* ── Macro Toggles ────────────────────────────────────────── */
+
+.macro-toggles { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem; padding: 0.35rem; border: 1px solid var(--border); border-radius: 24px; background: color-mix(in srgb, var(--surface-soft) 82%, var(--surface-strong)); }
+.macro-toggle { padding: 0.42rem 0.72rem; border-radius: 999px; border: 1px solid transparent; background: transparent; font-family: var(--font-body); font-size: 0.72rem; cursor: pointer; color: var(--muted); transition: all 0.15s; font-weight: 700; display: flex; align-items: center; gap: 0.32rem; }
+.macro-toggle .chip-dot { width: 7px; height: 7px; border-radius: 50%; opacity: 0.4; transition: opacity 0.15s; }
+.macro-toggle.on { border-color: transparent; background: var(--surface-strong); box-shadow: var(--shadow-sm); }
+.macro-toggle.on .chip-dot { opacity: 1; }
+.macro-toggle[data-macro="carbs"].on { color: var(--blue);   border-color: var(--blue); }
+.macro-toggle[data-macro="fat"].on   { color: var(--danger); border-color: var(--danger); }
+.macro-toggle[data-macro="prot"].on  { color: var(--green);  border-color: var(--green); }
+.macro-toggle[data-macro="fiber"].on { color: var(--fiber);  border-color: var(--fiber); }
+.macro-toggle[data-macro="water"].on { color: var(--water);  border-color: var(--water); }
+
+/* ── Macro Bars ───────────────────────────────────────────── */
+
+.macro-bars { display: flex; flex-direction: column; gap: 1rem; }
+.macro-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.38rem; }
+.macro-row-name { font-size: 0.82rem; color: var(--muted); }
+.macro-row-val  { font-size: 0.8rem; font-weight: 700; }
+.bar-track { height: 8px; background: var(--surface-muted); border-radius: 999px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+.bar-c { background: var(--blue); }
+.bar-v { background: var(--danger); }
+.bar-e { background: var(--green); }
+.bar-w { background: var(--water); }
+.bar-f { background: var(--fiber); }
+.bar-over { background: #e08060; }
+
+/* ── Macro Donut Chart ────────────────────────────────────── */
+
+.macro-donut-wrap { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding: 1.05rem; background: color-mix(in srgb, var(--surface-soft) 86%, var(--surface-strong)); border-radius: calc(var(--radius-md) + 2px); border: 1px solid var(--border); overflow: hidden; }
+.macro-donut { width: 90px; height: 90px; flex-shrink: 0; position: relative; }
+.macro-donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.macro-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.macro-donut-total { font-size: 1.04rem; font-weight: 700; font-family: var(--font-display); line-height: 1; }
+.macro-donut-label { font-size: 0.55rem; color: var(--tertiary); margin-top: 0.1rem; }
+.macro-donut-legend { display: flex; flex-direction: column; gap: 0.4rem; flex: 1; font-size: 0.78rem; min-width: 0; }
+.macro-legend-item { display: flex; align-items: center; gap: 0.4rem; min-width: 0; overflow: hidden; }
+.macro-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.macro-legend-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.macro-legend-val { font-weight: 600; font-variant-numeric: tabular-nums; margin-left: auto; white-space: nowrap; }
+.macro-legend-pct { font-size: 0.7rem; color: var(--tertiary); white-space: nowrap; min-width: 32px; flex-shrink: 0; text-align: right; }
+
+/* ── Week Sparkline ───────────────────────────────────────── */
+
+.viz-card h3 { margin-bottom: 0.95rem; font-weight: 600; }
+.week-spark svg { width: 100%; height: 80px; display: block; }
+.week-spark-labels { display: flex; justify-content: space-between; font-size: 0.67rem; color: var(--tertiary); margin-top: 0.42rem; padding: 0 2px; }
+.week-spark-avg { text-align: center; font-size: 0.79rem; color: var(--muted); margin-top: 0.65rem; }
+.week-spark-avg strong { color: var(--accent); font-weight: 600; font-family: var(--font-display); font-size: 0.92rem; }
+.water-divider { padding-top: 0.6rem; border-top: 1px solid var(--border); }
+.fiber-subrow { margin-top: 0.35rem; padding-left: 0.9rem; border-left: 2px solid var(--fiber); opacity: 0.85; }
+.fiber-sub-label { font-size: 0.72rem !important; color: var(--fiber) !important; }
+.fiber-sub-bar { height: 3px !important; }
+
+/* ── Advies Button ────────────────────────────────────────── */
+
+.advies-knop { width: 100%; background: linear-gradient(135deg, #ca8750, #9b602f); color: white; border: none; border-radius: 999px; padding: 0.95rem 1rem; font-family: var(--font-body); font-size: 0.9rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: opacity 0.15s, transform 0.15s; box-shadow: 0 18px 32px rgba(160, 98, 42, 0.22); }
+.advies-knop:hover { opacity: 0.95; transform: translateY(-1px); }
+
+/* ── History ──────────────────────────────────────────────── */
+
+.history-card h3 { margin-bottom: 0.9rem; }
+.history-day { display: flex; align-items: center; justify-content: space-between; padding: 0.58rem 0.2rem; border-bottom: 1px solid var(--border-subtle); font-size: 0.82rem; cursor: pointer; transition: color 0.1s, background 0.1s; border-radius: 14px; }
+.history-day:last-child { border-bottom: none; }
+.history-day:hover { color: var(--accent); background: color-mix(in srgb, var(--surface-soft) 70%, var(--surface-strong)); }
+.history-day-cals { font-weight: 500; color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
