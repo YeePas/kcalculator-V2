@@ -10,9 +10,9 @@
 .input-with-ac { position: relative; flex: 1; }
 .ac-dropdown {
   display: none; position: absolute; left: 0; right: 0; top: 100%;
-  margin-top: 4px; background: var(--surface); border: 1.5px solid var(--border);
+  margin-top: 6px; background: #fdfdf9; border: 1.5px solid var(--border);
   border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
-  max-height: 340px; overflow-y: auto; z-index: 90;
+  max-height: min(520px, 60vh); overflow-y: auto; z-index: 120;
 }
 .ac-dropdown.open { display: block; }
 .ac-item {
@@ -34,7 +34,7 @@
 .ac-hint {
   padding: 0.5rem 0.9rem; font-size: 0.72rem; color: var(--tertiary);
   border-bottom: 1px solid var(--border-subtle); display: flex;
-  align-items: center; gap: 0.4rem; background: var(--bg);
+  align-items: center; gap: 0.4rem; background: #f7f8f2;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 .ac-hint-badge {
@@ -62,7 +62,7 @@
 .ac-portie-add:hover { background: var(--accent-hover); }
 .ac-manual-btn {
   display: flex; align-items: center; gap: 0.5rem; width: 100%;
-  padding: 0.6rem 0.9rem; border: none; background: var(--bg);
+  padding: 0.7rem 0.9rem; border: none; background: #f7f8f2;
   font-size: 0.82rem; color: var(--accent); cursor: pointer;
   font-weight: 500; transition: background 0.1s;
   border-top: 1px solid var(--border);

@@ -3,6 +3,14 @@
 import { goals } from '../state.js';
 import { r1, pct, fmtVal, dayTotals } from '../utils.js';
 
+function getCalorieOverageTone(goal, calories) {
+  if (!goal || calories <= goal) return null;
+  const overBy = calories - goal;
+  if (overBy < 250) return { className: 'warning', colorVar: 'var(--warning)' };
+  if (overBy < 500) return { className: 'warning-strong', colorVar: 'var(--warning-strong)' };
+  return { className: 'red', colorVar: 'var(--danger)' };
+}
+
 function setBar(id, val, goal, cls) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -16,19 +24,21 @@ export function renderSummary(day) {
   const C = 295.3;
   const ringEl = document.getElementById('cal-ring-fill');
   const pctCals = goals.kcal ? Math.min(cals / goals.kcal, 1) : 0;
+  const overageTone = getCalorieOverageTone(goals.kcal, cals);
   ringEl.style.strokeDashoffset = C * (1 - pctCals);
-  ringEl.setAttribute('class', 'ring-fill ' + (pctCals >= 1 ? 'red' : pctCals >= 0.8 ? 'orange' : 'green'));
+  ringEl.setAttribute('class', 'ring-fill ' + (overageTone?.className || (pctCals >= 0.8 ? 'orange' : 'green')));
 
   const calNumEl = document.getElementById('total-cals');
   calNumEl.textContent = Math.round(cals);
-  calNumEl.className = 'cal-ring-number' + (goals.kcal && cals > goals.kcal ? ' over' : '');
+  calNumEl.className = 'cal-ring-number' + (overageTone ? ' over' : '');
+  calNumEl.style.color = overageTone ? overageTone.colorVar : '';
 
   const restKcal = goals.kcal ? goals.kcal - Math.round(cals) : null;
   document.getElementById('cal-ring-label').textContent = goals.kcal ? (restKcal >= 0 ? `van ${goals.kcal}` : 'te veel!') : 'kcal';
 
   const infoRest = document.getElementById('ring-info-rest');
   infoRest.innerHTML = goals.kcal
-    ? (restKcal >= 0 ? `<strong>${restKcal}</strong> kcal over` : `<span style="color:var(--danger)"><strong>${Math.abs(restKcal)}</strong> kcal te veel</span>`)
+    ? (restKcal >= 0 ? `<strong>${restKcal}</strong> kcal over` : `<span style="color:${overageTone?.colorVar || 'var(--danger)'}"><strong>${Math.abs(restKcal)}</strong> kcal te veel</span>`)
     : '';
   document.getElementById('ring-info-prot').innerHTML = `<strong>${r1(prot)}g</strong> eiwit`;
   document.getElementById('ring-info-fat').innerHTML = `<strong>${r1(fat)}g</strong> vet`;

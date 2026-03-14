@@ -120,6 +120,7 @@
           <button class="btn-secondary" id="settings-goals-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem">🎯 Doelen</button>
           <button class="btn-secondary" id="settings-import-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem">📥 Apple Health</button>
           <button class="btn-secondary" id="settings-export-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem">📤 Exporteer data</button>
+          <button class="btn-secondary" id="settings-db-admin-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem;display:none">🧰 Database beheer</button>
         </div>
         <div class="setup-hint">Beheer doelen en importeer of exporteer je gegevens vanuit een centrale plek.</div>
       </div>
@@ -154,6 +155,26 @@
     <div class="modal-btns">
       <button class="btn-secondary" id="cancel-settings">Annuleren</button>
       <button class="btn-primary" id="save-settings">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- COPY DAY MODAL -->
+<div class="modal-overlay" id="copy-day-modal" role="dialog" aria-modal="true" aria-label="Maaltijden kopiëren van andere dag">
+  <div class="modal" style="max-width:460px">
+    <h3>Kopieer maaltijden</h3>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem">
+      Neem alle maaltijden van een andere datum over naar <strong id="copy-day-target-label">deze dag</strong>.
+      Activiteit en Apple Health data blijven ongewijzigd.
+    </p>
+    <div class="edit-field">
+      <label>Kopieer van datum</label>
+      <input type="date" id="copy-day-source-input">
+    </div>
+    <div class="setup-status" id="copy-day-status" style="margin-top:0.75rem"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" id="copy-day-cancel-btn">Annuleren</button>
+      <button class="btn-primary" id="copy-day-confirm-btn">Kopieer naar deze dag</button>
     </div>
   </div>
 </div>
@@ -517,15 +538,15 @@ Vet: 3.3g"></textarea>
 
 <!-- HEADER -->
 <header>
-  <div class="header-left">
+  <button class="header-left brand-home-btn" id="brand-home-btn" type="button" aria-label="Ga naar home">
     <div class="brand-mark">
       <img src="icon-192.png" alt="Kcalculator" width="34" height="34" style="border-radius:8px">
     </div>
-    <div>
+    <div class="brand-copy">
       <h1>Kcal<span style="color:var(--accent)">culator</span></h1>
       <span class="subtitle">VOEDINGSTRACKER</span>
     </div>
-  </div>
+  </button>
   <div class="header-actions">
     <span id="streak-display"></span>
     <button class="sync-indicator" id="sync-btn" title="Klik om te synchroniseren" type="button"><div class="sync-dot offline" id="sync-dot"></div><span id="sync-label">lokaal</span></button>
@@ -545,6 +566,7 @@ Vet: 3.3g"></textarea>
     <div class="day-nav">
       <button id="prev-day" aria-label="Vorige dag">‹</button>
       <button id="today-btn" title="Spring naar vandaag" aria-label="Spring naar vandaag">Vandaag</button>
+      <button id="copy-day-btn" title="Kopieer maaltijden van een andere dag" aria-label="Kopieer maaltijden van een andere dag">Kopieer dag</button>
       <span id="day-label">Vandaag</span>
       <button id="next-day" aria-label="Volgende dag">›</button>
     </div>
@@ -772,8 +794,8 @@ Vet: 3.3g"></textarea>
       <!-- TAB: URL -->
       <section class="smart-section" data-section="url_import" style="display:none">
         <div class="smart-form-row">
-          <label for="smart-url-input">Product- of recept-URL</label>
-          <input id="smart-url-input" type="url" placeholder="https://www.ah.nl/producten/... of openfoodfacts.org/..." />
+          <label for="smart-url-input">Open Food Facts product-URL</label>
+          <input id="smart-url-input" type="url" placeholder="https://world.openfoodfacts.org/product/..." />
         </div>
         <div class="smart-actions">
           <button class="btn-primary" id="smart-url-import-btn">🔗 Importeer</button>

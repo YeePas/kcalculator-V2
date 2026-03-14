@@ -150,7 +150,7 @@ export async function renderDataOverzicht(numDays) {
     html += '<div class="do-section"><h3>📈 Dagelijkse intake' + (a.daysWithEnergy > 0 ? ' vs verbruik' : '') + '</h3>';
     html += '<div class="do-chart" id="do-energy-chart"></div>';
     html += '<div class="do-legend"><span><span class="do-legend-dot" style="background:var(--accent)"></span>Intake</span>';
-    if (a.daysWithEnergy > 0) html += '<span><span class="do-legend-dot" style="background:var(--danger)"></span>TDEE</span>';
+    if (a.daysWithEnergy > 0) html += '<span><span class="do-legend-dot" style="background:var(--tdee-line)"></span>TDEE</span>';
     if (goals.kcal) html += '<span><span class="do-legend-dot" style="background:var(--muted)"></span>Doel (' + goals.kcal + ')</span>';
     html += '</div></div>';
 

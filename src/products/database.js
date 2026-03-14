@@ -101,5 +101,5 @@ export function searchNevo(query) {
   }
 
   results.sort((a, b) => b._score - a._score);
-  return results.slice(0, 15);
+  return results.slice(0, 8);
 }

@@ -16,9 +16,12 @@
   --accent-light: #e8f8ee;
   --accent-hover: #179846;
   --accent-wash: rgba(29, 185, 84, 0.14);
+  --warning: #e6b94f;
+  --warning-strong: #de8f3c;
   --danger: #d44040;
   --green: #1db954;
   --blue: #2da8b8;
+  --tdee-line: #9ccfda;
   --blue-wash: rgba(45, 168, 184, 0.12);
   --water: #2097a8;
   --fiber: #7c6aad;
@@ -50,9 +53,12 @@ body.dark {
   --accent-light: rgba(34, 195, 90, 0.12);
   --accent-hover: #30d06a;
   --accent-wash: rgba(34, 195, 90, 0.18);
+  --warning: #f0c96f;
+  --warning-strong: #f29b57;
   --danger: #ef6666;
   --green: #22c35a;
   --blue: #37bbcf;
+  --tdee-line: #89c8d8;
   --blue-wash: rgba(55, 187, 207, 0.18);
   --water: #30abbe;
   --fiber: #a48ad4;
