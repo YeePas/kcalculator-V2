@@ -13,6 +13,7 @@ import { trapFocus, releaseFocus } from '../ui/focus.js';
 let editMeal = null, editIdx = null;
 let editBasePer100 = null;
 let editBaseGram = null;
+let editRecipeMeal = null, editRecipeGroupId = null;
 
 export function openEditModal(meal, idx) {
   editMeal = meal;
@@ -69,6 +70,31 @@ export function closeEditModal() {
   editIdx = null;
   editBasePer100 = null;
   editBaseGram = null;
+}
+
+export function openEditRecipeGroupModal(meal, groupId) {
+  const day = localData[currentDate] || emptyDay();
+  const items = day[meal] || [];
+  const groupItems = items.filter(item => item._recipeGroup === groupId);
+  if (!groupItems.length) return;
+
+  editRecipeMeal = meal;
+  editRecipeGroupId = groupId;
+
+  document.getElementById('edit-recipe-name').value = groupItems[0]._recipeName || 'Gerecht';
+  const mealSelect = document.getElementById('edit-recipe-meal');
+  mealSelect.innerHTML = MEAL_NAMES.map(m => `<option value="${m}">${MEAL_LABELS[m] || m}</option>`).join('');
+  mealSelect.value = meal;
+
+  document.getElementById('edit-recipe-modal').classList.add('open');
+  trapFocus(document.getElementById('edit-recipe-modal'));
+}
+
+export function closeEditRecipeGroupModal() {
+  document.getElementById('edit-recipe-modal').classList.remove('open');
+  releaseFocus();
+  editRecipeMeal = null;
+  editRecipeGroupId = null;
 }
 
 export function initEditModalListeners() {
@@ -146,6 +172,40 @@ export function initEditModalListeners() {
   // Close on backdrop click
   document.getElementById('edit-modal').addEventListener('click', e => {
     if (e.target === document.getElementById('edit-modal')) closeEditModal();
+  });
+
+  document.getElementById('edit-recipe-cancel-btn')?.addEventListener('click', closeEditRecipeGroupModal);
+  document.getElementById('edit-recipe-save-btn')?.addEventListener('click', () => {
+    if (!editRecipeMeal || !editRecipeGroupId) return;
+    const day = localData[currentDate] || emptyDay();
+    const sourceItems = day[editRecipeMeal] || [];
+    const recipeItems = sourceItems.filter(item => item._recipeGroup === editRecipeGroupId);
+    if (!recipeItems.length) return;
+
+    const newName = (document.getElementById('edit-recipe-name').value || '').trim() || 'Gerecht';
+    const targetMeal = document.getElementById('edit-recipe-meal').value || editRecipeMeal;
+
+    for (const item of recipeItems) {
+      item._recipeName = newName;
+    }
+
+    if (targetMeal !== editRecipeMeal) {
+      day[editRecipeMeal] = sourceItems.filter(item => item._recipeGroup !== editRecipeGroupId);
+      if (!day[targetMeal]) day[targetMeal] = [];
+      day[targetMeal].push(...recipeItems);
+    }
+
+    localData[currentDate] = day;
+    saveDay(currentDate, day);
+    closeEditRecipeGroupModal();
+    _renderDayUI(day);
+
+    const status = document.getElementById('status');
+    const label = MEAL_LABELS[targetMeal] || targetMeal;
+    if (status) status.textContent = `✏️ "${newName}" bijgewerkt${targetMeal !== editRecipeMeal ? ` · verplaatst naar ${label}` : ''}`;
+  });
+  document.getElementById('edit-recipe-modal')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('edit-recipe-modal')) closeEditRecipeGroupModal();
   });
 }
 

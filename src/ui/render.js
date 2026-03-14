@@ -134,10 +134,7 @@ export function renderMealItems(items, meal) {
         </div>
         <div style="display:flex;align-items:center;gap:0.5rem">
           <div class="recipe-group-info">${g.items.length} items · ${r1(totKcal)} kcal</div>
-          <select class="recipe-group-move-select" onclick="event.stopPropagation()" onchange="event.stopPropagation();moveRecipeGroupToMeal('${meal}','${g.groupId.replace(/'/g, "\\\\'")}',(this.value));this.value=''" title="Verplaats gerecht naar…">
-            <option value="">↗️</option>
-            ${MEAL_NAMES.filter(m => m !== meal).map(m => `<option value="${m}">${MEAL_LABELS[m]}</option>`).join('')}
-          </select>
+          <button class="item-edit" onclick="event.stopPropagation();openEditRecipeGroupModal('${meal}','${g.groupId.replace(/'/g, "\\\\'")}')" title="Gerecht bewerken">✏️</button>
           <button class="item-delete" onclick="event.stopPropagation();deleteRecipeGroup('${meal}','${g.groupId.replace(/'/g, "\\\\'")}')">✕</button>
         </div>
       </div>
