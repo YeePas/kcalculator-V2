@@ -62,7 +62,7 @@ import { renderDashboard, renderWeekSpark, renderMacroDonut } from './ui/charts.
 import { setSyncStatus } from './ui/sync-status.js';
 import {
   renderHistory, renderQuickFavs, updateStreak,
-  applyDark, applyVis, deleteItem, deleteRecipeGroup, moveRecipeGroupToMeal,
+  applyDark, applyVis, deleteItem, deleteRecipeGroup,
   goToDay, switchMobileView,
 } from './ui/misc.js';
 import {
@@ -83,7 +83,7 @@ import {
   addMatchToFavs, aiLookupMatch, initMatchModalListeners,
 } from './modals/match.js';
 import {
-  openEditModal, closeEditModal, initEditModalListeners, moveItemToMeal,
+  openEditModal, openEditRecipeGroupModal, closeEditModal, initEditModalListeners, moveItemToMeal,
 } from './modals/edit.js';
 import { initDataManagement } from './modals/data-management.js';
 import { initManualDayEntry } from './modals/manual-day.js';
@@ -105,7 +105,7 @@ import {
 // Expose functions needed by inline onclick handlers
 // ══════════════════════════════════════════════════════════════
 Object.assign(window, {
-  toggleMealSection, saveMealAsRecipe, deleteRecipeGroup, moveRecipeGroupToMeal, moveRecipeGroupToMeal,
+  toggleMealSection, saveMealAsRecipe, deleteRecipeGroup,
   saveItemAsFavorite, openEditModal, deleteItem,
   addFavToMeal, toggleFavExpand, deleteFav, openEditFavModal, recalcEditFavTotals,
   selectAcItem, setPortie, addNevoItem, openSmartImportPage, closeCustomModal,
@@ -113,7 +113,7 @@ Object.assign(window, {
   updateMatchNevo, updateMatchGram, toggleManualMode,
   addMatchToFavs, aiLookupMatch,
   runAdvies, switchMobileView,
-  closeEditModal, closeMatchModal, moveItemToMeal,
+  closeEditModal, closeMatchModal, moveItemToMeal, openEditRecipeGroupModal,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
   analyzeCustomDishInput, applyCustomDishSuggestion,
   quickSaveCustomDishSuggestion, setCustomDishPortionSize,
