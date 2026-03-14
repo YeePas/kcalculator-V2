@@ -540,7 +540,16 @@ async function manualSync() {
     });
     const prefsRecord = {
       user_id: authUser.id, date: '9999-01-01',
-      data: { favs: loadFavs(), goals: loadGoals(), custom: loadCustomProducts(), provider: cfg.provider || '', vis, showDrinks },
+      data: {
+        favs: loadFavs(),
+        goals: loadGoals(),
+        custom: loadCustomProducts(),
+        provider: cfg.provider || '',
+        claudeKey: cfg.claudeKey || '',
+        keys: cfg.keys || {},
+        vis,
+        showDrinks,
+      },
     };
     await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
       method: 'POST', headers: { ...sbHeaders(true), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
@@ -733,11 +742,15 @@ function initEventListeners() {
     };
     const claudeKey = keys[provider];
     const statusEl = document.getElementById('setup-status');
-    setCfg({ ...cfg, claudeKey, keys, provider, model: cfg.model });
-    saveCfg(cfg);
+    const nextCfg = { ...cfg, claudeKey, keys, provider, model: cfg.model };
+    setCfg(nextCfg);
+    saveCfg(nextCfg);
+    if (cfg.sbUrl && cfg.sbKey && authUser?.id) await syncUserPrefs(true);
     if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');
     else if (!cfg.sbUrl) setSyncStatus('offline', 'lokaal');
-    statusEl.textContent = claudeKey ? '✓ Opgeslagen!' : '✓ Opgeslagen (zonder AI-advies)';
+    statusEl.textContent = claudeKey
+      ? (authUser?.id ? '✓ Opgeslagen in je account!' : '✓ Opgeslagen!')
+      : '✓ Opgeslagen (zonder AI-advies)';
     statusEl.className = 'setup-status ok';
     setTimeout(() => { hideSetup(); renderMeals(); }, 600);
   });
