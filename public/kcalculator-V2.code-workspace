@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"github.copilot.chat.codeGeneration.instructions": [
+			{
+				"text": "This is the kcalculator project: a Vite 6 + vanilla JS ES module PWA (no framework). Follow these rules strictly:\n\n1. MODULE BOUNDARIES — utils.js and storage.js must be 100% pure: zero DOM, zero document.*, zero business logic that belongs there\n2. DOM SEPARATION — DOM manipulation belongs only in src/ui/ and src/modals/. Never mix calculations with document.getElementById()\n3. IMPORTS — always use named exports (no default exports for utilities), always include .js extension in import paths\n4. CIRCULAR DEPS — never import from main.js inside other modules. Use an event bus for cross-module communication\n5. FILE SIZE — max 200 lines per module. Split if larger\n6. CSS — no inline styles, use CSS custom properties for colors/spacing, mobile-first with min-width media queries\n7. HTML — use semantic elements: <button> for actions, <label> for inputs, ARIA labels on icon-only buttons\n8. LANGUAGE — Dutch for domain terms (maaltijd, gerecht, portie), English for technical terms (render, parse, fetch)\n9. TESTS — pure functions get unit tests in tests/unit/, DOM interactions in tests/integration/ with jsdom\n10. SIMPLICITY — don't over-engineer. No abstractions for one-time use. No backwards-compat shims"
+			}
+		],
+		"github.copilot.chat.reviewSelection.instructions": [
+			{
+				"text": "When reviewing kcalculator code, check: (1) Is DOM code mixed with pure logic? (2) Are imports using .js extensions? (3) Is the module over 200 lines? (4) Are CSS custom properties used instead of hardcoded colors? (5) Are interactive elements semantic HTML (button, not div)? (6) Are ARIA labels present on icon buttons? Flag these as must-fix issues with before/after examples."
+			}
+		]
+	}
+}
