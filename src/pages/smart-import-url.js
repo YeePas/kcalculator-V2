@@ -1,52 +1,10 @@
-/* ── Smart Import: URL Import (OFF/ah.nl/jumbo + AI) ──────── */
+/* ── Smart Import: URL Import (Open Food Facts only) ─────── */
 
 import { esc, r1 } from '../utils.js';
 import {
   createFoodFromManualNutrition,
-  importFoodFromUrl,
   normalizeImportUrl,
 } from '../ai/dish-import-service.js';
-
-function normalizeName(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\b(ah|jumbo|huismerk|biologisch)\b/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function scoreOffMatch(productName, candidate) {
-  const target = normalizeName(productName);
-  const candidateName = normalizeName(candidate?.product_name || '');
-  const brand = normalizeName(candidate?.brands || '');
-  const combined = `${candidateName} ${brand}`.trim();
-  if (!target || !candidateName) return 0;
-
-  if (candidateName === target) return 100;
-  if (candidateName.includes(target) || target.includes(candidateName)) return 88;
-
-  const targetTokens = target.split(' ').filter(t => t.length > 2);
-  if (!targetTokens.length) return 0;
-
-  let score = 0;
-  const matchedTokens = targetTokens.filter(token => combined.includes(token));
-  score += (matchedTokens.length / targetTokens.length) * 70;
-
-  if (targetTokens[0] && candidateName.includes(targetTokens[0])) score += 10;
-  if ((candidate?.nutriments?.['energy-kcal_100g'] || 0) > 0) score += 8;
-  if (brand.includes('albert heijn') || brand.includes('jumbo')) score += 6;
-
-  return Math.round(score);
-}
-
-function findBestOffProduct(productName, products) {
-  const ranked = (products || [])
-    .map(product => ({ product, score: scoreOffMatch(productName, product) }))
-    .filter(entry => (entry.product?.nutriments?.['energy-kcal_100g'] || 0) > 0)
-    .sort((a, b) => b.score - a.score);
-  return ranked[0] || null;
-}
 
 export async function handleUrlImport(btn, renderCard, feedbackNear) {
   const target = document.getElementById('smart-url-result');
@@ -57,53 +15,61 @@ export async function handleUrlImport(btn, renderCard, feedbackNear) {
 
   try {
     const normalizedInput = normalizeImportUrl(input);
+    if (!normalizedInput.includes('openfoodfacts.org')) {
+      throw new Error('Gebruik hier alleen een Open Food Facts URL.');
+    }
 
     // Direct OpenFoodFacts barcode lookup
-    if (normalizedInput.includes('openfoodfacts.org')) {
-      const barcodeMatch = normalizedInput.match(/product\/(\d+)/);
-      if (!barcodeMatch) throw new Error('Geen geldig OFF URL');
-      const r = await fetch('https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(barcodeMatch[1]) + '.json?fields=product_name,nutriments,brands');
-      if (!r.ok) throw new Error('Product niet gevonden');
-      const data = await r.json();
-      const p = data.product;
-      if (!p) throw new Error('Geen productdata');
-      const n = p.nutriments || {};
-      return renderCard('smart-url-result', offToProposal(p.product_name, n));
-    }
-
-    // ah.nl / jumbo.com → search OFF by product slug
-    if (normalizedInput.includes('ah.nl') || normalizedInput.includes('jumbo.com')) {
-      const slug = normalizedInput.split('/').filter(s => s.length > 3).pop() || '';
-      const productName = slug.replace(/[-_]/g, ' ').replace(/^(wi\d+|\d+)\s*/, '').replace(/^(ah|jumbo)\s*/i, '').trim();
-      if (!productName) throw new Error('Kan productnaam niet uit URL halen');
-
-      const offR = await fetch('https://world.openfoodfacts.org/cgi/search.pl?action=process&search_terms=' + encodeURIComponent(productName) + '&countries_tags_contains=netherlands&fields=product_name,nutriments,brands&page_size=5&json=true');
-      if (offR.ok) {
-        const offData = await offR.json();
-        const best = findBestOffProduct(productName, offData.products);
-        if (best && best.score >= 55) {
-          return renderCard('smart-url-result', offToProposal(best.product.product_name || productName, best.product.nutriments));
-        }
-      }
-      // Fall through to AI scrape if OFF search is weak or fails
-    }
-
-    // General URL → AI scrape + estimation
-    renderCard('smart-url-result', await importFoodFromUrl(normalizedInput));
+    const barcodeMatch = normalizedInput.match(/product\/(\d+)/);
+    if (!barcodeMatch) throw new Error('Geen geldige Open Food Facts product-URL.');
+    const r = await fetch('https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(barcodeMatch[1]) + '.json?fields=product_name,nutriments,brands,serving_size,serving_quantity,product_quantity,quantity');
+    if (!r.ok) throw new Error('Product niet gevonden op Open Food Facts.');
+    const data = await r.json();
+    const p = data.product;
+    if (!p) throw new Error('Geen productdata gevonden op Open Food Facts.');
+    const n = p.nutriments || {};
+    return renderCard('smart-url-result', offToProposal(p.product_name, n, p));
   } catch (e) {
     target.innerHTML = '<p class="smart-error">' + esc(e?.message || 'Onbekende fout') + '</p>';
   }
 }
 
-function offToProposal(name, n) {
+function parseServingInfo(product) {
+  const servingLabel = String(product?.serving_size || '').trim();
+  const servingQty = Number(product?.serving_quantity);
+
+  if (servingLabel && Number.isFinite(servingQty) && servingQty > 0) {
+    return { portionLabel: servingLabel, portionGrams: servingQty };
+  }
+
+  const match = servingLabel.match(/(\d+(?:[.,]\d+)?)\s*(g|gr|gram|ml)\b/i);
+  if (match) {
+    return {
+      portionLabel: servingLabel,
+      portionGrams: Math.round(parseFloat(match[1].replace(',', '.'))),
+    };
+  }
+
+  return { portionLabel: '100g', portionGrams: 100 };
+}
+
+function offToProposal(name, n, product) {
+  const serving = parseServingInfo(product);
+  const factor = Math.max(serving.portionGrams, 1) / 100;
+  const calories = n['energy-kcal_serving'] || n['energy-kcal_value'] || Math.round((n['energy-kcal_100g'] || n['energy-kcal'] || 0) * factor);
+  const protein = n.proteins_serving || (n.proteins_100g || 0) * factor;
+  const carbs = n.carbohydrates_serving || (n.carbohydrates_100g || 0) * factor;
+  const fat = n.fat_serving || (n.fat_100g || 0) * factor;
+  const fiber = n.fiber_serving || (n.fiber_100g || 0) * factor;
+
   return createFoodFromManualNutrition({
     title: name || 'Product',
-    calories: Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0),
-    protein_g: r1(n.proteins_100g || 0),
-    carbs_g: r1(n.carbohydrates_100g || 0),
-    fat_g: r1(n.fat_100g || 0),
-    fiber_g: r1(n.fiber_100g || 0),
-    portionGrams: 100,
-    portionLabel: '100g',
+    calories: Math.round(calories || 0),
+    protein_g: r1(protein || 0),
+    carbs_g: r1(carbs || 0),
+    fat_g: r1(fat || 0),
+    fiber_g: r1(fiber || 0),
+    portionGrams: serving.portionGrams,
+    portionLabel: serving.portionLabel,
   });
 }

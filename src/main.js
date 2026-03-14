@@ -351,6 +351,70 @@ function importData() {
   };
 }
 
+function cloneDayData(day) {
+  return normalizeDayData(JSON.parse(JSON.stringify(day || emptyDay())));
+}
+
+function openCopyDayModal() {
+  const modal = document.getElementById('copy-day-modal');
+  const input = document.getElementById('copy-day-source-input');
+  const targetLabel = document.getElementById('copy-day-target-label');
+  const status = document.getElementById('copy-day-status');
+  if (!modal || !input || !targetLabel || !status) return;
+  targetLabel.textContent = formatDate(currentDate);
+  input.value = '';
+  input.max = currentDate;
+  status.textContent = '';
+  status.className = 'setup-status';
+  modal.classList.add('open');
+}
+
+function closeCopyDayModal() {
+  document.getElementById('copy-day-modal')?.classList.remove('open');
+}
+
+async function copyMealsFromDay() {
+  const input = document.getElementById('copy-day-source-input');
+  const status = document.getElementById('copy-day-status');
+  if (!input || !status) return;
+
+  const sourceDate = input.value;
+  if (!sourceDate) {
+    status.textContent = 'Kies eerst een datum.';
+    status.className = 'setup-status error';
+    return;
+  }
+  if (sourceDate === currentDate) {
+    status.textContent = 'Kies een andere dag dan de huidige dag.';
+    status.className = 'setup-status error';
+    return;
+  }
+
+  status.textContent = 'Bezig met kopiëren…';
+  status.className = 'setup-status';
+
+  const sourceDay = cloneDayData(await loadDay(sourceDate));
+  const hasMeals = Object.values(sourceDay).some(items => Array.isArray(items) && items.length > 0);
+  if (!hasMeals) {
+    status.textContent = 'Op die datum zijn geen maaltijden gevonden.';
+    status.className = 'setup-status error';
+    return;
+  }
+
+  const currentDayData = localData[currentDate] || emptyDay();
+  const currentHasMeals = Object.values(currentDayData).some(items => Array.isArray(items) && items.length > 0);
+  if (currentHasMeals && !window.confirm(`De maaltijden van ${formatDate(currentDate)} worden vervangen door ${formatDate(sourceDate)}. Doorgaan?`)) {
+    status.textContent = 'Kopiëren geannuleerd.';
+    status.className = 'setup-status';
+    return;
+  }
+
+  saveDay(currentDate, sourceDay);
+  setLocalData(currentDate, sourceDay);
+  await renderMeals();
+  closeCopyDayModal();
+}
+
 // ══════════════════════════════════════════════════════════════
 // Auth Redirect Handler
 // ══════════════════════════════════════════════════════════════
@@ -411,6 +475,8 @@ function showSetup(panel) {
         const lb2 = document.getElementById('logout-settings-btn'); if (lb2) lb2.style.display = 'none';
       }
     }
+    const dbAdminBtn = document.getElementById('settings-db-admin-btn');
+    if (dbAdminBtn) dbAdminBtn.style.display = isLocalhostEnv() ? '' : 'none';
     if (userEl) userEl.style.display = '';
   } else {
     const authSt = document.getElementById('auth-status'); if (authSt) authSt.textContent = '';
@@ -434,6 +500,11 @@ function setProviderUI(provider) {
 }
 
 function hideSetup() { document.getElementById('setup-screen').style.display = 'none'; }
+
+function isLocalhostEnv() {
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+}
 
 function openGoalsModal() {
   hideSetup();
@@ -540,6 +611,10 @@ function initEventListeners() {
     hideSetup();
     exportAllData();
   });
+  document.getElementById('settings-db-admin-btn')?.addEventListener('click', () => {
+    if (!isLocalhostEnv()) return;
+    window.open('/db-beheer.html', '_blank', 'noopener');
+  });
   document.getElementById('cancel-settings')?.addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
   document.getElementById('modal-overlay')?.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
   document.getElementById('save-settings')?.addEventListener('click', () => {
@@ -587,9 +662,15 @@ function initEventListeners() {
   document.getElementById('today-btn')?.addEventListener('click', () => {
     setCurrentDate(dateKey(new Date())); renderMeals();
   });
+  document.getElementById('copy-day-btn')?.addEventListener('click', openCopyDayModal);
+  document.getElementById('copy-day-cancel-btn')?.addEventListener('click', closeCopyDayModal);
+  document.getElementById('copy-day-confirm-btn')?.addEventListener('click', copyMealsFromDay);
+  document.getElementById('copy-day-modal')?.addEventListener('click', (e) => {
+    if (e.target?.id === 'copy-day-modal') closeCopyDayModal();
+  });
 
-  // Brand mark (home)
-  document.querySelector('.brand-mark')?.addEventListener('click', () => {
+  // Brand mark + title (home)
+  document.getElementById('brand-home-btn')?.addEventListener('click', () => {
     const layout = document.querySelector('.layout');
     if (!layout) return;
     layout.classList.remove('show-data', 'show-advies', 'show-import');

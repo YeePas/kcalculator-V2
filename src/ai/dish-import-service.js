@@ -67,6 +67,75 @@ function squeezeSpaces(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+function avgFromRange(raw) {
+  const m = String(raw || '').match(/(\d+(?:[.,]\d+)?)\s*[–-]\s*(\d+(?:[.,]\d+)?)/);
+  if (!m) return null;
+  const a = parseFloat(m[1].replace(',', '.'));
+  const b = parseFloat(m[2].replace(',', '.'));
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return (a + b) / 2;
+}
+
+function numberNearLabel(text, labels) {
+  for (const label of labels) {
+    const rx = new RegExp(label + String.raw`[^\d]{0,32}(\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?)`, 'i');
+    const m = text.match(rx);
+    if (!m) continue;
+    const ranged = avgFromRange(m[1]);
+    if (ranged !== null) return ranged;
+    const n = parseFloat(m[1].replace(',', '.'));
+    if (Number.isFinite(n)) return n;
+  }
+  return 0;
+}
+
+function titleFromSlug(pathname) {
+  const slug = pathname.split('/').filter(Boolean).pop() || '';
+  const cleaned = slug
+    .replace(/^wi\d+\//i, '')
+    .replace(/^wi\d+/i, '')
+    .replace(/[-_]+/g, ' ')
+    .trim();
+  if (!cleaned) return 'Product';
+  return cleaned.replace(/\b\w/g, ch => ch.toUpperCase());
+}
+
+function parseRetailNutritionFromText(url, text) {
+  const compact = squeezeSpaces(text);
+  if (!compact) return null;
+
+  const calories = Math.round(numberNearLabel(compact, ['calorie[eë]n', 'energie', 'kcal']));
+  const carbs = Number(numberNearLabel(compact, ['koolhydraten', 'waarvan suikers', '\\bkh\\b']).toFixed(1));
+  const fat = Number(numberNearLabel(compact, ['vet(?:ten)?', 'waarvan verzadigd']).toFixed(1));
+  const protein = Number(numberNearLabel(compact, ['eiwit(?:ten)?', 'prote[iï]ne']).toFixed(1));
+  const fiber = Number(numberNearLabel(compact, ['vezels?', 'fiber']).toFixed(1));
+  const macroHits = [calories > 0, carbs > 0, fat > 0, protein > 0, fiber > 0].filter(Boolean).length;
+  if (macroHits < 3) return null;
+
+  const portionLabelMatch = compact.match(/per\s+100\s*(g|gram|gr|ml)\b/i);
+  const portionUnit = portionLabelMatch?.[1]?.toLowerCase() || 'g';
+  const portionLabel = portionUnit === 'ml' ? '100ml' : '100g';
+
+  return createDishProposal({
+    sourceType: 'url_import',
+    title: titleFromSlug(url.pathname),
+    recognizedAs: 'Productpagina uitgelezen',
+    confidence: 'high',
+    portionLabel,
+    portionGrams: 100,
+    calories,
+    protein_g: protein,
+    carbs_g: carbs,
+    fat_g: fat,
+    fiber_g: fiber,
+    assumptions: ['Voedingswaarden rechtstreeks uit de productpagina gehaald. Controleer portie-eenheid als de bron per 100 ml rekent.'],
+    alternatives: [],
+    rawSourceInput: url.href,
+    providerUsed: 'retail-parse',
+    editable: true,
+  });
+}
+
 function cleanupDishCandidate(value) {
   return squeezeSpaces(String(value || '')
     .replace(/^["'“”‘’([{]+/, '')
@@ -282,6 +351,11 @@ export async function importFoodFromUrl(urlInput) {
 
   const slugGuess = url.pathname.split('/').filter(Boolean).pop()?.replace(/[-_]/g, ' ') || 'onbekend gerecht';
   const scraped = await fetchUrlContentForImport(url.href);
+  const isRetailerUrl = /(?:^|\.)ah\.nl$|(?:^|\.)jumbo\.com$/i.test(url.hostname);
+  const directRetailProposal = /(?:^|\.)ah\.nl$|(?:^|\.)jumbo\.com$/i.test(url.hostname)
+    ? parseRetailNutritionFromText(url, scraped.text)
+    : null;
+  if (directRetailProposal) return directRetailProposal;
   const scrapedContext = scraped.text
     ? `\n\nGescraapte content (${scraped.source}, ingekort):\n${scraped.text}`
     : '\n\nGeen scrape-content beschikbaar; gebruik URL + slug + kennis voor best-effort voorstel.';
@@ -308,7 +382,12 @@ export async function importFoodFromUrl(urlInput) {
       carbs_g: 32,
       fat_g: 16,
       fiber_g: 5,
-      assumptions: ['Exacte voedingswaarden niet gevonden op URL.', 'Fallback-schatting gebruikt op basis van recepttitel en type gerecht.'],
+      assumptions: isRetailerUrl
+        ? [
+            'Retailerpagina kon niet betrouwbaar worden uitgelezen vanuit de browser of proxy.',
+            'Fallback-schatting gebruikt. Voor exacte waarden: deploy de Supabase Edge Function "url-import-proxy" of gebruik handmatige invoer.',
+          ]
+        : ['Exacte voedingswaarden niet gevonden op URL.', 'Fallback-schatting gebruikt op basis van recepttitel en type gerecht.'],
       alternatives: [],
       rawSourceInput: url.href,
       providerUsed: 'url-fallback',

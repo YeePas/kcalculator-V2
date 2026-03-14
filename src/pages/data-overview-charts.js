@@ -18,6 +18,14 @@ function getRoundedAxis(maxVal, steps) {
   return { axisMax: stepSize * steps, stepSize };
 }
 
+function intakeBarColor(intake, goal) {
+  if (!goal || intake <= goal) return 'var(--accent)';
+  const surplus = intake - goal;
+  if (surplus < 250) return 'var(--warning)';
+  if (surplus < 500) return 'var(--warning-strong)';
+  return 'var(--danger)';
+}
+
 export function renderDOChart(a, container) {
   if (!container) return;
   const days = a.days, n = days.length;
@@ -45,9 +53,20 @@ export function renderDOChart(a, container) {
   for (let i = 0; i < n; i++) {
     const d = days[i], x = padL + i * gap + (gap - barW) / 2;
     if (d.intake > 0) {
-      const h = (d.intake / maxVal) * plotH, y = padT + plotH - h;
-      const overGoal = goals.kcal && d.intake > goals.kcal * 1.05;
-      svg += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="2" fill="${overGoal ? 'var(--danger)' : 'var(--accent)'}" opacity="0.75"><title>${d.date}: ${d.intake} kcal</title></rect>`;
+      const filledIntake = Math.min(d.intake, d.tdee_kcal || d.intake);
+      const h = (filledIntake / maxVal) * plotH, y = padT + plotH - h;
+      const fill = intakeBarColor(d.intake, goals.kcal);
+      const remainingToTdee = Math.max((d.tdee_kcal || 0) - d.intake, 0);
+      if (remainingToTdee > 0) {
+        const stackTopY = toY(d.tdee_kcal || 0);
+        const stackH = Math.max(y - stackTopY, 0);
+        if (stackH > 0) {
+          svg += `<rect x="${x}" y="${stackTopY}" width="${barW}" height="${stackH}" rx="2" fill="var(--tdee-line)" opacity="0.22"><title>${d.date}: nog ${Math.round(remainingToTdee)} kcal tot TDEE</title></rect>`;
+        }
+      }
+      svg += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="2" fill="${fill}" opacity="0.75"><title>${d.date}: ${d.intake} kcal</title></rect>`;
+      const labelY = Math.max(y - 6, padT + 8);
+      svg += `<text x="${x + barW / 2}" y="${labelY}" text-anchor="middle" fill="var(--text)" font-size="7.5" font-weight="700" font-family="var(--font-body)">${Math.round(d.intake)}</text>`;
     }
   }
   if (a.daysWithEnergy > 0) {
@@ -56,7 +75,7 @@ export function renderDOChart(a, container) {
     if (pts.length > 1) {
       let path = 'M ' + pts[0].x + ' ' + pts[0].y;
       for (let i = 1; i < pts.length; i++) { const cpx = (pts[i-1].x + pts[i].x) / 2; path += ' C ' + cpx + ' ' + pts[i-1].y + ', ' + cpx + ' ' + pts[i].y + ', ' + pts[i].x + ' ' + pts[i].y; }
-      svg += `<path d="${path}" fill="none" stroke="var(--danger)" stroke-width="2" stroke-dasharray="5 3" stroke-linecap="round"/>`;
+      svg += `<path d="${path}" fill="none" stroke="var(--tdee-line)" stroke-width="2" stroke-dasharray="5 3" stroke-linecap="round"/>`;
     }
   }
   const labelEvery = n <= 14 ? 1 : n <= 60 ? 7 : 30;
