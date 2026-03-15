@@ -58,6 +58,7 @@ describe('supabase auth persistence', () => {
     expect(JSON.parse(localStorage.getItem('eetdagboek_auth_v1'))).toEqual({
       id: 'user-1',
       email: 'test@example.com',
+      display_name: '',
       access_token: 'access-token',
       refresh_token: 'refresh-token',
     });
@@ -87,6 +88,7 @@ describe('supabase auth persistence', () => {
     expect(JSON.parse(localStorage.getItem('eetdagboek_auth_v1'))).toEqual({
       id: 'user-1',
       email: 'test@example.com',
+      display_name: '',
       access_token: 'new-access-token',
       refresh_token: 'new-refresh-token',
     });
