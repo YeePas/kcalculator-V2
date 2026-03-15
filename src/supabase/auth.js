@@ -23,12 +23,13 @@ function readStoredAuth() {
   const sessionRaw = sessionStorageRef?.getItem(AUTH_KEY) || null;
   const localRaw = localStorageRef?.getItem(AUTH_KEY) || null;
 
-  if (!sessionRaw && localRaw && sessionStorageRef) {
-    safeSetJson(sessionStorageRef, AUTH_KEY, safeParseFromStorage(localStorageRef, AUTH_KEY, null));
+  // Migrate older session-only auth to persistent storage so login survives app relaunches.
+  if (!localRaw && sessionRaw && localStorageRef) {
+    safeSetJson(localStorageRef, AUTH_KEY, safeParseFromStorage(sessionStorageRef, AUTH_KEY, null));
   }
-  if (localRaw) safeRemove(localStorageRef, AUTH_KEY);
+  if (sessionRaw) safeRemove(sessionStorageRef, AUTH_KEY);
 
-  return sessionRaw || localRaw;
+  return localRaw || sessionRaw;
 }
 
 export async function sbAuthRegister(email, password) {
@@ -89,12 +90,12 @@ export function setAuthUser(session) {
       setLocalData({});
     }
 
-    safeSetJson(getSessionStorage() || getLocalStorage(), AUTH_KEY, authUser);
-    safeRemove(getLocalStorage(), AUTH_KEY);
+    safeSetJson(getLocalStorage() || getSessionStorage(), AUTH_KEY, authUser);
+    safeRemove(getSessionStorage(), AUTH_KEY);
   } else {
     _setAuthUser(null);
-    safeRemove(getSessionStorage(), AUTH_KEY);
     safeRemove(getLocalStorage(), AUTH_KEY);
+    safeRemove(getSessionStorage(), AUTH_KEY);
   }
 }
 
