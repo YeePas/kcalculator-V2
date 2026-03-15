@@ -7,9 +7,21 @@ import {
 import { loadCustomProducts } from '../storage.js';
 import { parseQuantity } from './portions.js';
 
-const PRODUCTS_CACHE_KEY = 'kcalculator_products_v2';
+const PRODUCTS_CACHE_KEY = 'kcalculator_products_v5';
+const LEGACY_PRODUCTS_CACHE_KEYS = ['kcalculator_products_v4', 'kcalculator_products_v3', 'kcalculator_products_v2', 'kcalculator_products_v1'];
+
+export function clearProductCache() {
+  try { localStorage.removeItem(PRODUCTS_CACHE_KEY); } catch {}
+  for (const legacyKey of LEGACY_PRODUCTS_CACHE_KEYS) {
+    try { localStorage.removeItem(legacyKey); } catch {}
+  }
+}
 
 export async function loadNevo() {
+  for (const legacyKey of LEGACY_PRODUCTS_CACHE_KEYS) {
+    try { localStorage.removeItem(legacyKey); } catch {}
+  }
+
   // Try cache first
   try {
     const cached = localStorage.getItem(PRODUCTS_CACHE_KEY);
@@ -59,7 +71,8 @@ export function searchNevo(query) {
   // Also strip leftover quantity words
   searchQ = searchQ.replace(/\b\d+\s*(gram|gr|g|ml|liter|l|cl|dl|kg|stuks?|st)\b/gi, '').trim();
   if (!searchQ) searchQ = query;
-  const terms = searchQ.toLowerCase().trim().split(/\s+/).filter(t => t.length >= 2);
+  const normalizedQuery = searchQ.toLowerCase().trim();
+  const terms = normalizedQuery.split(/\s+/).filter(t => t.length >= 2);
   if (!terms.length) return [];
 
   const results = [];
@@ -85,18 +98,22 @@ export function searchNevo(query) {
 
       let score = item.src === 'rivm' ? 5 : 0; // RIVM gets priority
       const nameLower = item.n.toLowerCase();
+      const brandLower = String(item.b || '').toLowerCase();
       // Word-boundary matching: "appel" should NOT match "aardappel"
       const firstTermRegex = new RegExp('\\b' + terms[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       if (firstTermRegex.test(nameLower)) score += 10;
       else score -= 5; // substring-only match penalized
       if (nameLower.startsWith(terms[0])) score += 5;
       if (terms.length === 1 && nameLower === terms[0]) score += 20;
+      if (nameLower === normalizedQuery) score += 40;
+      if (nameLower.startsWith(normalizedQuery)) score += 18;
+      if (nameLower.includes(normalizedQuery)) score += 10;
+      if (brandLower && normalizedQuery.includes(brandLower)) score += 8;
       if (item.b) score += 2;
       score -= item.n.length * 0.04;
 
       const group = item.g !== undefined ? nevoData.groups[item.g] : (item.b || 'Open Food Facts');
       results.push({ ...item, _score: score, _group: group });
-      if (results.length > 150) break;
     }
   }
 

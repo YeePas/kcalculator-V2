@@ -4,65 +4,47 @@
 import { cfg } from '../state.js';
 import { saveCfg } from '../storage.js';
 
+export function hasAiProxyConfig() {
+  return Boolean(cfg.sbUrl && cfg.sbKey);
+}
+
+export function assertAiAvailable() {
+  if (!hasAiProxyConfig()) {
+    throw new Error('AI is niet beschikbaar: koppel eerst Supabase zodat de beveiligde AI-proxy gebruikt kan worden.');
+  }
+}
+
 /**
  * Universal AI call — routes to the correct provider API.
  * Original signature: aiCall(provider, system, user, maxTokens, useWebSearch)
  */
 export async function aiCall(provider, system, user, maxTokens = 1400, useWebSearch = false) {
-  const key = (cfg.keys && cfg.keys[provider]) || cfg.claudeKey;
-  if (!key) throw new Error('Geen API key ingesteld voor ' + provider);
-  const fullPrompt = system ? system + '\n\n' + user : user;
-
-  if (provider === 'gemini') {
-    const model = cfg.model || 'gemini-2.5-flash';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-    const r = await fetch(url, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: fullPrompt }] }],
-        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2 },
-      }),
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error?.message || 'Gemini fout (' + r.status + ')');
-    return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-  } else if (provider === 'openai') {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({
-        model: cfg.model || 'gpt-4o-mini', max_tokens: maxTokens, temperature: 0.2,
-        messages: system
-          ? [{ role: 'system', content: system }, { role: 'user', content: user }]
-          : [{ role: 'user', content: user }],
-      }),
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error?.message || 'OpenAI fout (' + r.status + ')');
-    return d.choices?.[0]?.message?.content || '';
-
-  } else {
-    // Claude (default) — met web search tool voor parseFood
-    const body = {
-      model: cfg.model || 'claude-haiku-4-5-20251001', max_tokens: maxTokens,
-      messages: [{ role: 'user', content: user }],
-    };
-    if (system) body.system = system;
-    if (useWebSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3,
-      allowed_domains: ['voedingscentrum.nl', 'nevo-online.rivm.nl', 'ah.nl', 'jumbo.com'] }];
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key,
-        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify(body),
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error?.message || 'Claude fout (' + r.status + ')');
-    const blocks = d.content.filter(b => b.type === 'text');
-    if (!blocks.length) throw new Error('Geen antwoord ontvangen');
-    return blocks[blocks.length - 1].text;
-  }
+  assertAiAvailable();
+  const resolvedProvider = provider || cfg.provider || 'claude';
+  const resolvedModel = cfg.model || (resolvedProvider === 'openai'
+    ? 'gpt-4o-mini'
+    : resolvedProvider === 'gemini'
+      ? 'gemini-2.5-flash'
+      : 'claude-haiku-4-5-20250514');
+  const response = await fetch(`${cfg.sbUrl}/functions/v1/ai-proxy`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': cfg.sbKey,
+      'Authorization': 'Bearer ' + cfg.sbKey,
+    },
+    body: JSON.stringify({
+      provider: resolvedProvider,
+      model: resolvedModel,
+      system,
+      user,
+      maxTokens,
+      useWebSearch,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload?.error || 'AI-proxy fout (' + response.status + ')');
+  return payload?.text || '';
 }
 
 /**

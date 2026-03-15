@@ -96,8 +96,10 @@ export async function syncUserPrefs(immediate = false) {
           goals: loadGoals(),
           custom: loadCustomProducts(),
           provider: cfg.provider || '',
-          claudeKey: cfg.claudeKey || '',
-          keys: cfg.keys || {},
+          adviesProvider: cfg.adviesProvider || '',
+          adviesModel: cfg.adviesModel || '',
+          importProvider: cfg.importProvider || '',
+          importModel: cfg.importModel || '',
           vis,
           showDrinks,
         },
@@ -177,21 +179,16 @@ export async function loadUserPrefs() {
       safeSetJson(getLocalStorage(), VIS_KEY, prefs.vis);
     }
 
-    const resolvedClaudeKey = String(prefs.claudeKey || cfg.claudeKey || '').trim();
-    const resolvedKeysChoice = resolvePrefsObject(prefs.keys, cfg.keys);
-    const resolvedKeys = resolvedKeysChoice.value || {};
     const nextCfg = {
       ...cfg,
       provider: prefs.provider || cfg.provider || '',
-      claudeKey: resolvedClaudeKey,
-      keys: resolvedKeys,
+      adviesProvider: prefs.adviesProvider || cfg.adviesProvider || '',
+      adviesModel: prefs.adviesModel || cfg.adviesModel || '',
+      importProvider: prefs.importProvider || cfg.importProvider || '',
+      importModel: prefs.importModel || cfg.importModel || '',
     };
     setCfg(nextCfg);
     saveCfg(nextCfg);
-
-    if ((!prefs.claudeKey && resolvedClaudeKey) || resolvedKeysChoice.source === 'local') {
-      shouldBackfillPrefs = true;
-    }
 
     if (shouldBackfillPrefs) await syncUserPrefs(true);
   } catch (e) { console.error('[LoadPrefs]', e); }

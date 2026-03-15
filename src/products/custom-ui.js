@@ -3,6 +3,7 @@
 import { cfg } from '../state.js';
 import { loadCustomProducts } from '../storage.js';
 import { r1 } from '../utils.js';
+import { hasAiProxyConfig } from '../ai/providers.js';
 import { trapFocus, releaseFocus } from '../ui/focus.js';
 import { clearCustomDishSuggestionState } from './custom-suggestion.js';
 
@@ -80,8 +81,7 @@ export function updatePhotoModelSelect() {
   ];
 
   const available = opts.filter(o => {
-    const prov = o.value.split('|')[0];
-    return (cfg.keys && cfg.keys[prov]) || (prov === (cfg.provider || 'claude') && cfg.claudeKey);
+    return hasAiProxyConfig();
   });
 
   sel.innerHTML = available.map(o => `<option value="${o.value}">${o.label}</option>`).join('');

@@ -2,6 +2,7 @@
 
 import { cfg } from '../state.js';
 import { fillCustomFields } from './custom-ui.js';
+import { hasAiProxyConfig } from '../ai/providers.js';
 
 export function resizeImage(file, maxDim = 800) {
   return new Promise((resolve) => {
@@ -55,10 +56,8 @@ export async function handleCustomPhoto(file) {
   btn.textContent = '🤖 Analyseren…';
   const selModel = document.getElementById('custom-photo-model')?.value || '';
   const [provider, model] = selModel.includes('|') ? selModel.split('|') : [cfg.provider || 'claude', selModel];
-  const key = (cfg.keys && cfg.keys[provider]) || cfg.claudeKey;
-
-  if (!key) {
-    btn.textContent = '⚠️ Geen API key';
+  if (!hasAiProxyConfig()) {
+    btn.textContent = '⚠️ AI niet beschikbaar';
     btn.disabled = false;
     setTimeout(() => {
       btn.textContent = '📸 Foto';
@@ -69,45 +68,25 @@ export async function handleCustomPhoto(file) {
   const prompt = 'Analyseer deze foto van een voedingswaarden-etiket. Geef de waarden per 100g in dit JSON format: {"naam":"productnaam","kcal":0,"kh":0,"vz":0,"vet":0,"eiwit":0,"portie":"","merk":""}. Antwoord ALLEEN met de JSON.';
 
   try {
-    let result;
-    if (provider === 'claude') {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': key,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: model || 'claude-haiku-4-5-20251001',
-          max_tokens: 500,
-          messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } }, { type: 'text', text: prompt }] }],
-        }),
-      });
-      const d = await r.json();
-      result = d.content?.[0]?.text || '';
-    } else if (provider === 'gemini') {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model || 'gemini-2.5-flash'}:generateContent?key=${key}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ inlineData: { mimeType, data: base64 } }, { text: prompt }] }] }),
-      });
-      const d = await r.json();
-      result = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    } else if (provider === 'openai') {
-      const r = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-        body: JSON.stringify({
-          model: model || 'gpt-4o-mini',
-          messages: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: dataUrl } }, { type: 'text', text: prompt }] }],
-          max_tokens: 500,
-        }),
-      });
-      const d = await r.json();
-      result = d.choices?.[0]?.message?.content || '';
-    }
+    const response = await fetch(`${cfg.sbUrl}/functions/v1/ai-proxy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': cfg.sbKey,
+        'Authorization': 'Bearer ' + cfg.sbKey,
+      },
+      body: JSON.stringify({
+        provider,
+        model: model || (provider === 'openai' ? 'gpt-4o-mini' : provider === 'gemini' ? 'gemini-2.5-flash' : 'claude-haiku-4-5-20250514'),
+        user: prompt,
+        maxTokens: 500,
+        imageData: base64,
+        imageMimeType: mimeType,
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload?.error || `AI-proxy fout (${response.status})`);
+    const result = payload?.text || '';
 
     const jsonMatch = result.match(/\{[\s\S]*\}/);
     if (jsonMatch) {

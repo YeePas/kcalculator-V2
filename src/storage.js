@@ -66,14 +66,8 @@ export function safeRemove(storage, key) {
 // ── Config ────────────────────────────────────────────────
 export function loadCfg() {
   const raw = safeParse(CFG_KEY, {});
-  const sessionSecrets = safeParseFromStorage(getSessionStorage(), CFG_SESSION_KEY, {});
-  const secrets = {
-    claudeKey: cleanString(sessionSecrets.claudeKey || raw.claudeKey || ''),
-    keys: sessionSecrets.keys || raw.keys || {},
-  };
-
-  if ((raw.claudeKey || raw.keys) && getSessionStorage()) {
-    safeSetJson(getSessionStorage(), CFG_SESSION_KEY, secrets);
+  safeRemove(getSessionStorage(), CFG_SESSION_KEY);
+  if (raw.claudeKey || raw.keys) {
     const migrated = { ...raw };
     delete migrated.claudeKey;
     delete migrated.keys;
@@ -83,8 +77,8 @@ export function loadCfg() {
   return {
     sbUrl: normalizeSupabaseUrl(raw.sbUrl || SUPABASE_URL),
     sbKey: cleanString(raw.sbKey || SUPABASE_ANON_KEY),
-    claudeKey: secrets.claudeKey,
-    keys: secrets.keys,
+    claudeKey: '',
+    keys: {},
     provider: raw.provider || 'claude',
     model: raw.model || '',
     adviesProvider: raw.adviesProvider || '',
@@ -99,16 +93,7 @@ export function saveCfg(cfg) {
   delete persisted.claudeKey;
   delete persisted.keys;
   safeSetJson(getLocalStorage(), CFG_KEY, persisted);
-
-  const secrets = {
-    claudeKey: cfg?.claudeKey || '',
-    keys: cfg?.keys || {},
-  };
-  if (secrets.claudeKey || Object.keys(secrets.keys).length > 0) {
-    safeSetJson(getSessionStorage(), CFG_SESSION_KEY, secrets);
-  } else {
-    safeRemove(getSessionStorage(), CFG_SESSION_KEY);
-  }
+  safeRemove(getSessionStorage(), CFG_SESSION_KEY);
 }
 
 // ── Goals ─────────────────────────────────────────────────

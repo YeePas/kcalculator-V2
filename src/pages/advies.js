@@ -9,6 +9,7 @@ import { dateKey, emptyDay, r1, formatDate, dayTotals } from '../utils.js';
 import { saveCfg } from '../storage.js';
 import { loadDay } from '../supabase/data.js';
 import { aiCall } from '../ai/providers.js';
+import { hasAiProxyConfig } from '../ai/providers.js';
 import { renderSchijfAnalyse } from './schijf.js';
 import { renderWeekrapport } from './weekrapport.js';
 import { switchMobileView } from '../ui/misc.js';
@@ -69,8 +70,7 @@ export function updateAdviesModelSelect() {
     {value:'openai|gpt-4o',                     label:'GPT-4o'},
   ];
   const available = opts.filter(o => {
-    const prov = o.value.split('|')[0];
-    return (cfg.keys && cfg.keys[prov]) || (prov === (cfg.provider || 'claude') && cfg.claudeKey);
+    return hasAiProxyConfig();
   });
   sel.innerHTML = available.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
   const saved = cfg.adviesProvider && cfg.adviesModel ? cfg.adviesProvider + '|' + cfg.adviesModel : null;
@@ -148,7 +148,7 @@ function setAdviesHTML(html) {
 }
 
 async function getAvondAdvies() {
-  if (!cfg.claudeKey && !cfg.keys?.[cfg.provider]) throw new Error('Geen API key ingesteld');
+  if (!hasAiProxyConfig()) throw new Error('AI-proxy niet beschikbaar');
   const day = localData[currentDate] || emptyDay();
   const tot = dayTotals(day);
   const rKcal = Math.max(0, (goals.kcal || 2000) - tot.cals);
@@ -188,7 +188,7 @@ Geef 2 concrete Nederlandse avondeten-opties die passen bij de resterende ruimte
 }
 
 async function getDagAdvies() {
-  if (!cfg.claudeKey && !cfg.keys?.[cfg.provider]) throw new Error('Geen API key ingesteld');
+  if (!hasAiProxyConfig()) throw new Error('AI-proxy niet beschikbaar');
   const day = localData[currentDate] || emptyDay();
   const tot = dayTotals(day);
   const alleItems = MEAL_NAMES.flatMap(m => (day[m] || []).map(i => ({ ...i, maaltijd: m })));
@@ -217,7 +217,7 @@ Vriendelijk, motiverend, specifiek. Gebruik <p> voor tekst.`);
 }
 
 async function getWeekAdvies() {
-  if (!cfg.claudeKey && !cfg.keys?.[cfg.provider]) throw new Error('Geen API key ingesteld');
+  if (!hasAiProxyConfig()) throw new Error('AI-proxy niet beschikbaar');
   const last7 = [];
   for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() - i); last7.push(dateKey(d)); }
   for (const d of last7) if (!localData[d]) localData[d] = await loadDay(d);

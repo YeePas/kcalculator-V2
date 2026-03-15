@@ -36,6 +36,26 @@ Nutrient Hoeveelheid
     expect(proposal?.fiber_g).toBe(8);
     expect(proposal?.providerUsed).toBe('manual-parse');
   });
+
+  it('prefers kcal over kJ and supports European number formats from labels or websites', () => {
+    const proposal = createProposalFromNutritionText(`Soort\tPer 100 Gram
+Energie\t1.125 kJ (269 kcal)
+Vet\t14 g
+waarvan verzadigd\t2,7 g
+waarvan onverzadigd\t11 g
+Koolhydraten\t26 g
+waarvan suikers\t3,4 g
+Voedingsvezel\t2,5 g
+Eiwitten\t8,5 g
+Zout\t1,4 g`);
+
+    expect(proposal).not.toBeNull();
+    expect(proposal?.calories).toBe(269);
+    expect(proposal?.fat_g).toBe(14);
+    expect(proposal?.carbs_g).toBe(26);
+    expect(proposal?.protein_g).toBe(8.5);
+    expect(proposal?.fiber_g).toBe(2.5);
+  });
 });
 
 describe('buildAiTextFallbackProposal', () => {

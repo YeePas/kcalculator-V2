@@ -29,7 +29,7 @@ import {
 import { sbHeaders } from './supabase/config.js';
 import {
   sbAuthRegister, sbAuthLogin, sbAuthRefresh,
-  setAuthUser, updateAccountUI, restoreAuth,
+  setAuthUser, updateAccountUI, restoreAuth, updateAuthProfile,
 } from './supabase/auth.js';
 import { initSupabase, loadDay, saveDay } from './supabase/data.js';
 import {
@@ -40,7 +40,7 @@ import {
 } from './supabase/sync.js';
 
 // ── Products ─────────────────────────────────────────────────
-import { loadNevo, searchNevo } from './products/database.js';
+import { clearProductCache, loadNevo, searchNevo } from './products/database.js';
 import { parseTextToItems, matchItemToNevo } from './products/matcher.js';
 import {
   openCustomModal, closeCustomModal, updatePhotoModelSelect,
@@ -53,6 +53,7 @@ import {
 
 // ── AI ───────────────────────────────────────────────────────
 import { updateInlineModelSelect } from './ai/providers.js';
+import { hasAiProxyConfig } from './ai/providers.js';
 import { parseFood } from './ai/parser.js';
 
 // ── UI ───────────────────────────────────────────────────────
@@ -460,9 +461,7 @@ function showSetup(panel) {
   if (userEl) userEl.style.display = 'none';
 
   if (panel === 'user' || authUser) {
-    document.getElementById('setup-key-claude').value = cfg.keys?.claude || cfg.claudeKey || '';
-    document.getElementById('setup-key-gemini').value = cfg.keys?.gemini || '';
-    document.getElementById('setup-key-openai').value = cfg.keys?.openai || '';
+    document.getElementById('setup-display-name').value = authUser?.display_name || '';
     document.getElementById('setup-status').textContent = '';
     setProviderUI(cfg.provider || 'claude');
     const greeting = document.getElementById('setup-user-greeting');
@@ -475,8 +474,6 @@ function showSetup(panel) {
         const lb2 = document.getElementById('logout-settings-btn'); if (lb2) lb2.style.display = 'none';
       }
     }
-    const dbAdminBtn = document.getElementById('settings-db-admin-btn');
-    if (dbAdminBtn) dbAdminBtn.style.display = isLocalhostEnv() ? '' : 'none';
     if (userEl) userEl.style.display = '';
   } else {
     const authSt = document.getElementById('auth-status'); if (authSt) authSt.textContent = '';
@@ -492,19 +489,10 @@ function showSetup(panel) {
 
 function setProviderUI(provider) {
   document.querySelectorAll('.provider-btn').forEach(b => b.classList.toggle('active', b.dataset.provider === provider));
-  ['claude', 'gemini', 'openai'].forEach(p => {
-    const el = document.getElementById('key-field-' + p);
-    if (el) el.style.display = (p === provider) ? '' : 'none';
-  });
   updateInlineModelSelect(provider);
 }
 
 function hideSetup() { document.getElementById('setup-screen').style.display = 'none'; }
-
-function isLocalhostEnv() {
-  const host = window.location.hostname;
-  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
-}
 
 function openGoalsModal() {
   hideSetup();
@@ -545,8 +533,10 @@ async function manualSync() {
         goals: loadGoals(),
         custom: loadCustomProducts(),
         provider: cfg.provider || '',
-        claudeKey: cfg.claudeKey || '',
-        keys: cfg.keys || {},
+        adviesProvider: cfg.adviesProvider || '',
+        adviesModel: cfg.adviesModel || '',
+        importProvider: cfg.importProvider || '',
+        importModel: cfg.importModel || '',
         vis,
         showDrinks,
       },
@@ -572,7 +562,7 @@ async function manualSync() {
 function refreshProductDB() {
   const btn = document.getElementById('refresh-db-btn');
   btn.textContent = '⏳ Laden...'; btn.disabled = true;
-  localStorage.removeItem('kcalculator_products_v2');
+  clearProductCache();
   localStorage.removeItem('eetdagboek_nevo_v1');
   localStorage.removeItem('kcalculator_off_v1');
   loadNevo().then(() => {
@@ -619,10 +609,6 @@ function initEventListeners() {
   document.getElementById('settings-export-btn')?.addEventListener('click', () => {
     hideSetup();
     exportAllData();
-  });
-  document.getElementById('settings-db-admin-btn')?.addEventListener('click', () => {
-    if (!isLocalhostEnv()) return;
-    window.open('/db-beheer.html', '_blank', 'noopener');
   });
   document.getElementById('cancel-settings')?.addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
   document.getElementById('modal-overlay')?.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
@@ -735,22 +721,18 @@ function initEventListeners() {
   // Setup save
   document.getElementById('setup-save-btn')?.addEventListener('click', async () => {
     const provider = document.querySelector('.provider-btn.active')?.dataset.provider || 'claude';
-    const keys = {
-      claude: document.getElementById('setup-key-claude').value.trim(),
-      gemini: document.getElementById('setup-key-gemini').value.trim(),
-      openai: document.getElementById('setup-key-openai').value.trim(),
-    };
-    const claudeKey = keys[provider];
+    const displayName = document.getElementById('setup-display-name').value.trim();
     const statusEl = document.getElementById('setup-status');
-    const nextCfg = { ...cfg, claudeKey, keys, provider, model: cfg.model };
+    const nextCfg = { ...cfg, claudeKey: '', keys: {}, provider, model: cfg.model };
     setCfg(nextCfg);
     saveCfg(nextCfg);
+    if (cfg.sbUrl && cfg.sbKey && authUser?.id) await updateAuthProfile({ displayName });
     if (cfg.sbUrl && cfg.sbKey && authUser?.id) await syncUserPrefs(true);
     if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');
     else if (!cfg.sbUrl) setSyncStatus('offline', 'lokaal');
-    statusEl.textContent = claudeKey
-      ? (authUser?.id ? '✓ Opgeslagen in je account!' : '✓ Opgeslagen!')
-      : '✓ Opgeslagen (zonder AI-advies)';
+    statusEl.textContent = hasAiProxyConfig()
+      ? (authUser?.id ? '✓ Opgeslagen. AI loopt nu via de beveiligde serverproxy.' : '✓ Opgeslagen. AI loopt via de beveiligde serverproxy.')
+      : '✓ Opgeslagen. Koppel Supabase om de beveiligde AI-proxy te gebruiken.';
     statusEl.className = 'setup-status ok';
     setTimeout(() => { hideSetup(); renderMeals(); }, 600);
   });

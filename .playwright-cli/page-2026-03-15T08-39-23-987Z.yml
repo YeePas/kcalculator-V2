@@ -1,0 +1,418 @@
+- generic [active] [ref=e1]:
+  - dialog "Instellingen en inloggen" [ref=e2]:
+    - generic [ref=e4]:
+      - heading "Kcalculator" [level=2] [ref=e5]
+      - paragraph [ref=e6]: Log in om te beginnen met bijhouden.
+      - generic [ref=e7]:
+        - text: Email
+        - textbox "je@email.nl" [ref=e8]
+      - generic [ref=e9]:
+        - text: Wachtwoord
+        - textbox "minimaal 6 tekens" [ref=e10]
+      - generic [ref=e11]:
+        - button "Inloggen" [ref=e12]
+        - button "Registreren" [ref=e13]
+      - button "🔗 Stuur magic link (inloggen zonder wachtwoord)" [ref=e14] [cursor=pointer]
+      - button "Wachtwoord vergeten?" [ref=e15] [cursor=pointer]
+      - button "↳ Zonder account verder (alleen lokaal, geen sync)" [ref=e17] [cursor=pointer]
+  - dialog "Dagelijkse doelen instellen" [ref=e18]:
+    - generic [ref=e19]:
+      - heading "Dagelijkse doelen" [level=3] [ref=e20]
+      - generic [ref=e21]:
+        - text: Calorieën
+        - spinbutton [ref=e22]
+        - generic [ref=e23]: kcal / dag
+      - generic [ref=e24]:
+        - text: Koolhydraten
+        - spinbutton [ref=e25]
+        - generic [ref=e26]: gram / dag
+      - generic [ref=e27]:
+        - text: Vetten
+        - spinbutton [ref=e28]
+        - generic [ref=e29]: gram / dag
+      - generic [ref=e30]:
+        - text: Eiwitten
+        - spinbutton [ref=e31]
+        - generic [ref=e32]: gram / dag
+      - generic [ref=e33]:
+        - text: Vezels
+        - spinbutton [ref=e34]
+        - generic [ref=e35]: gram / dag
+      - generic [ref=e36]:
+        - text: Drinken / water
+        - spinbutton [ref=e37]
+        - generic [ref=e38]: ml / dag
+      - generic [ref=e39]:
+        - button "Annuleren" [ref=e40]
+        - button "Opslaan" [ref=e41]
+  - dialog "Maaltijden kopiëren van andere dag" [ref=e42]:
+    - generic [ref=e43]:
+      - heading "Kopieer maaltijden" [level=3] [ref=e44]
+      - paragraph [ref=e45]:
+        - text: Neem alle maaltijden van een andere datum over naar
+        - strong [ref=e46]: deze dag
+        - text: . Activiteit en Apple Health data blijven ongewijzigd.
+      - generic [ref=e47]:
+        - text: Kopieer van datum
+        - textbox [ref=e48]
+      - generic [ref=e49]:
+        - button "Annuleren" [ref=e50]
+        - button "Kopieer naar deze dag" [ref=e51]
+  - dialog "Dashboard weekoverzicht" [ref=e52]:
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - heading "📊 Dashboard" [level=3] [ref=e55]
+        - button "✕" [ref=e56] [cursor=pointer]
+      - generic [ref=e57]:
+        - button "Week" [ref=e58]
+        - button "2 weken" [ref=e59]
+        - button "Maand" [ref=e60]
+      - generic [ref=e61]:
+        - generic [ref=e62]: Kcal
+        - generic [ref=e63]: Koolh
+        - generic [ref=e64]: Vet
+        - generic [ref=e65]: Eiwit
+      - generic [ref=e67]: Laden…
+      - button "Sluiten" [ref=e69]
+  - dialog "Favorieten beheren" [ref=e70]:
+    - generic [ref=e71]:
+      - heading "⭐ Favorieten" [level=3] [ref=e72]
+      - paragraph [ref=e73]: Klik op een favoriet om het toe te voegen aan de huidige maaltijd.
+      - button "➕ Nieuw favoriet of product toevoegen (BETA)" [ref=e75]
+      - button "Sluiten" [ref=e77]
+  - dialog "Favoriet bewerken" [ref=e78]:
+    - generic [ref=e79]:
+      - heading "✏️ Favoriet bewerken" [level=3] [ref=e80]
+      - generic [ref=e81]:
+        - text: Naam
+        - textbox [ref=e82]
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - text: Totaal kcal
+          - spinbutton [ref=e85]
+        - generic [ref=e86]:
+          - text: Koolhydraten (g)
+          - spinbutton [ref=e87]
+        - generic [ref=e88]:
+          - text: Vezels (g)
+          - spinbutton [ref=e89]
+        - generic [ref=e90]:
+          - text: Vetten (g)
+          - spinbutton [ref=e91]
+        - generic [ref=e92]:
+          - text: Eiwitten (g)
+          - spinbutton [ref=e93]
+      - generic [ref=e94]:
+        - button "Annuleren" [ref=e95]
+        - button "Opslaan" [ref=e96]
+  - dialog "Gegevens beheren" [ref=e97]:
+    - generic [ref=e98]:
+      - heading "🗑️ Gegevens beheren" [level=3] [ref=e99]
+      - paragraph [ref=e100]: Verwijder opgeslagen data. Dit kan niet ongedaan worden gemaakt.
+      - generic [ref=e101]:
+        - text: Verwijder data van een specifieke datum
+        - textbox [ref=e102]
+        - generic [ref=e103]:
+          - button "🍎 Voeding" [ref=e104]
+          - button "🔥 Activiteit" [ref=e105]
+          - button "🗑️ Beide" [ref=e106]
+      - generic [ref=e107]:
+        - generic [ref=e108]: ⚠️ Gevaarzone
+        - generic [ref=e109]:
+          - button "🗑️ Verwijder alle voedingsdata" [ref=e110]
+          - button "🔥 Verwijder alle activiteitsdata" [ref=e111]
+        - generic [ref=e112]: Verwijdert alles, zowel lokaal als in de cloud.
+      - button "Sluiten" [ref=e114]
+  - dialog "Handmatige dag invoer" [ref=e115]:
+    - generic [ref=e116]:
+      - heading "📝 Handmatige dag invoer" [level=3] [ref=e117]
+      - paragraph [ref=e118]: Vul de totalen in voor de hele dag. Dit voegt één item toe aan de geselecteerde maaltijd.
+      - generic [ref=e119]:
+        - text: Naam
+        - textbox [ref=e120]: Handmatige invoer
+      - generic [ref=e121]:
+        - generic [ref=e122]:
+          - text: Calorieën (kcal)
+          - spinbutton [ref=e123]
+        - generic [ref=e124]:
+          - text: Koolhydraten (g)
+          - spinbutton [ref=e125]
+        - generic [ref=e126]:
+          - text: Vezels (g)
+          - spinbutton [ref=e127]
+        - generic [ref=e128]:
+          - text: Vetten (g)
+          - spinbutton [ref=e129]
+        - generic [ref=e130]:
+          - text: Eiwitten (g)
+          - spinbutton [ref=e131]
+      - generic [ref=e132]:
+        - text: Toevoegen aan maaltijd
+        - combobox [ref=e133]
+      - generic [ref=e134]:
+        - button "Annuleren" [ref=e135]
+        - button "✓ Toevoegen" [ref=e136]
+  - dialog "Item bewerken" [ref=e137]:
+    - generic [ref=e138]:
+      - heading "✏️ Item bewerken" [level=3] [ref=e139]
+      - generic [ref=e140]:
+        - text: Naam
+        - textbox [ref=e141]
+      - generic [ref=e142]:
+        - text: Portiegrootte (gram)
+        - spinbutton [ref=e143]
+      - generic [ref=e144]:
+        - generic [ref=e145]:
+          - text: Calorieën (kcal)
+          - spinbutton [ref=e146]
+        - generic [ref=e147]:
+          - text: Koolhydraten (g)
+          - spinbutton [ref=e148]
+        - generic [ref=e149]:
+          - text: Vezels (g)
+          - spinbutton [ref=e150]
+        - generic [ref=e151]:
+          - text: Vetten (g)
+          - spinbutton [ref=e152]
+        - generic [ref=e153]:
+          - text: Eiwitten (g)
+          - spinbutton [ref=e154]
+      - generic [ref=e155]:
+        - text: Verplaats naar ander moment
+        - generic [ref=e156]:
+          - combobox [ref=e157]
+          - button "↗️ Verplaats" [ref=e158]
+      - generic [ref=e159]:
+        - button "Annuleren" [ref=e160]
+        - button "⭐ Favoriet" [ref=e161]
+        - button "Opslaan" [ref=e162]
+  - dialog "Gerecht bewerken" [ref=e163]:
+    - generic [ref=e164]:
+      - heading "🍽️ Gerecht bewerken" [level=3] [ref=e165]
+      - generic [ref=e166]:
+        - text: Naam
+        - textbox [ref=e167]
+      - generic [ref=e168]:
+        - text: Verplaats naar ander moment
+        - combobox [ref=e169]
+      - generic [ref=e170]:
+        - button "Annuleren" [ref=e171]
+        - button "Opslaan" [ref=e172]
+  - dialog "Nieuw product toevoegen" [ref=e173]:
+    - generic [ref=e174]:
+      - heading "➕ Nieuw product of gerecht" [level=3] [ref=e175]
+      - generic [ref=e176]:
+        - generic [ref=e177]:
+          - text: Snel gerecht herkennen
+          - textbox "Bijv. linzensoep, Caesar salad, Ottolenghi bloemkooltaart of plak een receptlink" [ref=e178]
+          - button "🔎 Analyseer gerecht" [ref=e180]
+        - generic [ref=e181]:
+          - text: Plak voedingswaarden of voer naam in
+          - 'textbox "Plak hier voedingsinfo van een recept of verpakking, bijv.: Calorieën: 92 kcal Eiwit: 10.7g Koolhydraten: 6.4g Vet: 3.3g" [ref=e182]':
+            - /placeholder: "Plak hier voedingsinfo van een recept of verpakking, bijv.:\nCalorieën: 92 kcal\nEiwit: 10.7g\nKoolhydraten: 6.4g\nVet: 3.3g"
+          - generic [ref=e183]:
+            - button "📋 Herken" [ref=e184]
+            - button "📸 Foto" [ref=e185]
+            - combobox "AI model voor fotoherkenning" [ref=e186]
+          - img
+        - generic [ref=e187]:
+          - text: Productnaam
+          - textbox "bijv. Proteïne shake vanille" [ref=e188]
+        - generic [ref=e189]:
+          - text: Of importeer via URL
+          - generic [ref=e190]:
+            - textbox "URL van openfoodfacts.org, ah.nl of jumbo.com" [ref=e191]
+            - button "Importeer" [ref=e192]
+        - generic [ref=e193]:
+          - generic [ref=e194]:
+            - text: Calorieën (kcal)
+            - spinbutton [ref=e195]
+            - generic [ref=e196]: per 100g
+          - generic [ref=e197]:
+            - text: Koolhydraten (g)
+            - spinbutton [ref=e198]
+            - generic [ref=e199]: per 100g
+          - generic [ref=e200]:
+            - text: Vezels (g)
+            - spinbutton [ref=e201]
+            - generic [ref=e202]: per 100g
+          - generic [ref=e203]:
+            - text: Vetten (g)
+            - spinbutton [ref=e204]
+            - generic [ref=e205]: per 100g
+          - generic [ref=e206]:
+            - text: Eiwitten (g)
+            - spinbutton [ref=e207]
+            - generic [ref=e208]: per 100g
+          - generic [ref=e209]:
+            - text: Portie (gram)
+            - spinbutton [ref=e210]: "100"
+            - generic [ref=e211]: hoeveel gram eet je?
+        - generic [ref=e212]:
+          - text: "Opslaan als:"
+          - generic [ref=e213]:
+            - checkbox "Eigen product (autocomplete)" [checked] [ref=e214]
+            - text: Eigen product (autocomplete)
+          - generic [ref=e215]:
+            - checkbox "Favoriet gerecht (⭐ snelkeuze)" [ref=e216]
+            - text: Favoriet gerecht (⭐ snelkeuze)
+      - generic [ref=e217]:
+        - button "Annuleren" [ref=e218]
+        - button "🤖 Vul in met AI" [ref=e219]
+        - button "Toevoegen" [ref=e220]
+  - dialog "Producten koppelen" [ref=e221]:
+    - generic [ref=e222]:
+      - heading "🔍 Producten koppelen" [level=3] [ref=e223]
+      - paragraph [ref=e224]: Hieronder zie je de herkende items. Controleer de matches en pas aan waar nodig.
+      - generic [ref=e225]:
+        - button "Annuleren" [ref=e226]
+        - button "✓ Toevoegen" [ref=e227]
+        - button "✓ Toevoegen én opslaan als gerecht" [ref=e228]
+  - dialog "Apple Health importeren" [ref=e229]:
+    - generic [ref=e230]:
+      - heading "📥 Apple Health importeren" [level=3] [ref=e231]
+      - paragraph [ref=e232]: Importeer je verbruiksdata (actieve + rustverbranding) uit een Apple Health XML-export.
+      - generic [ref=e233]:
+        - text: Bestand
+        - generic [ref=e234]:
+          - text: 📄 Kies een XML-bestand…
+          - button "📄 Kies een XML-bestand…" [ref=e235]
+      - generic [ref=e236]:
+        - generic [ref=e237]: Importeer vanaf datum (optioneel)
+        - textbox [ref=e238]
+        - generic [ref=e239]: Laat leeg om alle data te importeren
+      - generic [ref=e241]: Bezig…
+      - generic [ref=e242]:
+        - button "Annuleren" [ref=e243]
+        - button "🚀 Importeren" [disabled] [ref=e244]
+  - banner [ref=e245]:
+    - button "Ga naar home" [ref=e246]:
+      - img "Kcalculator" [ref=e248]
+      - generic [ref=e249]:
+        - heading "Kcalculator" [level=1] [ref=e250]
+        - text: VOEDINGSTRACKER
+    - generic [ref=e251]:
+      - button "lokaal" [ref=e252]: lokaal
+      - button "Schakel donkere modus" [ref=e253]: 🌙
+      - button "Weekoverzicht openen" [ref=e254]:
+        - img [ref=e255]
+      - button "Product of gerecht toevoegen (BETA)" [ref=e259]:
+        - img [ref=e260]
+      - button "Advies en analyse openen" [ref=e262]:
+        - img [ref=e263]
+      - button "Instellingen openen" [ref=e266]:
+        - img [ref=e267]
+  - link "Ga naar invoer" [ref=e270] [cursor=pointer]:
+    - /url: "#food-input"
+  - generic [ref=e271]:
+    - generic [ref=e272]:
+      - generic [ref=e273]:
+        - button "Vorige dag" [ref=e274]: ‹
+        - button "Spring naar vandaag" [ref=e275]: Vandaag
+        - button "Kopieer maaltijden van een andere dag" [ref=e276]:
+          - img [ref=e277]
+        - text: Vandaag
+        - button "Volgende dag" [ref=e280]: ›
+      - generic [ref=e281]:
+        - generic [ref=e282]:
+          - button "🌅 Ontbijt" [ref=e283]
+          - button "🍎 Ochtendsnack" [ref=e284]
+          - button "☀️ Lunch" [ref=e285]
+          - button "🍪 Middagsnack" [ref=e286]
+          - button "🌙 Avondeten" [ref=e287]
+          - button "🌜 Avondsnack" [ref=e288]
+          - button "💧 Drinken" [ref=e289]
+        - generic [ref=e292]:
+          - textbox "Voedsel invoeren" [ref=e293]:
+            - /placeholder: Wat heb je gegeten?
+          - button "Voeg toe" [ref=e294]:
+            - img [ref=e295]
+    - generic [ref=e297]:
+      - generic [ref=e298]:
+        - generic [ref=e299]:
+          - heading "Dagoverzicht" [level=3] [ref=e300]
+          - button "Doelen aanpassen" [ref=e301]:
+            - img [ref=e302]
+        - generic [ref=e306]:
+          - img [ref=e307]
+          - generic [ref=e310]:
+            - generic [ref=e311]: "0"
+            - generic [ref=e312]: kcal
+        - generic [ref=e314]:
+          - img [ref=e315]
+          - generic [ref=e317]:
+            - generic [ref=e318]: 0g
+            - generic [ref=e319]: macros
+        - generic [ref=e320]:
+          - button "Koolhydraten" [ref=e321]: Koolhydraten
+          - button "Vetten" [ref=e322]: Vetten
+          - button "Eiwitten" [ref=e323]: Eiwitten
+          - button "Vezels" [ref=e324]: Vezels
+          - button "Drinken" [ref=e325]: Drinken
+        - generic [ref=e326]:
+          - generic [ref=e327]:
+            - generic [ref=e328]: Koolhydraten0g
+            - generic [ref=e330]: ↳ w.v. vezels0g
+          - generic [ref=e332]: Vetten0g
+          - generic [ref=e334]: Eiwitten0g
+          - generic [ref=e336]: 💧 Drinken0 ml
+      - heading "Afgelopen 7 dagen" [level=3] [ref=e338]
+    - generic [ref=e339]:
+      - generic [ref=e340]:
+        - heading "📊 Data-overzicht" [level=2] [ref=e341]
+        - button "← Terug" [ref=e342]
+      - generic [ref=e343]:
+        - button "Week" [ref=e344]
+        - button "Maand" [ref=e345]
+        - button "Jaar" [ref=e346]
+      - generic [ref=e348]: Laden…
+    - generic [ref=e349]:
+      - generic [ref=e350]:
+        - heading "💡 Advies & Analyse" [level=2] [ref=e351]
+        - button "← Terug" [ref=e352]
+      - generic [ref=e353]:
+        - button "🥗 Schijf van 5" [ref=e354]
+        - button "📊 Weekrapport" [ref=e355]
+        - button "🍽️ Avondeten" [ref=e356]
+        - button "📋 Daganalyse" [ref=e357]
+        - button "📈 AI Week" [ref=e358]
+      - generic [ref=e359]:
+        - combobox "Model voor advies" [ref=e360]
+        - button "🔄 Vernieuwen" [ref=e361]
+      - generic [ref=e363]: ⏳ Laden…
+    - generic [ref=e364]:
+      - generic [ref=e365]:
+        - heading "➕ Product of gerecht" [level=2] [ref=e366]
+        - button "← Terug" [ref=e368]
+      - generic [ref=e369]:
+        - button "🍽️ Herkennen" [ref=e370]
+        - button "📋 Invullen" [ref=e371]
+        - button "🔗 URL" [ref=e372]
+        - button "📦 Beheer" [ref=e373]
+      - generic "Kies maaltijd voor Smart Import" [ref=e374]:
+        - button "🌅 Ontbijt" [ref=e375]
+        - button "🍎 Ochtendsnack" [ref=e376]
+        - button "☀️ Lunch" [ref=e377]
+        - button "🍪 Middagsnack" [ref=e378]
+        - button "🌙 Avondeten" [ref=e379]
+        - button "🌜 Avondsnack" [ref=e380]
+        - button "💧 Drinken" [ref=e381]
+      - generic [ref=e383]:
+        - generic [ref=e384]:
+          - text: Gerecht, vraag of macro-tekst
+          - textbox "Gerecht, vraag of macro-tekst" [ref=e385]:
+            - /placeholder: Bijv. erwtensoep, 'mag ik de calorieen voor pasta alla norma?', of geplakte macro's
+        - generic [ref=e386]:
+          - button "🔎 Analyseer" [ref=e387]
+          - combobox "AI-provider" [ref=e388]
+          - combobox "Model" [ref=e389]
+  - generic [ref=e391]:
+    - button "✏️ Invoer" [ref=e392]
+    - button "Dag" [ref=e393]:
+      - img [ref=e395]
+      - text: Dag
+    - button "📊 Data" [ref=e401]
+    - button "💡 Advies" [ref=e402]
+    - button "Import" [ref=e403]:
+      - img [ref=e405]
+      - text: Import

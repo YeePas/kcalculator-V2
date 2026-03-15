@@ -138,9 +138,20 @@ export async function goToDay(key) {
 }
 
 /* ── Mobile view switching ───────────────────────────────── */
+function scrollMobileViewToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelectorAll('.layout, .main-col, .sidebar, .data-col, .advies-col, .smart-import-col').forEach(el => {
+    if (typeof el.scrollTo === 'function') el.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
 export function switchMobileView(view, btn) {
   const layout = document.querySelector('.layout');
   if (!layout) return;
+  if (btn?.classList.contains('active')) {
+    scrollMobileViewToTop();
+    return;
+  }
   layout.classList.remove('mobile-view-invoer', 'mobile-view-overzicht', 'mobile-view-data', 'mobile-view-advies', 'mobile-view-import', 'show-advies', 'show-import');
   layout.classList.add('mobile-view-' + view);
   document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));

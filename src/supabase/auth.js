@@ -6,6 +6,56 @@ import { getLocalStorage, getSessionStorage, safeParseFromStorage, safeRemove, s
 
 const AUTH_KEY = 'eetdagboek_auth_v1';
 
+function getDisplayInitials(name) {
+  if (!name || typeof name !== 'string') return '';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  return parts.slice(0, 2).map(part => part[0]?.toUpperCase() || '').join('');
+}
+
+function getAccountLabel() {
+  if (!authUser) return 'Login';
+  const initials = getDisplayInitials(authUser.display_name);
+  if (initials) return initials;
+  const emailPrefix = authUser.email?.split('@')[0] || '';
+  return emailPrefix ? emailPrefix.slice(0, 4) : 'Account';
+}
+
+export async function updateAuthProfile({ displayName }) {
+  if (!cfg.sbUrl || !cfg.sbKey || !authUser?.access_token) {
+    throw new Error('Je moet ingelogd zijn om je profiel aan te passen.');
+  }
+
+  const normalizedName = typeof displayName === 'string' ? displayName.trim() : '';
+  const response = await fetch(`${cfg.sbUrl}/auth/v1/user`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': cfg.sbKey,
+      'Authorization': 'Bearer ' + authUser.access_token,
+    },
+    body: JSON.stringify({
+      data: {
+        full_name: normalizedName,
+      },
+    }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.error_description || payload?.msg || 'Profiel opslaan mislukt');
+  }
+
+  const updatedUser = payload?.user || payload || {};
+  _setAuthUser({
+    ...authUser,
+    display_name: updatedUser.user_metadata?.full_name || updatedUser.user_metadata?.name || normalizedName,
+  });
+  safeSetJson(getLocalStorage() || getSessionStorage(), AUTH_KEY, authUser);
+  updateAccountUI();
+  return authUser;
+}
+
 function assertAuthConfig() {
   if (!cfg.sbUrl || !cfg.sbKey) {
     throw new Error('Supabase is niet goed ingesteld.');
@@ -76,6 +126,7 @@ export function setAuthUser(session) {
     _setAuthUser({
       id: user.id || session.user?.id,
       email: user.email || session.user?.email,
+      display_name: user.user_metadata?.full_name || user.user_metadata?.name || session.user?.user_metadata?.full_name || session.user?.user_metadata?.name || '',
       access_token: session.access_token,
       refresh_token: session.refresh_token,
     });
@@ -103,10 +154,12 @@ export function updateAccountUI() {
   const el = document.getElementById('account-btn');
   if (!el) return;
   if (authUser) {
-    el.textContent = '👤 ' + (authUser.email?.split('@')[0] || 'Account');
+    el.dataset.accountState = 'user';
+    el.textContent = '👤 ' + getAccountLabel();
     el.title = authUser.email || '';
     el.style.display = '';
   } else {
+    el.dataset.accountState = 'guest';
     el.textContent = '👤 Login';
     el.title = 'Niet ingelogd';
     el.style.display = cfg.sbUrl ? '' : 'none';

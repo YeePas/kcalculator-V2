@@ -4,12 +4,12 @@
 import { cfg, localData, currentDate, nevoReady, selMeal } from '../state.js';
 import { MEAL_LABELS } from '../constants.js';
 import { dateKey } from '../utils.js';
-import { aiCall } from './providers.js';
+import { aiCall, assertAiAvailable } from './providers.js';
 import { searchNevo } from '../products/database.js';
 import { loadDay } from '../supabase/data.js';
 
 export async function parseFood(text, meal) {
-  if (!cfg.claudeKey && !(cfg.keys && cfg.keys[cfg.provider])) throw new Error('Geen API key ingesteld');
+  assertAiAvailable();
   const isDrink = meal === 'drinken';
   const provider = cfg.provider || 'claude';
 
