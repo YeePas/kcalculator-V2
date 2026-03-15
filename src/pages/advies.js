@@ -11,10 +11,17 @@ import { loadDay } from '../supabase/data.js';
 import { aiCall } from '../ai/providers.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
 import { renderSchijfAnalyse } from './schijf.js';
-import { renderWeekrapport } from './weekrapport.js';
 import { switchMobileView } from '../ui/misc.js';
 
+const LOCAL_ADVIES_TABS = new Set(['schijf']);
+const AI_ADVIES_TABS = new Set(['avond', 'dag', 'week']);
+
+function getSafeAdviesTab(tab) {
+  return LOCAL_ADVIES_TABS.has(tab) || AI_ADVIES_TABS.has(tab) ? tab : 'schijf';
+}
+
 export function openAdviesModal() {
+  setActiveAdviesTab(getSafeAdviesTab(activeAdviesTab));
   updateAdviesModelSelect();
   const layout = document.querySelector('.layout');
   if (!layout) return;
@@ -39,10 +46,11 @@ export function closeAdviesPage() {
 }
 
 export function showAdviesContent() {
-  const localTabs = ['schijf', 'weekrapport'];
-  if (localTabs.includes(activeAdviesTab)) {
-    if (activeAdviesTab === 'schijf') renderSchijfAnalyse();
-    else if (activeAdviesTab === 'weekrapport') renderWeekrapport();
+  const safeTab = getSafeAdviesTab(activeAdviesTab);
+  if (safeTab !== activeAdviesTab) setActiveAdviesTab(safeTab);
+
+  if (LOCAL_ADVIES_TABS.has(safeTab)) {
+    if (safeTab === 'schijf') renderSchijfAnalyse();
   } else {
     showAdviesPrompt();
   }
@@ -62,8 +70,8 @@ export function updateAdviesModelSelect() {
   const sel = document.getElementById('advies-model-select');
   if (!sel) return;
   const opts = [
-    {value:'claude|claude-haiku-4-5-20251001', label:'Claude Haiku'},
-    {value:'claude|claude-sonnet-4-5',         label:'Claude Sonnet'},
+    {value:'claude|claude-haiku-4-5-20250514', label:'Claude Haiku'},
+    {value:'claude|claude-sonnet-4-5-20250514', label:'Claude Sonnet'},
     {value:'gemini|gemini-2.5-flash',           label:'Gemini Flash (gratis)'},
     {value:'gemini|gemini-2.5-pro',             label:'Gemini Pro'},
     {value:'openai|gpt-4o-mini',                label:'GPT-4o mini'},
@@ -76,8 +84,9 @@ export function updateAdviesModelSelect() {
   const saved = cfg.adviesProvider && cfg.adviesModel ? cfg.adviesProvider + '|' + cfg.adviesModel : null;
   if (saved && available.some(o => o.value === saved)) sel.value = saved;
   else {
-    const def = (cfg.provider || 'claude') + '|' + (cfg.model || 'claude-haiku-4-5-20251001');
+    const def = (cfg.provider || 'claude') + '|' + (cfg.model || 'claude-haiku-4-5-20250514');
     if (available.some(o => o.value === def)) sel.value = def;
+    else if (available[0]) sel.value = available[0].value;
   }
   _syncAdviesModel();
 }
@@ -113,12 +122,17 @@ function sanitizeAdviesHTML(unsafeHtml) {
 }
 
 export async function runAdvies(tab) {
-  setActiveAdviesTab(tab);
-  document.querySelectorAll('.advies-page-tabs .advies-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  const safeTab = getSafeAdviesTab(tab);
+  setActiveAdviesTab(safeTab);
+  document.querySelectorAll('.advies-page-tabs .advies-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === safeTab));
+  if (LOCAL_ADVIES_TABS.has(safeTab)) {
+    showAdviesContent();
+    return;
+  }
   document.getElementById('advies-body').innerHTML = '<div class="advies-loading"><span class="spin">⏳</span> Genereren…</div>';
   try {
-    if (tab === 'avond') await getAvondAdvies();
-    else if (tab === 'dag') await getDagAdvies();
+    if (safeTab === 'avond') await getAvondAdvies();
+    else if (safeTab === 'dag') await getDagAdvies();
     else await getWeekAdvies();
   } catch (e) {
     const body = document.getElementById('advies-body');

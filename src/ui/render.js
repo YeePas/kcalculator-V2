@@ -90,7 +90,7 @@ export function _renderDayUI(day) {
   renderSummary(day);
   // These are called from main.js or other modules, fire them via events
   import('../ui/charts.js').then(m => { m.renderWeekSpark(); });
-  import('../ui/misc.js').then(m => { m.renderHistory(); m.updateStreak(); });
+  import('../ui/misc.js').then(m => { m.renderHistory(); });
 }
 
 export function toggleMealSection(header) {

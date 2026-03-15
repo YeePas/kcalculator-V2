@@ -174,6 +174,19 @@
 /* ── Match Review Modal ───────────────────────────────────── */
 
 #match-modal .modal { max-width: 560px; }
+#match-modal .modal-btns {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 0.55rem;
+  align-items: start;
+}
+#match-modal .modal-btns .btn-primary,
+#match-modal .modal-btns .btn-secondary {
+  min-height: 0;
+  padding: 0.72rem 0.9rem;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
 .match-intro { font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.5; }
 .match-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; max-height: 55vh; overflow-y: auto; }
 .match-item {
@@ -198,18 +211,35 @@
 }
 .match-db-select:focus { outline: none; border-color: var(--accent); }
 .match-portie-row {
-  display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem; font-size: 0.82rem;
+  display: flex; align-items: center; gap: 0.5rem; margin-top: 0.45rem; font-size: 0.82rem; flex-wrap: wrap;
 }
 .match-portie-input {
-  width: 60px; border: 1px solid var(--border); border-radius: 12px;
+  width: 72px; border: 1px solid var(--border); border-radius: 12px;
   padding: 0.42rem 0.5rem; font-size: 0.82rem; text-align: center;
   background: var(--surface-strong); color: var(--text);
 }
 .match-portie-input:focus { outline: none; border-color: var(--accent); }
+.match-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
 .match-manual-btn {
-  background: none; border: 1px dashed var(--border); border-radius: 999px;
-  padding: 0.25rem 0.6rem; font-size: 0.75rem; color: var(--accent); cursor: pointer;
-  margin-top: 0.4rem; transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  padding: 0.22rem 0.68rem;
+  font-size: 0.73rem;
+  line-height: 1.2;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
 .match-manual-btn:hover { border-color: var(--accent); background: var(--accent-light); }
 .match-manual-grid {
@@ -221,6 +251,45 @@
 }
 .match-manual-grid input:focus { outline: none; border-color: var(--accent); }
 .match-manual-grid label { font-size: 0.62rem; color: var(--tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
+
+@media (max-width: 640px) {
+  #match-modal .modal {
+    padding: 1.25rem;
+  }
+
+  #match-modal .modal-btns {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #match-add-and-save-btn {
+    grid-column: 1 / -1;
+  }
+
+  .match-item-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .match-db-select {
+    font-size: 0.78rem;
+  }
+
+  .match-portie-row {
+    gap: 0.42rem;
+  }
+
+  .match-item-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .match-manual-btn {
+    width: 100%;
+    min-height: 32px;
+    padding: 0.24rem 0.55rem;
+    white-space: normal;
+  }
+}
 
 /* ── Import Modal ─────────────────────────────────────────── */
 

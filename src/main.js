@@ -63,7 +63,7 @@ import { renderSummary } from './ui/summary.js';
 import { renderDashboard, renderWeekSpark, renderMacroDonut } from './ui/charts.js';
 import { setSyncStatus } from './ui/sync-status.js';
 import {
-  renderHistory, renderQuickFavs, updateStreak,
+  renderHistory, renderQuickFavs,
   applyDark, applyVis, deleteItem, deleteRecipeGroup,
   goToDay, switchMobileView,
 } from './ui/misc.js';
@@ -715,7 +715,10 @@ function initEventListeners() {
       showAdviesContent();
     });
   });
-  document.getElementById('advies-refresh-btn')?.addEventListener('click', () => runAdvies(activeAdviesTab));
+  document.getElementById('advies-refresh-btn')?.addEventListener('click', () => {
+    if (activeAdviesTab === 'schijf') showAdviesContent();
+    else runAdvies(activeAdviesTab);
+  });
   document.getElementById('advies-back-btn')?.addEventListener('click', closeAdviesPage);
   initAdviesListeners();
 
@@ -989,6 +992,34 @@ function initEventListeners() {
   initAutocomplete();
 }
 
+function inferNumericInputMode(input) {
+  const step = input.getAttribute('step');
+  return step && (step === 'any' || step.includes('.')) ? 'decimal' : 'numeric';
+}
+
+function applyNumericInputModes(root = document) {
+  root.querySelectorAll?.('input[type="number"]').forEach(input => {
+    input.setAttribute('inputmode', inferNumericInputMode(input));
+    input.setAttribute('enterkeyhint', 'done');
+  });
+}
+
+function initNumericInputModes() {
+  applyNumericInputModes();
+
+  const observer = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      mutation.addedNodes.forEach(node => {
+        if (!(node instanceof HTMLElement)) return;
+        if (node.matches?.('input[type="number"]')) applyNumericInputModes(node.parentElement || document);
+        else applyNumericInputModes(node);
+      });
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
 // ══════════════════════════════════════════════════════════════
 // Boot Sequence
 // ══════════════════════════════════════════════════════════════
@@ -998,6 +1029,7 @@ function initEventListeners() {
     applyDark(localStorage.getItem(DARK_KEY) === '1');
     applyVis();
     setCfg(loadCfg());
+    initNumericInputModes();
     initEventListeners();
 
     await loadNevo();

@@ -4,7 +4,7 @@ import { localData, currentDate, goals } from '../state.js';
 import { dateKey, r1, dayTotals } from '../utils.js';
 import { loadDay } from '../supabase/data.js';
 import { MEAL_NAMES } from '../constants.js';
-import { schijfDagScore, getAdviesTeksten } from './schijf.js';
+import { schijfDagScore, getAdviesTeksten, SCHIJF_CATEGORY_META } from './schijf.js';
 
 export async function renderWeekrapport() {
   const body = document.getElementById('advies-body');
@@ -33,6 +33,8 @@ export async function renderWeekrapport() {
   const avg = (arr, fn) => arr.reduce((s, x) => s + fn(x), 0) / arr.length;
   const avgKcal = Math.round(avg(activeDays, d => d.tot.cals));
   const avgSchijf = Math.round(avg(activeDays, d => d.schijf.score));
+  const avgCoverage = Math.round(avg(activeDays, d => d.schijf.confidencePct));
+  const avgCoveredBlocks = r1(avg(activeDays, d => d.schijf.coveredCount));
   const avgCarbs = r1(avg(activeDays, d => d.tot.carbs));
   const avgFat = r1(avg(activeDays, d => d.tot.fat));
   const avgProt = r1(avg(activeDays, d => d.tot.prot));
@@ -43,7 +45,7 @@ export async function renderWeekrapport() {
   const pctFat = totalMacroG ? Math.round(avgFat / totalMacroG * 100) : 0;
   const pctProt = 100 - pctCarbs - pctFat;
 
-  const catNames = { groente:'Groente', fruit:'Fruit', volkoren:'Volkoren', zuivel:'Zuivel', eiwit:'Eiwitbronnen', onverzadigd_vet:'Gezonde vetten', beperken:'Beperking ongezond' };
+  const catNames = Object.fromEntries(Object.entries(SCHIJF_CATEGORY_META).map(([key, meta]) => [key, meta.naam]));
   const avgCatScores = {};
   for (const cat of Object.keys(catNames)) {
     avgCatScores[cat] = Math.round(avg(activeDays, d => d.schijf.scores[cat]) * 100);
@@ -91,11 +93,22 @@ export async function renderWeekrapport() {
     <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
       <div style="flex:1;text-align:center;padding:0.7rem;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
         <div style="font-size:1.6rem;font-weight:700;font-family:var(--font-display);color:${schijfColor}">${avgSchijf}%</div>
-        <div style="font-size:0.65rem;color:var(--muted)">Schijf van 5</div>
+        <div style="font-size:0.65rem;color:var(--muted)">Schijf-check</div>
       </div>
       <div style="flex:1;text-align:center;padding:0.7rem;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
         <div style="font-size:1.6rem;font-weight:700;font-family:var(--font-display)">${avgKcal}</div>
         <div style="font-size:0.65rem;color:var(--muted)">gem. kcal/dag</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+      <div style="flex:1;text-align:center;padding:0.7rem;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+        <div style="font-size:1.35rem;font-weight:700;font-family:var(--font-display);color:${avgCoverage >= 70 ? 'var(--green)' : avgCoverage >= 45 ? '#e8a020' : 'var(--danger)'}">${avgCoverage}%</div>
+        <div style="font-size:0.65rem;color:var(--muted)">analyse-dekking</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:0.7rem;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+        <div style="font-size:1.35rem;font-weight:700;font-family:var(--font-display)">${avgCoveredBlocks}/6</div>
+        <div style="font-size:0.65rem;color:var(--muted)">bouwstenen geraakt</div>
       </div>
     </div>
 
