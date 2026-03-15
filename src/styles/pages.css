@@ -125,7 +125,7 @@
   flex: 0 0 auto;
   width: auto;
   min-width: 0;
-  padding: 0.62rem 0.92rem;
+  padding: 0.58rem 0.86rem;
   font-size: 0.82rem;
 }
 .smart-inline-select { border: 1px solid var(--border); border-radius: 999px; padding: 0.45rem 0.75rem; font-family: var(--font-body); font-size: 0.75rem; font-weight: 700; background: color-mix(in srgb, var(--surface-strong) 84%, var(--surface-soft)); color: var(--muted); max-width: 140px; }

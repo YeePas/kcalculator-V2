@@ -1,6 +1,6 @@
 /* ── Smart Import: Photo Recognition ─────────────────────── */
 
-import { cfg } from '../state.js';
+import { cfg, authUser } from '../state.js';
 import { resizeImage } from '../products/custom-photo.js';
 import { estimateDishFromAIResponse } from '../ai/dish-import-service.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
@@ -36,7 +36,7 @@ export async function handlePhotoUpload(file, renderCard, feedbackNear) {
       headers: {
         'Content-Type': 'application/json',
         'apikey': cfg.sbKey,
-        'Authorization': 'Bearer ' + cfg.sbKey,
+        'Authorization': 'Bearer ' + (authUser?.access_token || cfg.sbKey),
       },
       body: JSON.stringify({
         provider,

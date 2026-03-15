@@ -23,6 +23,61 @@ function getSecret(name: string) {
   return Deno.env.get(name)?.trim() || '';
 }
 
+function base64ToBytes(value: string) {
+  const binary = atob(value);
+  return Uint8Array.from(binary, ch => ch.charCodeAt(0));
+}
+
+async function importEncryptionKey(secret: string) {
+  const raw = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
+  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+
+async function decryptApiKey(secret: string, encryptedKey: string, iv: string) {
+  const key = await importEncryptionKey(secret);
+  const plaintext = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: base64ToBytes(iv) },
+    key,
+    base64ToBytes(encryptedKey),
+  );
+  return new TextDecoder().decode(plaintext);
+}
+
+async function getCurrentUser(baseUrl: string, anonKey: string, authHeader: string) {
+  const response = await fetch(`${baseUrl}/auth/v1/user`, {
+    headers: {
+      'apikey': anonKey,
+      'Authorization': authHeader,
+    },
+  });
+  if (!response.ok) return null;
+  return response.json();
+}
+
+async function getUserStoredKey(provider: string, authHeader: string) {
+  if (!authHeader.startsWith('Bearer ')) return '';
+  const supabaseUrl = getSecret('SUPABASE_URL');
+  const supabaseAnonKey = getSecret('SUPABASE_ANON_KEY');
+  const encryptionSecret = getSecret('AI_KEY_ENCRYPTION_SECRET');
+  if (!supabaseUrl || !supabaseAnonKey || !encryptionSecret) return '';
+
+  const user = await getCurrentUser(supabaseUrl, supabaseAnonKey, authHeader);
+  const userId = String(user?.id || '');
+  if (!userId) return '';
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/user_ai_keys?user_id=eq.${userId}&provider=eq.${provider}&select=encrypted_key,iv&limit=1`, {
+    headers: {
+      'apikey': supabaseAnonKey,
+      'Authorization': authHeader,
+    },
+  });
+  if (!response.ok) return '';
+  const rows = await response.json().catch(() => []);
+  const row = rows?.[0];
+  if (!row?.encrypted_key || !row?.iv) return '';
+  return decryptApiKey(encryptionSecret, row.encrypted_key, row.iv);
+}
+
 async function callGemini(model: string, key: string, prompt: string, maxTokens: number) {
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
     method: 'POST',
@@ -180,11 +235,12 @@ Deno.serve(async (req) => {
     const useWebSearch = Boolean(body.useWebSearch);
     const imageData = body.imageData ? String(body.imageData) : '';
     const imageMimeType = body.imageMimeType ? String(body.imageMimeType) : 'image/jpeg';
+    const authHeader = req.headers.get('Authorization') || '';
 
     if (!user) return json({ error: 'Missing user prompt' }, 400);
 
     if (provider === 'gemini') {
-      const key = getSecret('GEMINI_API_KEY');
+      const key = await getUserStoredKey('gemini', authHeader) || getSecret('GEMINI_API_KEY');
       if (!key) return json({ error: 'Supabase secret GEMINI_API_KEY ontbreekt' }, 500);
       const text = imageData
         ? await callGeminiVision(String(body.model || 'gemini-2.5-flash'), key, system ? `${system}\n\n${user}` : user, maxTokens, imageData, imageMimeType)
@@ -193,7 +249,7 @@ Deno.serve(async (req) => {
     }
 
     if (provider === 'openai') {
-      const key = getSecret('OPENAI_API_KEY');
+      const key = await getUserStoredKey('openai', authHeader) || getSecret('OPENAI_API_KEY');
       if (!key) return json({ error: 'Supabase secret OPENAI_API_KEY ontbreekt' }, 500);
       const text = imageData
         ? await callOpenAIVision(String(body.model || 'gpt-4o-mini'), key, user, maxTokens, imageData, imageMimeType)
@@ -201,7 +257,7 @@ Deno.serve(async (req) => {
       return json({ text });
     }
 
-    const key = getSecret('ANTHROPIC_API_KEY');
+    const key = await getUserStoredKey('claude', authHeader) || getSecret('ANTHROPIC_API_KEY');
     if (!key) return json({ error: 'Supabase secret ANTHROPIC_API_KEY ontbreekt' }, 500);
     const text = imageData
       ? await callClaudeVision(String(body.model || 'claude-haiku-4-5-20250514'), key, user, maxTokens, imageData, imageMimeType)

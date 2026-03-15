@@ -79,7 +79,7 @@
           <div class="setup-section-head">
             <div>
               <h3>AI & Advies</h3>
-              <p>Kies je model. AI draait via een beveiligde serverproxy in plaats van browser-API keys.</p>
+              <p>Kies je model. Je kunt je eigen AI-sleutels hier invullen; die worden versleuteld in Supabase opgeslagen.</p>
             </div>
           </div>
           <div class="setup-field">
@@ -108,7 +108,22 @@
               </button>
             </div>
           </div>
-          <div class="setup-hint">De provider-sleutels horen voortaan als Supabase Function Secrets op de server te staan, niet meer in de app of browser.</div>
+          <div class="setup-field" id="key-field-claude">
+            <label>Claude API Key</label>
+            <input type="password" id="setup-key-claude" placeholder="sk-ant-…">
+            <div class="setup-hint" id="setup-key-status-claude">Log in om veilig op te slaan</div>
+          </div>
+          <div class="setup-field" id="key-field-gemini">
+            <label>Gemini API Key</label>
+            <input type="password" id="setup-key-gemini" placeholder="AIza…">
+            <div class="setup-hint" id="setup-key-status-gemini">Log in om veilig op te slaan</div>
+          </div>
+          <div class="setup-field" id="key-field-openai">
+            <label>OpenAI API Key</label>
+            <input type="password" id="setup-key-openai" placeholder="sk-…">
+            <div class="setup-hint" id="setup-key-status-openai">Log in om veilig op te slaan</div>
+          </div>
+          <div class="setup-hint">De sleutel zelf blijft niet in de browser staan. Alleen de server kan hem ontsleutelen en gebruiken.</div>
         </section>
 
         <section class="setup-section-card">

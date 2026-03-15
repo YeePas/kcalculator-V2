@@ -38,6 +38,7 @@ import {
   syncUserPrefs,
   loadUserPrefs,
 } from './supabase/sync.js';
+import { fetchUserAiKeyStatuses, saveUserAiKey } from './supabase/user-ai-keys.js';
 
 // ── Products ─────────────────────────────────────────────────
 import { clearProductCache, loadNevo, searchNevo } from './products/database.js';
@@ -462,6 +463,15 @@ function showSetup(panel) {
 
   if (panel === 'user' || authUser) {
     document.getElementById('setup-display-name').value = authUser?.display_name || '';
+    ['claude', 'gemini', 'openai'].forEach(provider => {
+      const input = document.getElementById(`setup-key-${provider}`);
+      const status = document.getElementById(`setup-key-status-${provider}`);
+      if (input) {
+        input.value = '';
+        input.placeholder = provider === 'gemini' ? 'AIza…' : 'sk-…';
+      }
+      if (status) status.textContent = authUser ? 'Laden…' : 'Log in om veilig op te slaan';
+    });
     document.getElementById('setup-status').textContent = '';
     setProviderUI(cfg.provider || 'claude');
     const greeting = document.getElementById('setup-user-greeting');
@@ -475,6 +485,21 @@ function showSetup(panel) {
       }
     }
     if (userEl) userEl.style.display = '';
+    if (authUser?.access_token && cfg.sbUrl && cfg.sbKey) {
+      fetchUserAiKeyStatuses().then(statuses => {
+        ['claude', 'gemini', 'openai'].forEach(provider => {
+          const input = document.getElementById(`setup-key-${provider}`);
+          const status = document.getElementById(`setup-key-status-${provider}`);
+          if (input) input.placeholder = statuses[provider] ? 'Veilig opgeslagen in Supabase' : (provider === 'gemini' ? 'AIza…' : 'sk-…');
+          if (status) status.textContent = statuses[provider] ? 'Veilig opgeslagen' : 'Nog geen sleutel opgeslagen';
+        });
+      }).catch(() => {
+        ['claude', 'gemini', 'openai'].forEach(provider => {
+          const status = document.getElementById(`setup-key-status-${provider}`);
+          if (status) status.textContent = 'Kon status niet laden';
+        });
+      });
+    }
   } else {
     const authSt = document.getElementById('auth-status'); if (authSt) authSt.textContent = '';
     const ae = document.getElementById('auth-email'); if (ae) ae.value = '';
@@ -489,6 +514,10 @@ function showSetup(panel) {
 
 function setProviderUI(provider) {
   document.querySelectorAll('.provider-btn').forEach(b => b.classList.toggle('active', b.dataset.provider === provider));
+  ['claude', 'gemini', 'openai'].forEach(p => {
+    const el = document.getElementById('key-field-' + p);
+    if (el) el.style.display = '';
+  });
   updateInlineModelSelect(provider);
 }
 
@@ -726,6 +755,16 @@ function initEventListeners() {
     const nextCfg = { ...cfg, claudeKey: '', keys: {}, provider, model: cfg.model };
     setCfg(nextCfg);
     saveCfg(nextCfg);
+    if (cfg.sbUrl && cfg.sbKey && authUser?.access_token) {
+      for (const providerName of ['claude', 'gemini', 'openai']) {
+        const input = document.getElementById(`setup-key-${providerName}`);
+        const rawValue = input?.value?.trim() || '';
+        if (input && rawValue) {
+          await saveUserAiKey(providerName, rawValue);
+          input.value = '';
+        }
+      }
+    }
     if (cfg.sbUrl && cfg.sbKey && authUser?.id) await updateAuthProfile({ displayName });
     if (cfg.sbUrl && cfg.sbKey && authUser?.id) await syncUserPrefs(true);
     if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');

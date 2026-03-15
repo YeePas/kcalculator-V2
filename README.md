@@ -75,6 +75,39 @@ Daarna gebruikt de app automatisch deze proxy via je bestaande:
 
 Zonder deze function blijft URL-import werken, maar retailerpagina's kunnen dan terugvallen op een schatting omdat browsers zulke pagina's vaak niet direct mogen uitlezen.
 
-## Belangrijke noot
+## Veilige AI-sleutels via Supabase
 
-AI-verkeer draait nu nog client-side. Voor privégebruik is dat werkbaar, maar voor een publieke productie-app is een backend of edge function veiliger zodat gebruikers-API-keys niet in de browser blijven.
+Deze repo ondersteunt nu een veiligere flow waarbij gebruikers hun eigen AI-sleutel in de app invullen, terwijl:
+
+- de sleutel versleuteld in Supabase wordt opgeslagen
+- de browser de ruwe sleutel niet bewaart
+- alleen Edge Functions de sleutel kunnen ontsleutelen en gebruiken
+
+Wat je hiervoor nodig hebt:
+
+1. Draai de database migration voor `user_ai_keys`
+2. Zet een encryptiesleutel in Supabase secrets
+3. Deploy de Edge Functions
+
+Voorbeeld:
+
+```bash
+supabase link --project-ref cykoqtzdoypqrxilqoer
+supabase db push
+supabase secrets set AI_KEY_ENCRYPTION_SECRET="kies-hier-een-lange-willekeurige-geheime-string"
+supabase functions deploy ai-proxy
+supabase functions deploy save-user-ai-key
+```
+
+Optioneel kun je daarnaast ook globale fallback-sleutels op serverniveau zetten:
+
+```bash
+supabase secrets set ANTHROPIC_API_KEY="..."
+supabase secrets set OPENAI_API_KEY="..."
+supabase secrets set GEMINI_API_KEY="..."
+```
+
+Dan geldt:
+
+- heeft een gebruiker een eigen opgeslagen sleutel, dan gebruikt de app die
+- anders valt de app terug op de globale project-sleutel als die bestaat

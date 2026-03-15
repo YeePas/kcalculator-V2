@@ -1,8 +1,7 @@
 /* ── AI Provider Routing ───────────────────────────────────── */
 /* Faithful port of the original aiCall / claudeCall from index.html */
 
-import { cfg } from '../state.js';
-import { saveCfg } from '../storage.js';
+import { cfg, authUser } from '../state.js';
 
 export function hasAiProxyConfig() {
   return Boolean(cfg.sbUrl && cfg.sbKey);
@@ -31,7 +30,7 @@ export async function aiCall(provider, system, user, maxTokens = 1400, useWebSea
     headers: {
       'Content-Type': 'application/json',
       'apikey': cfg.sbKey,
-      'Authorization': 'Bearer ' + cfg.sbKey,
+      'Authorization': 'Bearer ' + (authUser?.access_token || cfg.sbKey),
     },
     body: JSON.stringify({
       provider: resolvedProvider,

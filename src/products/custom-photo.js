@@ -1,6 +1,6 @@
 /* ── Custom Photo Nutrition Parsing ───────────────────────── */
 
-import { cfg } from '../state.js';
+import { cfg, authUser } from '../state.js';
 import { fillCustomFields } from './custom-ui.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
 
@@ -73,7 +73,7 @@ export async function handleCustomPhoto(file) {
       headers: {
         'Content-Type': 'application/json',
         'apikey': cfg.sbKey,
-        'Authorization': 'Bearer ' + cfg.sbKey,
+        'Authorization': 'Bearer ' + (authUser?.access_token || cfg.sbKey),
       },
       body: JSON.stringify({
         provider,
