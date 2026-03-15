@@ -47,6 +47,40 @@ Voor GitHub Pages moet je in GitHub nog even controleren:
 
 Het custom domain bestand staat in [public/CNAME](/Users/joepwillemsen/Documents/GitHub/kcalculator/public/CNAME).
 
+## Deploy naar Supabase via GitHub Actions
+
+Deze repo bevat ook een workflow in [.github/workflows/deploy-supabase.yml](/Users/joepwillemsen/Documents/GitHub/kcalculator-V2/.github/workflows/deploy-supabase.yml).
+
+Die doet automatisch:
+
+- database migrations pushen
+- `ai-proxy` deployen
+- `save-user-ai-key` deployen
+- `url-import-proxy` deployen
+
+Je hoeft daarvoor geen lokale Supabase te draaien. Wel moet je in GitHub eenmalig deze repository secrets instellen:
+
+- `SUPABASE_ACCESS_TOKEN`
+- `SUPABASE_DB_PASSWORD`
+- `SUPABASE_PROJECT_REF`
+
+Waar vind je die?
+
+- `SUPABASE_PROJECT_REF`: in je Supabase project URL of project settings
+- `SUPABASE_DB_PASSWORD`: het database-wachtwoord van je Supabase project
+- `SUPABASE_ACCESS_TOKEN`: maak je aan in Supabase via `Account -> Access Tokens`
+
+In GitHub:
+
+1. Ga naar `Settings -> Secrets and variables -> Actions`
+2. Kies `New repository secret`
+3. Voeg de 3 secrets hierboven toe
+
+Daarna geldt:
+
+- push naar `main` = website deployt via GitHub Pages
+- Supabase functions en migrations deployen automatisch mee via GitHub Actions
+
 ## Omgevingsvariabelen
 
 Optioneel kun je tijdens build/deploy deze variabelen meegeven:
@@ -90,6 +124,12 @@ Wat je hiervoor nodig hebt:
 3. Deploy de Edge Functions
 
 Voorbeeld:
+
+Die migration en functions kunnen nu via GitHub Actions mee-deployen. Wat je nog steeds eenmalig moet doen in Supabase zelf:
+
+- `AI_KEY_ENCRYPTION_SECRET` toevoegen bij `Project Settings -> Edge Functions -> Secrets`
+
+Als je het toch handmatig wilt doen met de Supabase CLI:
 
 ```bash
 supabase link --project-ref cykoqtzdoypqrxilqoer
