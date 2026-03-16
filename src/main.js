@@ -45,6 +45,7 @@ import { fetchUserAiKeyStatuses, saveUserAiKey } from './supabase/user-ai-keys.j
 import { clearProductCache, loadNevo, searchNevo } from './products/database.js';
 import { parseTextToItems, matchItemToNevo, buildMealItem } from './products/matcher.js';
 import { isLiquidLike } from './products/density.js';
+import { SUPERMARKET_OPTIONS, normalizeSupermarketFilters } from './products/supermarket-filter.js';
 import {
   openCustomModal, closeCustomModal, updatePhotoModelSelect,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
@@ -491,6 +492,7 @@ function showSetup(panel) {
     });
     document.getElementById('setup-status').textContent = '';
     setProviderUI(cfg.provider || 'claude');
+    syncSupermarketFilterUI(cfg.supermarketExclusions || []);
     const greeting = document.getElementById('setup-user-greeting');
     if (greeting) {
       if (authUser) {
@@ -502,6 +504,7 @@ function showSetup(panel) {
       }
     }
     if (userEl) userEl.style.display = '';
+    activateSettingsTab('profiel');
     if (authUser?.access_token && cfg.sbUrl && cfg.sbKey) {
       fetchUserAiKeyStatuses().then(statuses => {
         ['claude', 'gemini', 'openai'].forEach(provider => {
@@ -549,6 +552,19 @@ function setProviderUI(provider) {
     if (el) el.style.display = '';
   });
   updateInlineModelSelect(provider);
+}
+
+function syncSupermarketFilterUI(excludedFilters = []) {
+  const excluded = new Set(normalizeSupermarketFilters(excludedFilters));
+  SUPERMARKET_OPTIONS.forEach(option => {
+    const input = document.getElementById(`supermarket-filter-${option.id}`);
+    if (input) input.checked = !excluded.has(option.id); // checked = NIET uitgesloten
+  });
+}
+
+function activateSettingsTab(tabId) {
+  document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+  document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t.id === `settings-tab-${tabId}`));
 }
 
 function hideSetup() { document.getElementById('setup-screen').style.display = 'none'; }
@@ -610,6 +626,7 @@ async function manualSync() {
         adviesModel: cfg.adviesModel || '',
         importProvider: cfg.importProvider || '',
         importModel: cfg.importModel || '',
+        supermarketExclusions: cfg.supermarketExclusions || [],
         vis,
         showDrinks,
       },
@@ -797,6 +814,18 @@ function initEventListeners() {
     btn.addEventListener('click', () => setProviderUI(btn.dataset.provider));
   });
 
+  // Settings sidebar tab switching
+  document.querySelectorAll('.settings-nav-item').forEach(btn => {
+    btn.addEventListener('click', () => activateSettingsTab(btn.dataset.tab));
+  });
+
+  // Eigen producten tab → open smart import manage
+  document.getElementById('settings-open-custom-btn')?.addEventListener('click', () => {
+    hideSetup();
+    openSmartImportPage();
+    setTimeout(() => document.querySelector('.smart-import-tab[data-tab="manage"]')?.click(), 50);
+  });
+
   // Setup save
   document.getElementById('setup-save-btn')?.addEventListener('click', async () => {
     const saveBtn = document.getElementById('setup-save-btn');
@@ -823,7 +852,19 @@ function initEventListeners() {
         }
       }
 
-      const nextCfg = { ...cfg, claudeKey: '', keys: loadSessionAiKeys(), provider, model: cfg.model };
+      const uncheckedSupermarkets = SUPERMARKET_OPTIONS
+        .filter(option => !document.getElementById(`supermarket-filter-${option.id}`)?.checked)
+        .map(option => option.id);
+      const supermarketExclusions = normalizeSupermarketFilters(uncheckedSupermarkets);
+
+      const nextCfg = {
+        ...cfg,
+        claudeKey: '',
+        keys: loadSessionAiKeys(),
+        provider,
+        model: cfg.model,
+        supermarketExclusions,
+      };
       setCfg(nextCfg);
       saveCfg(nextCfg);
 

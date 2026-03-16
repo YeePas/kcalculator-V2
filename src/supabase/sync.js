@@ -100,6 +100,7 @@ export async function syncUserPrefs(immediate = false) {
           adviesModel: cfg.adviesModel || '',
           importProvider: cfg.importProvider || '',
           importModel: cfg.importModel || '',
+          supermarketExclusions: cfg.supermarketExclusions || [],
           vis,
           showDrinks,
         },
@@ -186,6 +187,7 @@ export async function loadUserPrefs() {
       adviesModel: prefs.adviesModel || cfg.adviesModel || '',
       importProvider: prefs.importProvider || cfg.importProvider || '',
       importModel: prefs.importModel || cfg.importModel || '',
+      supermarketExclusions: Array.isArray(prefs.supermarketExclusions) ? prefs.supermarketExclusions : (cfg.supermarketExclusions || []),
     };
     setCfg(nextCfg);
     saveCfg(nextCfg);

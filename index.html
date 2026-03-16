@@ -55,105 +55,152 @@
       </div>
     </div>
 
-    <!-- STATE 2: User settings (AI providers) -->
+    <!-- STATE 2: User settings -->
     <div id="setup-user" style="display:none">
-      <h2>⚙️ Instellingen</h2>
-      <p id="setup-user-greeting"></p>
+      <div class="settings-layout">
 
-      <div class="setup-sections">
-        <section class="setup-section-card">
-          <div class="setup-section-head">
-            <div>
-              <h3>Profiel</h3>
-              <p>Persoonlijke weergave en accountidentiteit.</p>
+        <!-- LEFT SIDEBAR NAV -->
+        <nav class="settings-sidebar" aria-label="Instellingen secties">
+          <button class="settings-nav-item active" data-tab="profiel">
+            <span class="settings-nav-icon">👤</span>
+            <span class="settings-nav-label">Profiel</span>
+          </button>
+          <button class="settings-nav-item" data-tab="supermarkten">
+            <span class="settings-nav-icon">🛒</span>
+            <span class="settings-nav-label">Supermarkten</span>
+          </button>
+          <button class="settings-nav-item" data-tab="ai">
+            <span class="settings-nav-icon">🤖</span>
+            <span class="settings-nav-label">AI</span>
+          </button>
+          <button class="settings-nav-item" data-tab="data">
+            <span class="settings-nav-icon">📊</span>
+            <span class="settings-nav-label">Data</span>
+          </button>
+          <button class="settings-nav-item" data-tab="producten">
+            <span class="settings-nav-icon">🥗</span>
+            <span class="settings-nav-label">Eigen producten</span>
+          </button>
+        </nav>
+
+        <!-- RIGHT CONTENT AREA -->
+        <div class="settings-content">
+
+          <!-- TAB: Profiel -->
+          <div class="settings-tab active" id="settings-tab-profiel">
+            <h3 class="settings-tab-title">Profiel</h3>
+            <p id="setup-user-greeting" class="settings-tab-sub"></p>
+            <div class="setup-field">
+              <label>Naam <span style="font-weight:300;text-transform:none">(optioneel, voor initialen)</span></label>
+              <input type="text" id="setup-display-name" placeholder="Bijv. Joep Willemsen" autocomplete="name">
+              <div class="setup-hint">Als je een naam invult, tonen we je initialen in de accountknop.</div>
             </div>
           </div>
-          <div class="setup-field">
-            <label>Naam <span style="font-weight:300;text-transform:none">(optioneel, voor initialen)</span></label>
-            <input type="text" id="setup-display-name" placeholder="Bijv. Joep Willemsen" autocomplete="name">
-            <div class="setup-hint">Als je een naam invult, tonen we je initialen in de accountknop.</div>
-          </div>
-        </section>
 
-        <section class="setup-section-card">
-          <div class="setup-section-head">
-            <div>
-              <h3>AI & Advies</h3>
-              <p>Kies je model. Je eigen AI-sleutels worden normaal versleuteld in Supabase opgeslagen; op localhost kan Gemini ook alleen lokaal in je huidige sessie blijven.</p>
+          <!-- TAB: Supermarkten -->
+          <div class="settings-tab" id="settings-tab-supermarkten">
+            <h3 class="settings-tab-title">Supermarkten</h3>
+            <p class="settings-tab-sub">Vink een supermarkt <strong>uit</strong> om hun huismerken te verbergen. A-merken, RIVM-producten en je eigen producten blijven altijd zichtbaar.</p>
+            <div class="setup-field">
+              <div class="supermarket-picker" id="supermarket-picker">
+                <label class="supermarket-option"><input type="checkbox" value="ah" id="supermarket-filter-ah"> <span>Albert Heijn</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="jumbo" id="supermarket-filter-jumbo"> <span>Jumbo</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="picnic" id="supermarket-filter-picnic"> <span>Picnic</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="plus" id="supermarket-filter-plus"> <span>PLUS</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="lidl" id="supermarket-filter-lidl"> <span>Lidl</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="aldi" id="supermarket-filter-aldi"> <span>Aldi</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="hoogvliet" id="supermarket-filter-hoogvliet"> <span>Hoogvliet</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="coop" id="supermarket-filter-coop"> <span>Coop</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="etos" id="supermarket-filter-etos"> <span>Etos</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="kruidvat" id="supermarket-filter-kruidvat"> <span>Kruidvat</span></label>
+                <label class="supermarket-option"><input type="checkbox" value="boni" id="supermarket-filter-boni"> <span>Boni</span></label>
+              </div>
             </div>
           </div>
-          <div class="setup-field">
-            <label>AI Provider <span style="font-weight:300;text-transform:none">(optioneel, voor advies-functie)</span></label>
-            <div class="provider-picker" id="provider-picker">
-              <button class="provider-btn active" data-provider="claude">
-                <span class="provider-check"></span>
-                <span class="provider-text">
-                  <span class="provider-name">Claude</span>
-                  <span class="provider-sub">Anthropic · betaald</span>
-                </span>
-              </button>
-              <button class="provider-btn" data-provider="gemini">
-                <span class="provider-check"></span>
-                <span class="provider-text">
-                  <span class="provider-name">Gemini 2.5 Flash</span>
-                  <span class="provider-sub">Google · <strong>gratis</strong></span>
-                </span>
-              </button>
-              <button class="provider-btn" data-provider="openai">
-                <span class="provider-check"></span>
-                <span class="provider-text">
-                  <span class="provider-name">GPT-4o mini</span>
-                  <span class="provider-sub">OpenAI · betaald</span>
-                </span>
-              </button>
+
+          <!-- TAB: AI -->
+          <div class="settings-tab" id="settings-tab-ai">
+            <h3 class="settings-tab-title">AI &amp; Advies</h3>
+            <p class="settings-tab-sub">Kies je model. Je eigen AI-sleutels worden versleuteld in Supabase opgeslagen; op localhost kan Gemini ook alleen lokaal in je huidige sessie blijven.</p>
+            <div class="setup-field">
+              <label>AI Provider <span style="font-weight:300;text-transform:none">(optioneel)</span></label>
+              <div class="provider-picker" id="provider-picker">
+                <button class="provider-btn active" data-provider="claude">
+                  <span class="provider-check"></span>
+                  <span class="provider-text">
+                    <span class="provider-name">Claude</span>
+                    <span class="provider-sub">Anthropic · betaald</span>
+                  </span>
+                </button>
+                <button class="provider-btn" data-provider="gemini">
+                  <span class="provider-check"></span>
+                  <span class="provider-text">
+                    <span class="provider-name">Gemini 2.5 Flash</span>
+                    <span class="provider-sub">Google · <strong>gratis</strong></span>
+                  </span>
+                </button>
+                <button class="provider-btn" data-provider="openai">
+                  <span class="provider-check"></span>
+                  <span class="provider-text">
+                    <span class="provider-name">GPT-4o mini</span>
+                    <span class="provider-sub">OpenAI · betaald</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div class="setup-field" id="key-field-claude">
+              <label>Claude API Key</label>
+              <input type="password" id="setup-key-claude" placeholder="sk-ant-…">
+              <div class="setup-hint" id="setup-key-status-claude">Log in om veilig op te slaan</div>
+            </div>
+            <div class="setup-field" id="key-field-gemini">
+              <label>Gemini API Key</label>
+              <input type="password" id="setup-key-gemini" placeholder="AIza…">
+              <div class="setup-hint" id="setup-key-status-gemini">Log in om veilig op te slaan</div>
+            </div>
+            <div class="setup-field" id="key-field-openai">
+              <label>OpenAI API Key</label>
+              <input type="password" id="setup-key-openai" placeholder="sk-…">
+              <div class="setup-hint" id="setup-key-status-openai">Log in om veilig op te slaan</div>
+            </div>
+            <div class="setup-hint">Op productie blijft de sleutel niet in de browser staan. Alleen de server kan hem ontsleutelen en gebruiken.</div>
+          </div>
+
+          <!-- TAB: Data -->
+          <div class="settings-tab" id="settings-tab-data">
+            <h3 class="settings-tab-title">Data</h3>
+            <p class="settings-tab-sub">Beheer doelen, imports, exports en lokale caches.</p>
+            <div class="setup-action-grid">
+              <button class="btn-secondary setup-action-btn" id="settings-goals-btn">🎯 Doelen</button>
+              <button class="btn-secondary setup-action-btn" id="settings-import-btn">📥 Apple Health</button>
+              <button class="btn-secondary setup-action-btn" id="settings-export-btn">📤 Exporteer data</button>
+              <button class="btn-secondary setup-action-btn" id="open-data-mgmt-btn">🗑️ Data verwijderen</button>
+            </div>
+            <div class="setup-field setup-inline-action" style="margin-top:1rem">
+              <label>Productdatabase</label>
+              <button class="btn-secondary setup-inline-btn" id="refresh-db-btn">🔄 Vernieuw cache</button>
+              <div class="setup-hint">Wis de lokale cache om de nieuwste producten te laden.</div>
             </div>
           </div>
-          <div class="setup-field" id="key-field-claude">
-            <label>Claude API Key</label>
-            <input type="password" id="setup-key-claude" placeholder="sk-ant-…">
-            <div class="setup-hint" id="setup-key-status-claude">Log in om veilig op te slaan</div>
-          </div>
-          <div class="setup-field" id="key-field-gemini">
-            <label>Gemini API Key</label>
-            <input type="password" id="setup-key-gemini" placeholder="AIza…">
-            <div class="setup-hint" id="setup-key-status-gemini">Log in om veilig op te slaan</div>
-          </div>
-          <div class="setup-field" id="key-field-openai">
-            <label>OpenAI API Key</label>
-            <input type="password" id="setup-key-openai" placeholder="sk-…">
-            <div class="setup-hint" id="setup-key-status-openai">Log in om veilig op te slaan</div>
-          </div>
-          <div class="setup-hint">Op productie blijft de sleutel niet in de browser staan. Alleen de server kan hem ontsleutelen en gebruiken. Op localhost mag Gemini tijdelijk alleen in deze sessie blijven voor tests.</div>
-        </section>
 
-        <section class="setup-section-card">
-          <div class="setup-section-head">
-            <div>
-              <h3>Data</h3>
-              <p>Beheer doelen, imports, exports en lokale caches.</p>
+          <!-- TAB: Eigen producten -->
+          <div class="settings-tab" id="settings-tab-producten">
+            <h3 class="settings-tab-title">Eigen producten &amp; gerechten</h3>
+            <p class="settings-tab-sub">Bekijk en beheer je opgeslagen eigen producten en favorieten.</p>
+            <button class="btn-secondary setup-action-btn" id="settings-open-custom-btn" style="width:100%;justify-content:center;padding:0.9rem;font-size:0.93rem">📦 Open in Beheer</button>
+          </div>
+
+          <!-- Save footer (shunted to bottom of content column) -->
+          <div class="settings-save-area">
+            <button class="setup-save-btn" id="setup-save-btn">Opslaan</button>
+            <div class="setup-status" id="setup-status"></div>
+            <div class="setup-footer-actions">
+              <button style="background:none;border:none;color:var(--danger);font-size:0.78rem;cursor:pointer;padding:0" id="logout-settings-btn" class="logout-btn-settings">Uitloggen</button>
             </div>
           </div>
-          <div class="setup-action-grid">
-            <button class="btn-secondary setup-action-btn" id="settings-goals-btn">🎯 Doelen</button>
-            <button class="btn-secondary setup-action-btn" id="settings-import-btn">📥 Apple Health</button>
-            <button class="btn-secondary setup-action-btn" id="settings-export-btn">📤 Exporteer data</button>
-            <button class="btn-secondary setup-action-btn" id="open-data-mgmt-btn">🗑️ Data verwijderen</button>
-          </div>
-          <div class="setup-field setup-inline-action" style="margin-top:1rem">
-            <label>Productdatabase</label>
-            <button class="btn-secondary setup-inline-btn" id="refresh-db-btn">🔄 Vernieuw cache</button>
-            <div class="setup-hint">Wis de lokale cache om de nieuwste producten te laden.</div>
-          </div>
-        </section>
-      </div>
 
-      <button class="setup-save-btn" id="setup-save-btn">Opslaan</button>
-
-      <div class="setup-status" id="setup-status"></div>
-
-      <div class="setup-footer-actions">
-        <button style="background:none;border:none;color:var(--danger);font-size:0.78rem;cursor:pointer;padding:0" id="logout-settings-btn" class="logout-btn-settings">Uitloggen</button>
-      </div>
+        </div><!-- /.settings-content -->
+      </div><!-- /.settings-layout -->
     </div>
   </div>
 </div>

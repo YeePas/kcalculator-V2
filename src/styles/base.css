@@ -69,7 +69,7 @@ a { color: inherit; }
 /* ── Setup Screen ─────────────────────────────────────────── */
 
 #setup-screen { display: none; position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 62%, transparent); backdrop-filter: blur(30px) saturate(1.25); -webkit-backdrop-filter: blur(30px) saturate(1.25); z-index: 9999; align-items: flex-start; justify-content: center; padding: 2rem; overflow-y: auto; }
-.setup-box { background: color-mix(in srgb, var(--surface-strong) 90%, transparent); border-radius: calc(var(--radius-lg) + 2px); padding: 2.6rem; width: 100%; max-width: 540px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); position: relative; }
+.setup-box { background: color-mix(in srgb, var(--surface-strong) 90%, transparent); border-radius: calc(var(--radius-lg) + 2px); padding: 2.6rem; width: 100%; max-width: 720px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); position: relative; }
 .setup-box h2 { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 0.5rem; }
 .setup-box p  { font-size: 0.92rem; color: var(--muted); margin-bottom: 1.6rem; line-height: 1.7; }
 .setup-sections { display: flex; flex-direction: column; gap: 0.9rem; padding-bottom: 1rem; }
@@ -87,6 +87,10 @@ a { color: inherit; }
 .setup-action-btn { width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 0.38rem; font-size: 0.82rem; padding: 0.7rem 0.9rem; }
 .setup-inline-action { display: flex; flex-direction: column; align-items: flex-start; }
 .setup-inline-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.56rem 0.82rem; font-size: 0.78rem; margin-top: 0.2rem; }
+.supermarket-picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+.supermarket-option { display: flex; align-items: center; gap: 0.55rem; padding: 0.72rem 0.82rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: color-mix(in srgb, var(--surface-strong) 82%, var(--surface-soft)); color: var(--text); font-size: 0.84rem; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.58); }
+.supermarket-option input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.supermarket-option:has(input:checked) { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); background: color-mix(in srgb, var(--accent-light) 50%, var(--surface-strong)); }
 
 /* ── Provider Picker ──────────────────────────────────────── */
 
@@ -109,9 +113,29 @@ body.dark .provider-btn.active { background: color-mix(in srgb, var(--accent-lig
 .setup-status.err { color: var(--danger); }
 .setup-footer-actions { border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 0.8rem; display: flex; gap: 1rem; flex-wrap: wrap; }
 
+/* ── Settings sidebar-tab layout ─────────────────────────── */
+.settings-layout { display: flex; gap: 0; min-height: 400px; }
+.settings-sidebar { width: 106px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.18rem; padding: 0.25rem 0.75rem 0.25rem 0; border-right: 1px solid var(--border); margin-right: 1.5rem; }
+.settings-nav-item { display: flex; flex-direction: column; align-items: center; gap: 0.28rem; padding: 0.65rem 0.3rem; border-radius: var(--radius-md); background: none; border: none; cursor: pointer; color: var(--muted); transition: background 0.15s, color 0.15s; font-family: var(--font-body); font-size: 0.69rem; font-weight: 600; text-align: center; line-height: 1.3; width: 100%; }
+.settings-nav-item:hover { background: color-mix(in srgb, var(--accent-light) 40%, transparent); color: var(--text); }
+.settings-nav-item.active { background: color-mix(in srgb, var(--accent-light) 65%, transparent); color: var(--accent); }
+.settings-nav-icon { font-size: 1.3rem; line-height: 1; }
+.settings-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; max-height: 70vh; }
+.settings-tab { display: none; flex: 1; }
+.settings-tab.active { display: block; padding-bottom: 0.5rem; }
+.settings-tab-title { font-family: var(--font-body); font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 0.3rem; }
+.settings-tab-sub { font-size: 0.81rem; color: var(--muted); margin: 0 0 1.1rem; line-height: 1.55; }
+.settings-save-area { margin-top: auto; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+
 @media (max-width: 600px) {
   #setup-screen { padding: 0.75rem; align-items: stretch; }
-  .setup-box { max-width: none; min-height: calc(100dvh - 1.5rem); border-radius: 26px; padding: 1.35rem 1.1rem 7rem; }
+  .setup-box { max-width: none; min-height: calc(100dvh - 1.5rem); border-radius: 26px; padding: 1.35rem 1.1rem 2rem; }
   .setup-action-grid { grid-template-columns: 1fr; }
-  .setup-save-btn { position: sticky; bottom: 0.55rem; z-index: 2; margin-top: 0.4rem; }
+  .supermarket-picker { grid-template-columns: 1fr; }
+  .setup-save-btn { margin-top: 0.4rem; }
+  .settings-layout { flex-direction: column; }
+  .settings-sidebar { flex-direction: row; width: 100%; padding: 0 0 0.65rem; border-right: none; border-bottom: 1px solid var(--border); margin-right: 0; margin-bottom: 0.85rem; overflow-x: auto; gap: 0.15rem; -webkit-overflow-scrolling: touch; }
+  .settings-nav-item { flex-direction: row; gap: 0.4rem; padding: 0.5rem 0.7rem; font-size: 0.7rem; white-space: nowrap; flex-shrink: 0; width: auto; }
+  .settings-nav-icon { font-size: 1rem; }
+  .settings-content { max-height: none; overflow-y: visible; }
 }

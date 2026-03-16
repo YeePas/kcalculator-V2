@@ -3,9 +3,11 @@
 import {
   nevoData, nevoReady, offData, offReady,
   setNevoData, setNevoReady, setOffData, setOffReady,
+  cfg,
 } from '../state.js';
 import { loadCustomProducts } from '../storage.js';
 import { parseQuantity } from './portions.js';
+import { shouldIncludeProductForSupermarketFilters } from './supermarket-filter.js';
 
 const PRODUCTS_CACHE_KEY = 'kcalculator_products_v5';
 const LEGACY_PRODUCTS_CACHE_KEYS = ['kcalculator_products_v4', 'kcalculator_products_v3', 'kcalculator_products_v2', 'kcalculator_products_v1'];
@@ -93,6 +95,7 @@ export function searchNevo(query) {
   // 2) Search product database (RIVM + OFF merged)
   if (nevoReady && nevoData) {
     for (const item of nevoData.items) {
+      if (!shouldIncludeProductForSupermarketFilters(item, cfg.supermarketFilters)) continue;
       const searchText = (item.n + ' ' + (item.s || '') + ' ' + (item.b || '')).toLowerCase();
       if (!terms.every(t => searchText.includes(t))) continue;
 

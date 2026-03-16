@@ -4,6 +4,7 @@ import {
   CFG_KEY, CFG_SESSION_KEY, GOALS_KEY, FAV_KEY, VIS_KEY, CUSTOM_KEY,
   DEFAULT_GOALS, SUPABASE_URL, SUPABASE_ANON_KEY,
 } from './constants.js';
+import { normalizeSupermarketFilters } from './products/supermarket-filter.js';
 
 function cleanString(value) {
   if (typeof value !== 'string') return '';
@@ -119,6 +120,7 @@ export function loadCfg() {
     sbKey: cleanString(raw.sbKey || SUPABASE_ANON_KEY),
     claudeKey: '',
     keys: sessionKeys,
+    supermarketExclusions: normalizeSupermarketFilters(raw.supermarketExclusions),
     provider: raw.provider || 'claude',
     model: raw.model || '',
     adviesProvider: raw.adviesProvider || '',

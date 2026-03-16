@@ -1,11 +1,12 @@
 /* ── Local Database Matcher ────────────────────────────────── */
 
-import { nevoReady, nevoData } from '../state.js';
+import { nevoReady, nevoData, cfg } from '../state.js';
 import { r1 } from '../utils.js';
 import { loadCustomProducts } from '../storage.js';
 import { searchNevo } from './database.js';
 import { PORTION_ALIASES as SHARED_PORTION_ALIASES, parsePortionTextPart } from './quantity-parser.js';
 import { toMacroGram, resolveDensityForName, isLiquidLike } from './density.js';
+import { shouldIncludeProductForSupermarketFilters } from './supermarket-filter.js';
 
 // ── Portion Aliases ───────────────────────────────────────
 export const PORTION_ALIASES = SHARED_PORTION_ALIASES;
@@ -97,6 +98,7 @@ export function matchItemToNevo(parsedItem) {
     if (!termWords.length) continue;
 
     for (const item of allItems) {
+      if (!shouldIncludeProductForSupermarketFilters(item, cfg.supermarketFilters)) continue;
       const itemName = item.n.toLowerCase();
       const itemSearch = itemName + ' ' + (item.s || '').toLowerCase() + ' ' + (item.b || '').toLowerCase();
 
