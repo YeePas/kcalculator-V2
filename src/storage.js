@@ -1,7 +1,7 @@
 /* ── LocalStorage Wrappers ─────────────────────────────────── */
 
 import {
-  CFG_KEY, CFG_SESSION_KEY, GOALS_KEY, FAV_KEY, VIS_KEY, CUSTOM_KEY,
+  CFG_KEY, CFG_SESSION_KEY, GOALS_KEY, FAV_KEY, VIS_KEY, CUSTOM_KEY, WEIGHT_KEY,
   DEFAULT_GOALS, SUPABASE_URL, SUPABASE_ANON_KEY,
 } from './constants.js';
 import { normalizeSupermarketFilters } from './products/supermarket-filter.js';
@@ -168,4 +168,13 @@ export function loadCustomProducts() {
 
 export function saveCustomProducts(products) {
   safeSetJson(getLocalStorage(), CUSTOM_KEY, products);
+}
+
+// ── Body Weight ──────────────────────────────────────────
+export function loadWeight() {
+  return safeParse(WEIGHT_KEY, {});
+}
+
+export function saveWeight(data) {
+  safeSetJson(getLocalStorage(), WEIGHT_KEY, data);
 }

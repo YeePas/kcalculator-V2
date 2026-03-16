@@ -12,6 +12,9 @@ import { switchMobileView } from '../ui/misc.js';
 import { loadEnergyStatsRange, aggregatePeriod } from './data-overview-data.js';
 import { generateInsights } from './data-overview-insights.js';
 import { kpiCard, doInsight, renderDOChart, renderDOMacroChart, renderMacroDonutChart } from './data-overview-charts.js';
+import { exportPeriodCSV, exportWeekrapportPrint } from './export.js';
+import { renderWeightChart } from './weight.js';
+import { loadWeight } from '../storage.js';
 
 function balanceColor(balance, hasData) {
   if (!hasData || balance === null || balance === undefined) return 'var(--muted)';
@@ -190,6 +193,14 @@ export async function renderDataOverzicht(numDays) {
       html += '</div></div>';
     }
 
+    // Weight chart
+    const weightData = loadWeight();
+    const weightEntries = Object.keys(weightData).filter(d => d >= dateKeys[0] && d <= dateKeys[dateKeys.length - 1]);
+    if (weightEntries.length >= 2) {
+      html += '<div class="do-section"><h3>Gewicht</h3>';
+      html += '<div class="do-chart" id="do-weight-chart"></div></div>';
+    }
+
     // Weekday vs weekend
     const ww = weekdayWeekend;
     if (ww.weekday.days > 0 && ww.weekend.days > 0) {
@@ -246,10 +257,20 @@ export async function renderDataOverzicht(numDays) {
       html += '</ul></div>';
     }
 
+    // Export buttons (bottom, subtle)
+    html += '<div style="display:flex;gap:0.5rem;justify-content:center;padding:1.5rem 0 0.5rem;border-top:1px solid var(--border);margin-top:1rem">';
+    html += '<button class="btn-secondary" id="do-export-csv" style="font-size:0.72rem;padding:0.3rem 0.7rem;opacity:0.7">📄 CSV export</button>';
+    html += '<button class="btn-secondary" id="do-export-print" style="font-size:0.72rem;padding:0.3rem 0.7rem;opacity:0.7">🖨️ Weekrapport printen</button>';
+    html += '</div>';
+
     contentEl.innerHTML = html;
     renderDOChart(a, document.getElementById('do-energy-chart'));
     renderDOMacroChart(a, document.getElementById('do-macro-chart'));
     renderMacroDonutChart(a, document.getElementById('do-macro-donut'));
+
+    document.getElementById('do-export-csv')?.addEventListener('click', () => exportPeriodCSV(numDays));
+    document.getElementById('do-export-print')?.addEventListener('click', () => exportWeekrapportPrint());
+    renderWeightChart(document.getElementById('do-weight-chart'), numDays);
   } catch (err) {
     console.error('[renderDataOverzicht]', err);
     contentEl.innerHTML = '<div class="do-empty">Data-overzicht kon niet laden.<br><small style="color:var(--danger)">' + esc(err?.message || 'Onbekende fout') + '</small></div>';
