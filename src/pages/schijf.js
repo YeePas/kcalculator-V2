@@ -18,37 +18,42 @@ export const SCHIJF_CATEGORY_META = {
 
 const POSITIVE_GROUP_MATCHERS = [
   { category: 'groente', groups: ['Groente'], names: /.*/ },
-  { category: 'fruit', groups: ['Fruit'], names: /^(?!.*sap)(?!.*smoothie).+/ },
-  { category: 'volkoren', groups: ['Brood', 'Graanproducten en meelsoorten'], names: /volkoren|bruinbrood|tarwebrood volkoren|rogge|haver|havermout|muesli|quinoa|zilvervlies|bulgur|boekweit|spelt/ },
-  { category: 'zuivel', groups: ['Melk en melkproducten', 'Kaas'], names: /melk|karnemelk|kwark|skyr|yoghurt|yoghurt naturel|magere yoghurt|halfvolle melk|kaas|cottage cheese|mozzarella|ricotta/ },
+  { category: 'fruit', groups: ['Fruit'], names: /^(?!.*sap)(?!.*smoothie)(?!.*kokos)(?!.*kokosnoot).+/ },
+  { category: 'volkoren', groups: ['Brood', 'Graanproducten en meelsoorten'], names: /volkoren|bruinbrood|tarwebrood volkoren|rogge|haver|havermout|muesli|quinoa|zilvervlies|zilvervliesrijst|bruine rijst|brown rice|bulgur|boekweit|spelt/ },
+  { category: 'volkoren', groups: ['Aardappelen en knolgewassen'], names: /^(?!.*chips)(?!.*frit)(?!.*kroket)(?!.*patat)(?!.*rosti)(?!.*gefrituur)(?!.*aardappelsalade).+/ },
+  { category: 'zuivel', groups: ['Melk en melkproducten', 'Kaas'], names: /melk|karnemelk|kwark|skyr|yoghurt|yoghurt naturel|magere yoghurt|halfvolle melk|kaas|cottage cheese|huttenkase|mozzarella|ricotta/ },
+  { category: 'zuivel', groups: ['Vleesvervangers en zuivelvervangers'], names: /sojadrink|sojamelk|sojayoghurt|soja drink|soja melk/ },
   { category: 'eiwit', groups: ['Peulvruchten', 'Vis, schaal- en schelpdieren', 'Eieren'], names: /.*/ },
-  { category: 'eiwit', groups: ['Vleesvervangers en zuivelvervangers'], names: /tofu|tempeh|vegetar|vega|soja|edamame|linzen|kikkererwt|bonen/ },
-  { category: 'eiwit', groups: ['Vlees en gevogelte'], names: /kip|kipfilet|kalkoen|filet|biefstuk|runderlap|rundertartaar/ },
+  { category: 'eiwit', groups: ['Vleesvervangers en zuivelvervangers'], names: /tofu|tempeh|tempe|vegetar|vega|soja|edamame|linzen|kikkererwt|bonen/ },
+  { category: 'eiwit', groups: ['Vlees en gevogelte'], names: /kip|kipfilet|kippenborst|kalkoen|kalkoenfilet|filet|biefstuk|runderlap|rundertartaar|ossenhaas|varkensfilet|varkenshaas|kalfsvlees|lamsfilet|lamsbout|magere/ },
   { category: 'onverzadigd_vet', groups: ['Noten en zaden'], names: /noten|amandel|walnoot|cashew|pistache|hazelnoot|pinda|pompoenpit|zonnebloempit|chia|lijnzaad/ },
-  { category: 'onverzadigd_vet', groups: ['Vetten en oliën'], names: /olijf|zonnebloem|lijnzaad|vloeibare margarine|halvarine|bakken en braden vloeibaar/ },
+  { category: 'onverzadigd_vet', groups: ['Vetten en oliën'], names: /olijf|zonnebloem|lijnzaad|koolzaad|sojaolie|maisolie|margarine|halvarine|plantaardig|bakken en braden|bak en braad|slaolie/ },
 ];
 
 const NAME_FALLBACK_MATCHERS = [
-  { category: 'zuivel', names: /\b(skyr|kwark|yoghurt|melk|karnemelk|kaas|cottage cheese|mozzarella|ricotta)\b/ },
-  { category: 'groente', names: /\b(groente|broccoli|spinazie|sla|komkommer|paprika|tomaat|wortel|courgette|bloemkool|boerenkool)\b/ },
-  { category: 'fruit', names: /\b(fruit|appel|peer|banaan|kiwi|blauwe bes|aardbei|druif|mandarijn|sinaasappel|mango)\b/ },
-  { category: 'volkoren', names: /\b(volkoren|havermout|rogge|muesli|quinoa|zilvervlies)\b/ },
-  { category: 'eiwit', names: /\b(ei|eieren|kip|kipfilet|vis|zalm|tonijn|tofu|tempeh|linzen|bonen|kikkererwten)\b/ },
-  { category: 'onverzadigd_vet', names: /\b(olijfolie|noten|amandel|walnoot|cashew|avocado|pinda)\b/ },
+  { category: 'zuivel', names: /\b(skyr|kwark|yoghurt|melk|karnemelk|kaas|cottage cheese|huttenkase|mozzarella|ricotta|sojadrink|sojamelk|sojayoghurt)\b/ },
+  { category: 'groente', names: /\b(groente|broccoli|spinazie|sla|komkommer|paprika|tomaat|wortel|courgette|bloemkool|boerenkool|andijvie|prei|sperziebonen|snijbonen)\b/ },
+  { category: 'fruit', names: /\b(fruit|appel|peer|banaan|kiwi|blauwe bes|aardbei|druif|mandarijn|sinaasappel|mango|perzik|pruim|nectarine|ananas|meloen)\b/ },
+  { category: 'volkoren', names: /\b(volkoren|havermout|rogge|muesli|quinoa|zilvervlies|zilvervliesrijst|bruine rijst|brown rice|aardappel|aardappelen|pieper|krieltje|bulgur|boekweit|spelt)\b/ },
+  { category: 'eiwit', names: /\b(ei|eieren|kip|kipfilet|vis|zalm|tonijn|tofu|tempeh|tempe|linzen|bonen|kikkererwten|garnalen|mosselen|forel|sardine|makreel|kabeljauw|schol|tilapia)\b/ },
+  { category: 'onverzadigd_vet', names: /\b(olijfolie|noten|amandel|walnoot|cashew|avocado|pinda|halvarine|margarine|zonnebloemolie)\b/ },
 ];
 
 const OUTSIDE_GROUPS = new Set([
   'Alcoholische dranken',
   'Gebak en koek',
+  'Hartig broodbeleg',
+  'Hartige sauzen',
   'Hartige snacks en zoutjes',
   'Suiker, snoep, zoet beleg en zoete sauzen',
   'Vleeswaren',
 ]);
 
-const OUTSIDE_NAME_PATTERN = /chips|koek|cake|taart|gebak|croissant|donut|frisdrank|cola|energy drink|snoep|chocolade|ijs|milkshake|wijn|bier|cocktail|likeur|salami|bacon|spek|frituur|patat|saus|mayonaise|ketchup|dessert|vla|pudding/;
+const OUTSIDE_NAME_PATTERN = /chips|koek|cake|taart|gebak|croissant|donut|frisdrank|cola|energy drink|snoep|chocolade|ijs|milkshake|wijn|bier|cocktail|likeur|salami|bacon|spek|frituur|patat|saus|mayonaise|ketchup|dessert|vla|pudding|worst|hamburger|rookvlees|cervelaat|limo|siroop|leverworst|frikandel|knakworst|shoarma/;
 const EXCLUDE_NAME_PATTERN = /sap|smoothie|supplement|poeder|vitamine|capsule|pil|saus|bouillon|kruidenmix|kruiden|specerijen/;
-const SWEET_DAIRY_PATTERN = /vla|pudding|dessert|choco|vanillevla|room|slagroom|ijs|drinkyoghurt|yoghurtdrink|vruchtenyoghurt/;
-const SALTED_NUTS_PATTERN = /gezouten|honing|karamel|choco|borrelnoten|gebrand gezouten/;
+const SWEET_DAIRY_PATTERN = /vla|pudding|dessert|choco|vanillevla|room|slagroom|ijs|drinkyoghurt|yoghurtdrink|vruchtenyoghurt|(?<!half)volle melk|volle yoghurt|volle kwark|chocomel|fristi|optimel/;
+const SALTED_NUTS_PATTERN = /gezouten|honing|karamel|choco|borrelnoten|gebrand gezouten|gesuikerd|kokos/;
+const HARD_FAT_PATTERN = /roomboter|kokosolie|kokosvet|kokosroom|ghee|reuzel|palmvet|palmolie|boter(?!ham)|frituurvet/;
 
 const matchCache = new Map();
 
@@ -144,6 +149,7 @@ function classifyMatchedProduct(product, itemName) {
 
     if (matcher.category === 'zuivel' && SWEET_DAIRY_PATTERN.test(name)) return { type: 'outside', group };
     if (matcher.category === 'onverzadigd_vet' && SALTED_NUTS_PATTERN.test(name)) return { type: 'outside', group };
+    if (matcher.category === 'onverzadigd_vet' && HARD_FAT_PATTERN.test(name)) return { type: 'outside', group };
     return { type: 'category', category: matcher.category, group };
   }
 
@@ -159,6 +165,7 @@ function classifyNameFallback(itemName) {
     if (!matcher.names.test(name)) continue;
     if (matcher.category === 'zuivel' && SWEET_DAIRY_PATTERN.test(name)) return { type: 'outside' };
     if (matcher.category === 'onverzadigd_vet' && SALTED_NUTS_PATTERN.test(name)) return { type: 'outside' };
+    if (matcher.category === 'onverzadigd_vet' && HARD_FAT_PATTERN.test(name)) return { type: 'outside' };
     return { type: 'category', category: matcher.category };
   }
 

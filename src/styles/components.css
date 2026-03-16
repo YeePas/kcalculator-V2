@@ -178,14 +178,19 @@
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1.35fr);
   gap: 0.55rem;
-  align-items: start;
+  align-items: stretch;
 }
 #match-modal .modal-btns .btn-primary,
 #match-modal .modal-btns .btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 0;
+  height: 100%;
   padding: 0.72rem 0.9rem;
   font-size: 0.82rem;
   line-height: 1.25;
+  text-align: center;
 }
 .match-intro { font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.5; }
 .match-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; max-height: 55vh; overflow-y: auto; }
