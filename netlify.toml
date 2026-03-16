@@ -1,0 +1,130 @@
+# netlify.toml - Netlify configuration for kcalculator.eu
+# Place this file in your project root
+# Deploy: git push (Netlify auto-deploys from GitHub)
+
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# Build function configuration
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Environment variables
+[context.production]
+  environment = { NODE_ENV = "production" }
+
+[context.preview]
+  environment = { NODE_ENV = "preview" }
+
+[context.deploy-preview]
+  environment = { NODE_ENV = "preview" }
+
+# ═══════════════════════════════════════════════════════════════
+# Security Headers - Applied to all routes
+# ═══════════════════════════════════════════════════════════════
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Clickjacking protection
+    X-Frame-Options = "DENY"
+    
+    # MIME type sniffing protection
+    X-Content-Type-Options = "nosniff"
+    
+    # Legacy XSS protection (modern browsers use CSP)
+    X-XSS-Protection = "1; mode=block"
+    
+    # Privacy: don't send referrer to external sites
+    Referrer-Policy = "strict-no-referrer"
+    
+    # Force HTTPS for 2 years (with preload for HSTS preload list)
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    
+    # Content Security Policy (Vite static site)
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://world.openfoodfacts.org https://api.supabase.co; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests"
+    
+    # Feature/Permissions policy (disable browser features not needed)
+    Permissions-Policy = "accelerometer=(), ambient-light-sensor=(), autoplay=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    
+    # Additional hardening
+    X-Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://world.openfoodfacts.org https://api.supabase.co; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests"
+
+# ═══════════════════════════════════════════════════════════════
+# Caching - Versioned assets (long cache)
+# ═══════════════════════════════════════════════════════════════
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    # Cache for 1 year (Vite adds content hash to filenames)
+    Cache-Control = "public, immutable, max-age=31536000"
+    # Repeat security headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+
+# ═══════════════════════════════════════════════════════════════
+# Caching - HTML & SPA entry point
+# ═══════════════════════════════════════════════════════════════
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    # Short cache + revalidation for index.html (enables quick updates)
+    Cache-Control = "max-age=3600, must-revalidate"
+    # Repeat security headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+
+# ═══════════════════════════════════════════════════════════════
+# Redirects - SPA routing
+# ═══════════════════════════════════════════════════════════════
+
+# Catch-all redirect for SPA routing (soft redirect, no status)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Redirect www to non-www (or vice versa if preferred)
+# Uncomment one of these based on your preference:
+
+# Option 1: Redirect www to non-www
+[[redirects]]
+  from = "https://www.kcalculator.eu/*"
+  to = "https://kcalculator.eu/:splat"
+  status = 301
+  force = true
+
+# Option 2: Redirect non-www to www (if you prefer www)
+# [[redirects]]
+#   from = "https://kcalculator.eu/*"
+#   to = "https://www.kcalculator.eu/:splat"
+#   status = 301
+#   force = true
+
+# ═══════════════════════════════════════════════════════════════
+# Rate Limiting (Netlify Enterprise only)
+# For free tier, use Cloudflare in front of Netlify
+# ═══════════════════════════════════════════════════════════════
+
+# If using Netlify with Cloudflare, configure rate limiting in Cloudflare dashboard:
+# - kcalculator.eu/*: 100 requests per minute per IP
+
+# ═══════════════════════════════════════════════════════════════
+# Cloudflare Integration (Recommended for WAF)
+# ═══════════════════════════════════════════════════════════════
+
+# If using Cloudflare as DNS provider:
+# 1. In Cloudflare dashboard, enable WAF
+# 2. Create Firewall Rules:
+#    - (cf.threat_score >= 50): Challenge
+#    - Rate limiting: 100 req/min per IP
+#    - OWASP ModSecurity Rules: Enable (Sensitive)
+
+# To connect Netlify to Cloudflare:
+# 1. Change DNS at Cloudflare to point to Netlify
+# 2. In Netlify, add custom domain with Cloudflare DNS
+# 3. Ensure "Flexible SSL" is set to at least "Full" in Cloudflare
