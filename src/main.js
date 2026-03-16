@@ -18,7 +18,7 @@ import {
 } from './constants.js';
 import {
   dateKey, formatDate, emptyDay, normalizeDayData,
-  esc, r1, dayTotals,
+  esc, r1, dayTotals, getMealByTime,
 } from './utils.js';
 import {
   safeParse, loadCfg, saveCfg, loadGoals, saveGoals,
@@ -807,11 +807,6 @@ function initEventListeners() {
   // Dark mode
   document.getElementById('dark-toggle')?.addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));
 
-  // Macro toggles
-  document.querySelectorAll('.macro-toggle').forEach(btn => {
-    btn.addEventListener('click', () => { vis[btn.dataset.macro] = !vis[btn.dataset.macro]; applyVis(); });
-  });
-
   // Provider buttons
   document.querySelectorAll('.provider-btn').forEach(btn => {
     btn.addEventListener('click', () => setProviderUI(btn.dataset.provider));
@@ -1147,6 +1142,16 @@ function initNumericInputModes() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
+function autoSelectMealByTime() {
+  const mealByTime = getMealByTime();
+  const btn = document.querySelector(`.meal-btn[data-meal="${mealByTime}"]`);
+  if (btn) {
+    document.querySelectorAll('.meal-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    setSelMeal(mealByTime);
+  }
+}
+
 // ══════════════════════════════════════════════════════════════
 // Boot Sequence
 // ══════════════════════════════════════════════════════════════
@@ -1158,6 +1163,7 @@ function initNumericInputModes() {
     setCfg(loadCfg());
     initNumericInputModes();
     initEventListeners();
+    autoSelectMealByTime();
 
     await loadNevo();
 

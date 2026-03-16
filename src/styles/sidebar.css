@@ -46,7 +46,7 @@
 
 /* ── Macro Bars ───────────────────────────────────────────── */
 
-.macro-bars { display: flex; flex-direction: column; gap: 1rem; }
+.macro-bars { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; padding: 1rem 1.05rem; background: color-mix(in srgb, var(--surface-soft) 86%, var(--surface-strong)); border-radius: calc(var(--radius-md) + 2px); border: 1px solid var(--border); }
 .macro-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.38rem; }
 .macro-row-name { font-size: 0.82rem; color: var(--muted); }
 .macro-row-val  { font-size: 0.8rem; font-weight: 700; }

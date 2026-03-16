@@ -94,3 +94,20 @@ export function dayTotals(day) {
   });
   return { cals, carbs, fat, prot, fiber, water };
 }
+
+// ── Meal selection by time ────────────────────────────────
+export function getMealByTime() {
+  const now = new Date();
+  const hour = now.getHours();
+
+  // Time-based meal selection
+  if (hour >= 6 && hour < 10) return 'ontbijt';      // 06:00 - 09:59
+  if (hour >= 10 && hour < 12) return 'ochtendsnack'; // 10:00 - 11:59
+  if (hour >= 12 && hour < 14) return 'lunch';        // 12:00 - 13:59
+  if (hour >= 14 && hour < 17) return 'middagsnack';  // 14:00 - 16:59
+  if (hour >= 17 && hour < 21) return 'avondeten';    // 17:00 - 20:59
+  if (hour >= 21 && hour < 23) return 'avondsnack';   // 21:00 - 22:59
+
+  // Default: after 23:00 or before 06:00
+  return 'ochtendsnack';
+}

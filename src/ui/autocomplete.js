@@ -8,19 +8,22 @@ import { findPortie } from '../products/portions.js';
 import { buildMealItem } from '../products/matcher.js';
 import { isLiquidLike } from '../products/density.js';
 import { buildBugReportButton } from './bug-report.js';
-import { localData, currentDate } from '../state.js';
+import { localData, currentDate, cfg } from '../state.js';
 import { loadCustomProducts, saveCustomProducts } from '../storage.js';
 import { syncCustomProductsToSupabase } from '../supabase/sync.js';
 import { saveDay } from '../supabase/data.js';
 import { _renderDayUI } from './render.js';
 
-export function renderAcDropdown(results, query) {
+export function renderAcDropdown(results, query, isLoading = false) {
   const dd = document.getElementById('ac-dropdown');
   setAcResults(results);
   setAcSelectedIdx(-1);
   setAcSelectedItem(null);
 
   const terms = query.toLowerCase().trim().split(/\s+/);
+  const loadingRow = isLoading
+    ? '<div class="ac-loading-row"><span class="ac-loading-spinner" aria-hidden="true"></span><span>Zoeken in OpenFoodFacts.org…</span></div>'
+    : '';
 
   const safeQuery = encodeURIComponent(query);
   const manualBtn = `<button class="ac-manual-btn" onmousedown="openSmartImportPage(decodeURIComponent('${safeQuery}'))">➕ Eigen product toevoegen… (BETA)</button>`;
@@ -28,6 +31,7 @@ export function renderAcDropdown(results, query) {
   if (!results.length) {
     dd.innerHTML = `
       <div class="ac-hint"><span class="ac-hint-badge">Database + OpenFoodFacts.org</span> Geen resultaten — druk Enter voor AI-analyse</div>
+      ${loadingRow}
       ${manualBtn}
     `;
     dd.classList.add('open');
@@ -50,6 +54,7 @@ export function renderAcDropdown(results, query) {
         </div>
       </div>
     `).join('')}
+    ${loadingRow}
     ${manualBtn}
   `;
   dd.classList.add('open');
@@ -196,18 +201,20 @@ export function initAutocomplete() {
     const val = input.value.trim();
     if (val.length < 2) { closeAcDropdown(); return; }
 
+    const shouldSearchLive = val.length >= 3 && cfg.openFoodFactsLiveSearch !== false;
+
     // Show local results immediately to keep typing responsive.
     const localResults = searchNevo(val);
     if (localResults.length > 0) {
-      renderAcDropdown(localResults, val);
+      renderAcDropdown(localResults, val, shouldSearchLive);
     } else if (val.length >= 3) {
-      renderAcDropdown([], val);
+      renderAcDropdown([], val, shouldSearchLive);
     } else {
       closeAcDropdown();
     }
 
     const seq = ++searchSeq;
-    if (val.length < 3) return;
+    if (!shouldSearchLive) return;
 
     acTimeout = setTimeout(async () => {
       const results = await searchNevoHybrid(val, 8);

@@ -1,7 +1,7 @@
 /* ── Smart Import Page ───────────────────────────────────── */
 
 import { cfg, localData, currentDate, selMeal } from '../state.js';
-import { esc, emptyDay } from '../utils.js';
+import { esc, emptyDay, getMealByTime } from '../utils.js';
 import { saveCfg, loadFavs, saveFavs } from '../storage.js';
 import { saveDay } from '../supabase/data.js';
 import { syncFavoritesToSupabase } from '../supabase/sync.js';
@@ -102,7 +102,12 @@ function getTargetMeal() {
 }
 
 function syncSmartImportMealButtons() {
-  const targetMeal = getTargetMeal() || selMeal;
+  // If no active button, select based on time
+  const hasActiveBtn = document.querySelector('.smart-import-meal-btn.active');
+  const targetMeal = hasActiveBtn 
+    ? getTargetMeal() 
+    : getMealByTime();
+  
   document.querySelectorAll('.smart-import-meal-btn').forEach(btn => {
     const isActive = btn.dataset.meal === targetMeal;
     btn.classList.toggle('active', isActive);
