@@ -8,8 +8,7 @@ import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
 import { dateKey, emptyDay, r1, formatDate, dayTotals } from '../utils.js';
 import { saveCfg } from '../storage.js';
 import { loadDay } from '../supabase/data.js';
-import { aiCall } from '../ai/providers.js';
-import { hasAiProxyConfig } from '../ai/providers.js';
+import { aiCall, hasAiAvailable, hasAiProxyConfig, hasLocalSessionAi } from '../ai/providers.js';
 import { renderSchijfAnalyse } from './schijf.js';
 import { switchMobileView } from '../ui/misc.js';
 
@@ -78,7 +77,8 @@ export function updateAdviesModelSelect() {
     {value:'openai|gpt-4o',                     label:'GPT-4o'},
   ];
   const available = opts.filter(o => {
-    return hasAiProxyConfig();
+    if (hasAiProxyConfig()) return true;
+    return hasLocalSessionAi('gemini') && o.value.startsWith('gemini|');
   });
   sel.innerHTML = available.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
   const saved = cfg.adviesProvider && cfg.adviesModel ? cfg.adviesProvider + '|' + cfg.adviesModel : null;
@@ -162,7 +162,7 @@ function setAdviesHTML(html) {
 }
 
 async function getAvondAdvies() {
-  if (!hasAiProxyConfig()) throw new Error('AI-proxy niet beschikbaar');
+  if (!hasAiAvailable()) throw new Error('AI niet beschikbaar');
   const day = localData[currentDate] || emptyDay();
   const tot = dayTotals(day);
   const rKcal = Math.max(0, (goals.kcal || 2000) - tot.cals);
@@ -202,7 +202,7 @@ Geef 2 concrete Nederlandse avondeten-opties die passen bij de resterende ruimte
 }
 
 async function getDagAdvies() {
-  if (!hasAiProxyConfig()) throw new Error('AI-proxy niet beschikbaar');
+  if (!hasAiAvailable()) throw new Error('AI niet beschikbaar');
   const day = localData[currentDate] || emptyDay();
   const tot = dayTotals(day);
   const alleItems = MEAL_NAMES.flatMap(m => (day[m] || []).map(i => ({ ...i, maaltijd: m })));
@@ -231,7 +231,7 @@ Vriendelijk, motiverend, specifiek. Gebruik <p> voor tekst.`);
 }
 
 async function getWeekAdvies() {
-  if (!hasAiProxyConfig()) throw new Error('AI-proxy niet beschikbaar');
+  if (!hasAiAvailable()) throw new Error('AI niet beschikbaar');
   const last7 = [];
   for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() - i); last7.push(dateKey(d)); }
   for (const d of last7) if (!localData[d]) localData[d] = await loadDay(d);

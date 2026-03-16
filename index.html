@@ -79,7 +79,7 @@
           <div class="setup-section-head">
             <div>
               <h3>AI & Advies</h3>
-              <p>Kies je model. Je kunt je eigen AI-sleutels hier invullen; die worden versleuteld in Supabase opgeslagen.</p>
+              <p>Kies je model. Je eigen AI-sleutels worden normaal versleuteld in Supabase opgeslagen; op localhost kan Gemini ook alleen lokaal in je huidige sessie blijven.</p>
             </div>
           </div>
           <div class="setup-field">
@@ -123,7 +123,7 @@
             <input type="password" id="setup-key-openai" placeholder="sk-…">
             <div class="setup-hint" id="setup-key-status-openai">Log in om veilig op te slaan</div>
           </div>
-          <div class="setup-hint">De sleutel zelf blijft niet in de browser staan. Alleen de server kan hem ontsleutelen en gebruiken.</div>
+          <div class="setup-hint">Op productie blijft de sleutel niet in de browser staan. Alleen de server kan hem ontsleutelen en gebruiken. Op localhost mag Gemini tijdelijk alleen in deze sessie blijven voor tests.</div>
         </section>
 
         <section class="setup-section-card">

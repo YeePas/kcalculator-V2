@@ -23,6 +23,7 @@ import {
 import {
   safeParse, loadCfg, saveCfg, loadGoals, saveGoals,
   loadFavs, saveFavs, loadVis, loadCustomProducts, saveCustomProducts,
+  isLocalDevHost, loadSessionAiKeys, saveSessionAiKey,
 } from './storage.js';
 
 // ── Supabase ─────────────────────────────────────────────────
@@ -462,15 +463,23 @@ function showSetup(panel) {
   if (userEl) userEl.style.display = 'none';
 
   if (panel === 'user' || authUser) {
+    const sessionAiKeys = loadSessionAiKeys();
+    const hasLocalGeminiKey = isLocalDevHost() && Boolean(sessionAiKeys.gemini);
     document.getElementById('setup-display-name').value = authUser?.display_name || '';
     ['claude', 'gemini', 'openai'].forEach(provider => {
       const input = document.getElementById(`setup-key-${provider}`);
       const status = document.getElementById(`setup-key-status-${provider}`);
       if (input) {
         input.value = '';
-        input.placeholder = provider === 'gemini' ? 'AIza…' : 'sk-…';
+        input.placeholder = provider === 'gemini' && hasLocalGeminiKey
+          ? 'Lokaal in deze sessie opgeslagen'
+          : (provider === 'gemini' ? 'AIza…' : 'sk-…');
       }
-      if (status) status.textContent = authUser ? 'Laden…' : 'Log in om veilig op te slaan';
+      if (status) {
+        status.textContent = provider === 'gemini' && hasLocalGeminiKey
+          ? 'Alleen lokaal in deze browsersessie'
+          : (authUser ? 'Laden…' : 'Log in om veilig op te slaan');
+      }
     });
     document.getElementById('setup-status').textContent = '';
     setProviderUI(cfg.provider || 'claude');
@@ -490,13 +499,26 @@ function showSetup(panel) {
         ['claude', 'gemini', 'openai'].forEach(provider => {
           const input = document.getElementById(`setup-key-${provider}`);
           const status = document.getElementById(`setup-key-status-${provider}`);
-          if (input) input.placeholder = statuses[provider] ? 'Veilig opgeslagen in Supabase' : (provider === 'gemini' ? 'AIza…' : 'sk-…');
-          if (status) status.textContent = statuses[provider] ? 'Veilig opgeslagen' : 'Nog geen sleutel opgeslagen';
+          const isLocalGemini = provider === 'gemini' && hasLocalGeminiKey;
+          if (input) {
+            input.placeholder = isLocalGemini
+              ? 'Lokaal in deze sessie opgeslagen'
+              : (statuses[provider] ? 'Veilig opgeslagen in Supabase' : (provider === 'gemini' ? 'AIza…' : 'sk-…'));
+          }
+          if (status) {
+            status.textContent = isLocalGemini
+              ? 'Alleen lokaal in deze browsersessie'
+              : (statuses[provider] ? 'Veilig opgeslagen' : 'Nog geen sleutel opgeslagen');
+          }
         });
       }).catch(() => {
         ['claude', 'gemini', 'openai'].forEach(provider => {
           const status = document.getElementById(`setup-key-status-${provider}`);
-          if (status) status.textContent = 'Kon status niet laden';
+          if (status) {
+            status.textContent = provider === 'gemini' && hasLocalGeminiKey
+              ? 'Alleen lokaal in deze browsersessie'
+              : 'Kon status niet laden';
+          }
         });
       });
     }
@@ -763,7 +785,20 @@ function initEventListeners() {
     if (saveBtn) saveBtn.disabled = true;
 
     try {
-      const nextCfg = { ...cfg, claudeKey: '', keys: {}, provider, model: cfg.model };
+      let savedLocalGemini = false;
+      if (isLocalDevHost()) {
+        const geminiInput = document.getElementById('setup-key-gemini');
+        const geminiValue = geminiInput?.value?.trim() || '';
+        if (geminiValue) {
+          saveSessionAiKey('gemini', geminiValue);
+          savedLocalGemini = true;
+          if (geminiInput) geminiInput.value = '';
+          const geminiStatus = document.getElementById('setup-key-status-gemini');
+          if (geminiStatus) geminiStatus.textContent = 'Alleen lokaal in deze browsersessie';
+        }
+      }
+
+      const nextCfg = { ...cfg, claudeKey: '', keys: loadSessionAiKeys(), provider, model: cfg.model };
       setCfg(nextCfg);
       saveCfg(nextCfg);
 
@@ -785,9 +820,11 @@ function initEventListeners() {
       if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');
       else if (!cfg.sbUrl) setSyncStatus('offline', 'lokaal');
 
-      statusEl.textContent = hasAiProxyConfig()
-        ? (authUser?.id ? '✓ Opgeslagen. AI loopt nu via de beveiligde serverproxy.' : '✓ Opgeslagen. AI loopt via de beveiligde serverproxy.')
-        : '✓ Opgeslagen. Koppel Supabase om de beveiligde AI-proxy te gebruiken.';
+      statusEl.textContent = savedLocalGemini
+        ? '✓ Opgeslagen. Gemini draait lokaal in deze browsersessie.'
+        : (hasAiProxyConfig()
+          ? (authUser?.id ? '✓ Opgeslagen. AI loopt nu via de beveiligde serverproxy.' : '✓ Opgeslagen. AI loopt via de beveiligde serverproxy.')
+          : '✓ Opgeslagen. Koppel Supabase om de beveiligde AI-proxy te gebruiken.');
       statusEl.className = 'setup-status ok';
       setTimeout(() => { hideSetup(); renderMeals(); }, 600);
     } catch (error) {

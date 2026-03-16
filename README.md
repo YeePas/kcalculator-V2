@@ -135,8 +135,8 @@ Als je het toch handmatig wilt doen met de Supabase CLI:
 supabase link --project-ref cykoqtzdoypqrxilqoer
 supabase db push
 supabase secrets set AI_KEY_ENCRYPTION_SECRET="kies-hier-een-lange-willekeurige-geheime-string"
-supabase functions deploy ai-proxy
-supabase functions deploy save-user-ai-key
+supabase functions deploy ai-proxy --no-verify-jwt
+supabase functions deploy save-user-ai-key --no-verify-jwt
 ```
 
 Optioneel kun je daarnaast ook globale fallback-sleutels op serverniveau zetten:

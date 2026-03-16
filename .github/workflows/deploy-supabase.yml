@@ -45,10 +45,10 @@ jobs:
         run: supabase db push --password "$SUPABASE_DB_PASSWORD"
 
       - name: Deploy ai-proxy
-        run: supabase functions deploy ai-proxy --project-ref "$SUPABASE_PROJECT_REF"
+        run: supabase functions deploy ai-proxy --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Deploy save-user-ai-key
-        run: supabase functions deploy save-user-ai-key --project-ref "$SUPABASE_PROJECT_REF"
+        run: supabase functions deploy save-user-ai-key --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Deploy url-import-proxy
-        run: supabase functions deploy url-import-proxy --project-ref "$SUPABASE_PROJECT_REF"
+        run: supabase functions deploy url-import-proxy --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"

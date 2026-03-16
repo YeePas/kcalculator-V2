@@ -5,6 +5,8 @@ import {
   safeParse,
   loadCfg,
   saveCfg,
+  loadSessionAiKeys,
+  saveSessionAiKey,
   loadFavs,
   saveFavs,
   loadGoals,
@@ -96,6 +98,19 @@ describe('loadCfg / saveCfg', () => {
       sbUrl: 'https://example.supabase.co',
       provider: 'claude',
     });
+  });
+
+  it('loads a local-only session key without persisting it to localStorage', () => {
+    saveSessionAiKey('gemini', 'test-gemini-key');
+
+    const cfg = loadCfg();
+
+    expect(loadSessionAiKeys()).toEqual({ gemini: 'test-gemini-key' });
+    expect(cfg.keys).toEqual({ gemini: 'test-gemini-key' });
+    expect(JSON.parse(sessionStorage.getItem(CFG_SESSION_KEY))).toEqual({
+      keys: { gemini: 'test-gemini-key' },
+    });
+    expect(localStorage.getItem(CFG_KEY)).toBe(null);
   });
 });
 

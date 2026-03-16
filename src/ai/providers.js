@@ -2,6 +2,7 @@
 /* Faithful port of the original aiCall / claudeCall from index.html */
 
 import { cfg, authUser } from '../state.js';
+import { isLocalDevHost } from '../storage.js';
 
 const DEFAULT_MODELS = {
   claude: 'claude-haiku-4-5-20250514',
@@ -25,10 +26,50 @@ export function hasAiProxyConfig() {
   return Boolean(cfg.sbUrl && cfg.sbKey);
 }
 
+export function hasLocalSessionAi(provider = 'gemini') {
+  return isLocalDevHost() && Boolean(cfg.keys?.[provider]);
+}
+
+export function hasAiAvailable() {
+  return hasAiProxyConfig() || hasLocalSessionAi('gemini');
+}
+
 export function assertAiAvailable() {
-  if (!hasAiProxyConfig()) {
-    throw new Error('AI is niet beschikbaar: koppel eerst Supabase zodat de beveiligde AI-proxy gebruikt kan worden.');
+  if (!hasAiAvailable()) {
+    throw new Error('AI is niet beschikbaar: koppel Supabase of gebruik lokaal een Gemini testsleutel.');
   }
+}
+
+async function callGeminiDirect(model, system, user, maxTokens, useWebSearch) {
+  const apiKey = cfg.keys?.gemini;
+  if (!apiKey) throw new Error('Geen lokale Gemini testsleutel gevonden.');
+
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
+      contents: [{ role: 'user', parts: [{ text: user }] }],
+      generationConfig: {
+        maxOutputTokens: maxTokens,
+      },
+      ...(useWebSearch ? { tools: [{ googleSearch: {} }] } : {}),
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload?.error?.message || `Gemini fout (${response.status})`);
+
+  const text = (payload?.candidates || [])
+    .flatMap(candidate => candidate?.content?.parts || [])
+    .map(part => part?.text || '')
+    .join('')
+    .trim();
+
+  if (!text) throw new Error('Gemini gaf geen bruikbare tekst terug.');
+  return text;
 }
 
 /**
@@ -36,9 +77,12 @@ export function assertAiAvailable() {
  * Original signature: aiCall(provider, system, user, maxTokens, useWebSearch)
  */
 export async function aiCall(provider, system, user, maxTokens = 1400, useWebSearch = false) {
-  assertAiAvailable();
   const resolvedProvider = provider || cfg.provider || 'claude';
   const resolvedModel = resolveModel(resolvedProvider, cfg.model);
+  if (resolvedProvider === 'gemini' && hasLocalSessionAi('gemini')) {
+    return callGeminiDirect(resolvedModel, system, user, maxTokens, useWebSearch);
+  }
+  assertAiAvailable();
   let response;
   try {
     response = await fetch(`${cfg.sbUrl}/functions/v1/ai-proxy`, {
