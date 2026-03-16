@@ -383,12 +383,12 @@ async function copyMealsFromDay() {
   const sourceDate = input.value;
   if (!sourceDate) {
     status.textContent = 'Kies eerst een datum.';
-    status.className = 'setup-status error';
+    status.className = 'setup-status err';
     return;
   }
   if (sourceDate === currentDate) {
     status.textContent = 'Kies een andere dag dan de huidige dag.';
-    status.className = 'setup-status error';
+    status.className = 'setup-status err';
     return;
   }
 
@@ -399,7 +399,7 @@ async function copyMealsFromDay() {
   const hasMeals = Object.values(sourceDay).some(items => Array.isArray(items) && items.length > 0);
   if (!hasMeals) {
     status.textContent = 'Op die datum zijn geen maaltijden gevonden.';
-    status.className = 'setup-status error';
+    status.className = 'setup-status err';
     return;
   }
 
@@ -752,31 +752,51 @@ function initEventListeners() {
 
   // Setup save
   document.getElementById('setup-save-btn')?.addEventListener('click', async () => {
+    const saveBtn = document.getElementById('setup-save-btn');
     const provider = document.querySelector('.provider-btn.active')?.dataset.provider || 'claude';
     const displayName = document.getElementById('setup-display-name').value.trim();
     const statusEl = document.getElementById('setup-status');
-    const nextCfg = { ...cfg, claudeKey: '', keys: {}, provider, model: cfg.model };
-    setCfg(nextCfg);
-    saveCfg(nextCfg);
-    if (cfg.sbUrl && cfg.sbKey && authUser?.access_token) {
-      for (const providerName of ['claude', 'gemini', 'openai']) {
-        const input = document.getElementById(`setup-key-${providerName}`);
-        const rawValue = input?.value?.trim() || '';
-        if (input && rawValue) {
-          await saveUserAiKey(providerName, rawValue);
-          input.value = '';
+    if (statusEl) {
+      statusEl.textContent = 'Opslaan…';
+      statusEl.className = 'setup-status';
+    }
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+      const nextCfg = { ...cfg, claudeKey: '', keys: {}, provider, model: cfg.model };
+      setCfg(nextCfg);
+      saveCfg(nextCfg);
+
+      if (cfg.sbUrl && cfg.sbKey && authUser?.access_token) {
+        for (const providerName of ['claude', 'gemini', 'openai']) {
+          const input = document.getElementById(`setup-key-${providerName}`);
+          const rawValue = input?.value?.trim() || '';
+          if (input && rawValue) {
+            await saveUserAiKey(providerName, rawValue);
+            input.value = '';
+            const keyStatusEl = document.getElementById(`setup-key-status-${providerName}`);
+            if (keyStatusEl) keyStatusEl.textContent = 'Veilig opgeslagen in Supabase';
+          }
         }
       }
+
+      if (cfg.sbUrl && cfg.sbKey && authUser?.id) await updateAuthProfile({ displayName });
+      if (cfg.sbUrl && cfg.sbKey && authUser?.id) await syncUserPrefs(true);
+      if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');
+      else if (!cfg.sbUrl) setSyncStatus('offline', 'lokaal');
+
+      statusEl.textContent = hasAiProxyConfig()
+        ? (authUser?.id ? '✓ Opgeslagen. AI loopt nu via de beveiligde serverproxy.' : '✓ Opgeslagen. AI loopt via de beveiligde serverproxy.')
+        : '✓ Opgeslagen. Koppel Supabase om de beveiligde AI-proxy te gebruiken.';
+      statusEl.className = 'setup-status ok';
+      setTimeout(() => { hideSetup(); renderMeals(); }, 600);
+    } catch (error) {
+      console.error('[SetupSave] Error:', error);
+      statusEl.textContent = error instanceof Error ? error.message : 'Opslaan mislukt.';
+      statusEl.className = 'setup-status err';
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
     }
-    if (cfg.sbUrl && cfg.sbKey && authUser?.id) await updateAuthProfile({ displayName });
-    if (cfg.sbUrl && cfg.sbKey && authUser?.id) await syncUserPrefs(true);
-    if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');
-    else if (!cfg.sbUrl) setSyncStatus('offline', 'lokaal');
-    statusEl.textContent = hasAiProxyConfig()
-      ? (authUser?.id ? '✓ Opgeslagen. AI loopt nu via de beveiligde serverproxy.' : '✓ Opgeslagen. AI loopt via de beveiligde serverproxy.')
-      : '✓ Opgeslagen. Koppel Supabase om de beveiligde AI-proxy te gebruiken.';
-    statusEl.className = 'setup-status ok';
-    setTimeout(() => { hideSetup(); renderMeals(); }, 600);
   });
 
   // Open config
