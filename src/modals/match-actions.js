@@ -7,6 +7,7 @@ import { loadFavs, saveFavs } from '../storage.js';
 import { saveDay } from '../supabase/data.js';
 import { syncFavoritesToSupabase } from '../supabase/sync.js';
 import { buildMealItem } from '../products/matcher.js';
+import { isLiquidLike } from '../products/density.js';
 import { parseFood } from '../ai/parser.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
 import { _renderDayUI } from '../ui/render.js';
@@ -65,9 +66,9 @@ export function buildItemsFromMatchState(isDrink) {
         v: parseFloat(document.getElementById('mm-v-' + i)?.value) || 0,
         e: parseFloat(document.getElementById('mm-e-' + i)?.value) || 0,
       };
-      items.push(buildMealItem(ms.parsed.foodName, src, ms.gram, isDrink));
+      items.push(buildMealItem(ms.parsed.foodName, src, ms.gram, isLiquidLike(ms.parsed.foodName, isDrink)));
     } else if (ms.nevoMatch) {
-      items.push(buildMealItem(ms.nevoMatch.n, ms.nevoMatch, ms.gram, isDrink));
+      items.push(buildMealItem(ms.nevoMatch.n, ms.nevoMatch, ms.gram, isLiquidLike(ms.nevoMatch.n, isDrink)));
     }
   }
   return items;

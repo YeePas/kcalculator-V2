@@ -24,7 +24,7 @@ export function openAdviesModal() {
   updateAdviesModelSelect();
   const layout = document.querySelector('.layout');
   if (!layout) return;
-  layout.classList.remove('show-data', 'show-import');
+  layout.classList.remove('show-data', 'show-import', 'show-admin');
   if (window.innerWidth >= 781) {
     layout.classList.add('show-advies');
   } else {

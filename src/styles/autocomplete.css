@@ -12,9 +12,14 @@
   display: none; position: absolute; left: 0; right: 0; top: 100%;
   margin-top: 6px; background: #fdfdf9; border: 1.5px solid var(--border);
   border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
-  max-height: min(520px, 60vh); overflow-y: auto; z-index: 120;
+  max-height: min(520px, 60vh); overflow-y: auto; z-index: 80;
 }
 .ac-dropdown.open { display: block; }
+
+/* Never render autocomplete above modal overlays. */
+body:has(.modal-overlay.open) .ac-dropdown {
+  display: none !important;
+}
 .ac-item {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0.6rem 0.9rem; cursor: pointer; gap: 0.5rem;

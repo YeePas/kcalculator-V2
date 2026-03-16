@@ -11,6 +11,8 @@ import { saveDay } from '../supabase/data.js';
 import { syncFavoritesToSupabase } from '../supabase/sync.js';
 import { searchNevo } from '../products/database.js';
 import { matchItemToNevo, resolveGram } from '../products/matcher.js';
+import { isLiquidLike } from '../products/density.js';
+import { buildBugReportButton } from '../ui/bug-report.js';
 import { _renderDayUI } from '../ui/render.js';
 import { trapFocus, releaseFocus } from '../ui/focus.js';
 import { closeAcDropdown } from '../ui/autocomplete.js';
@@ -38,6 +40,7 @@ export function closeMatchModal() {
 export function renderMatchList() {
   const list = document.getElementById('match-list');
   list.innerHTML = matchState.map((ms, i) => {
+    const useMl = isLiquidLike(ms.nevoMatch?.n || ms.parsed.foodName, selMeal === 'drinken');
     const matched = ms.nevoMatch !== null && !ms.manualMode;
     const nevo = ms.nevoMatch;
     const factor = ms.gram / 100;
@@ -62,11 +65,21 @@ export function renderMatchList() {
 
     const aiLabel = nevo?._aiResult ? ' <span style="font-size:0.6rem;color:var(--blue)">AI</span>' : '';
     const statusLabel = matched ? `✓ ${nevo?._aiResult ? 'AI' : 'Database'}` : ms.manualMode ? '✎ Handmatig' : '? Niet gevonden';
+    const bugBtn = buildBugReportButton('match-modal-item', {
+      original: ms.parsed.original,
+      parsedName: ms.parsed.foodName,
+      gram: ms.gram,
+      meal: selMeal,
+      matchedName: nevo?.n || null,
+      matchedGroup: nevo?._group || null,
+      isManual: Boolean(ms.manualMode),
+    });
 
     const actionBtns = [];
     if (!ms.manualMode) actionBtns.push(`<button class="match-manual-btn" onclick="toggleManualMode(${i})">✎ Handmatig</button>`);
     actionBtns.push(`<button class="match-manual-btn" onclick="aiLookupMatch(${i})" style="border-color:var(--blue);color:var(--blue)">🤖 AI zoeken</button>`);
     if (matched) actionBtns.push(`<button class="match-manual-btn" id="match-fav-${i}" onclick="addMatchToFavs(${i})" style="border-color:var(--accent);color:var(--accent)">⭐ Favoriet</button>`);
+    if (bugBtn) actionBtns.push(bugBtn);
 
     const manualForm = ms.manualMode
       ? `<div class="match-manual-grid">
@@ -91,7 +104,7 @@ export function renderMatchList() {
         <label style="font-size:0.75rem;color:var(--muted)">Portie:</label>
         <input type="number" class="match-portie-input" value="${Math.round(ms.gram)}" min="1" step="10"
           oninput="updateMatchGram(${i}, this.value)">
-        <span style="font-size:0.75rem;color:var(--muted)">gram</span>
+        <span style="font-size:0.75rem;color:var(--muted)">${useMl ? 'ml' : 'gram'}</span>
       </div>
       <div class="match-item-actions">${actionBtns.join(' ')}</div>
       <div id="match-ai-status-${i}" style="font-size:0.75rem;margin-top:0.3rem"></div>
@@ -144,7 +157,7 @@ export function addMatchToFavs(idx) {
     vezels_g: r1((src.vz || 0) * factor),
     vetten_g: r1((src.v || 0) * factor),
     eiwitten_g: r1((src.e || 0) * factor),
-    portie: `${Math.round(gram)}g`,
+    portie: `${Math.round(gram)}${isLiquidLike(name, selMeal === 'drinken') ? 'ml' : 'g'}`,
   };
 
   if (!favs.some(f => f.naam === favItem.naam && f.item?.portie === favItem.portie)) {

@@ -1,6 +1,7 @@
 /* ── Portion Definitions ───────────────────────────────────── */
 // Porties op basis van RIVM-groep + product-specifieke overrides
 // Format: { t: type, g: gram, l: label }
+import { parseQuantity as parseSharedQuantity } from './quantity-parser.js';
 
 // Standaard porties per RIVM-groep (numeric ID)
 export const GROEP_PORTIES = {
@@ -148,7 +149,7 @@ export const PRODUCT_PORTIES = [
   // ═══ BELEG & SAUZEN ═══
   [/\bpindakaas/i,     [{ t:'eetlepel', g:15, l:'eetlepel' },{ t:'gram', g:100 }]],
   [/\bboter\b/i,      [{ t:'klontje', g:7, l:'klontje' },{ t:'gram', g:100 }]],
-  [/\bmargarine|\bhalfarine/i, [{ t:'klontje', g:7, l:'klontje' },{ t:'gram', g:100 }]],
+  [/\bmargarine|\bhalvarine/i, [{ t:'klontje', g:7, l:'klontje' },{ t:'gram', g:100 }]],
   [/\bjam\b|\bmarmelade/i, [{ t:'eetlepel', g:15, l:'eetlepel' },{ t:'gram', g:100 }]],
   [/\bhagel/i,         [{ t:'eetlepel', g:10, l:'eetlepel' },{ t:'gram', g:100 }]],
   [/\bhummus/i,        [{ t:'eetlepel', g:20, l:'eetlepel' },{ t:'gram', g:100 }]],
@@ -212,41 +213,5 @@ export function findPortie(productName, groepId, servingGrams) {
 
 // Parse quantity expressions: "2 bananen", "handje noten", "halve avocado"
 export function parseQuantity(query) {
-  const q = query.toLowerCase().trim();
-  let count = 1;
-  let unit = null;
-  let rest = q;
-
-  const numMatch = q.match(/^(\d+(?:[.,]\d+)?)\s+(.+)/);
-  const halfMatch = q.match(/^(?:halve?|half)\s+(.+)/);
-  const handjeMatch = q.match(/^(?:handje|handvol)\s+(.+)/);
-  const kopjeMatch = q.match(/^(?:kopje)\s+(.+)/);
-  const glasMatch = q.match(/^(?:glas(?:je)?)\s+(.+)/);
-
-  if (numMatch) {
-    count = parseFloat(numMatch[1].replace(',', '.'));
-    rest = numMatch[2];
-  } else if (halfMatch) {
-    count = 0.5;
-    rest = halfMatch[1];
-  } else if (handjeMatch) {
-    unit = 'handje';
-    rest = handjeMatch[1];
-  } else if (kopjeMatch) {
-    unit = 'kopje';
-    rest = kopjeMatch[1];
-  } else if (glasMatch) {
-    unit = 'glas';
-    rest = glasMatch[1];
-  }
-
-  // "appel 2 stuks" of "3 stuks"
-  const stuksEnd = rest.match(/(.+?)\s+(\d+)\s*(?:stuks?|st)$/);
-  if (stuksEnd) {
-    rest = stuksEnd[1];
-    count = parseFloat(stuksEnd[2]);
-  }
-  rest = rest.replace(/\s+(?:stuks?|st)$/i, '').trim();
-
-  return { count, unit, query: rest };
+  return parseSharedQuantity(query);
 }

@@ -247,6 +247,60 @@
   white-space: nowrap;
 }
 .match-manual-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.beta-bug-btn {
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-strong) 88%, var(--surface-soft));
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 0.78rem;
+  line-height: 1;
+  padding: 0.18rem 0.42rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+.beta-bug-btn:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface-strong));
+}
+.bug-report-dialog { max-width: 460px; }
+.bug-report-context {
+  font-size: 0.74rem;
+  color: var(--muted);
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+  margin-bottom: 0.7rem;
+}
+.bug-report-textarea {
+  width: 100%;
+  min-height: 110px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  padding: 0.62rem 0.7rem;
+  resize: vertical;
+}
+.bug-report-textarea:focus,
+.bug-report-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+.bug-report-select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.58rem 0.7rem;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+}
 .match-manual-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 0.5rem;
 }

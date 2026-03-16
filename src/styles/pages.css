@@ -217,3 +217,88 @@
 .smart-manage-info span { color: var(--muted); font-size: 0.73rem; }
 .smart-manage-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
 .smart-manage-actions button { padding: 0.25rem 0.45rem; font-size: 0.78rem; }
+
+/* ── Admin Page ──────────────────────────────────────────── */
+
+.admin-col { display: none; grid-column: 1 / -1; }
+.layout.mobile-view-admin .admin-col { display: block; }
+@media (min-width: 781px) {
+  .admin-col { display: none; }
+  .layout.show-admin .main-col { display: none; }
+  .layout.show-admin .sidebar { display: none; }
+  .layout.show-admin .data-col { display: none; }
+  .layout.show-admin .advies-col { display: none; }
+  .layout.show-admin .smart-import-col { display: none; }
+  .layout.show-admin .admin-col { display: block; grid-column: 1 / -1; }
+}
+
+.admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+.admin-issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.admin-issue-card {
+  background: color-mix(in srgb, var(--surface-strong) 88%, var(--surface-soft));
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-md) + 2px);
+  padding: 0.85rem 0.9rem;
+}
+.admin-issue-head {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.45rem;
+}
+.admin-issue-tags {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.admin-chip {
+  font-size: 0.68rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.08rem 0.45rem;
+  color: var(--muted);
+}
+.admin-issue-action {
+  padding: 0.34rem 0.58rem;
+  font-size: 0.72rem;
+}
+.admin-issue-message {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  margin-bottom: 0.45rem;
+}
+.admin-issue-meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.admin-issue-details {
+  margin-top: 0.45rem;
+  font-size: 0.74rem;
+}
+.admin-issue-details summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.admin-issue-details pre {
+  margin: 0.35rem 0 0;
+  padding: 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-soft);
+  white-space: pre-wrap;
+  word-break: break-word;
+}

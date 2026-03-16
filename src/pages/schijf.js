@@ -49,7 +49,7 @@ const OUTSIDE_GROUPS = new Set([
   'Vleeswaren',
 ]);
 
-const OUTSIDE_NAME_PATTERN = /chips|koek|cake|taart|gebak|croissant|donut|frisdrank|cola|energy drink|snoep|chocolade|ijs|milkshake|wijn|bier|cocktail|likeur|salami|bacon|spek|frituur|patat|saus|mayonaise|ketchup|dessert|vla|pudding|worst|hamburger|rookvlees|cervelaat|limo|siroop|leverworst|frikandel|knakworst|shoarma/;
+const OUTSIDE_NAME_PATTERN = /chips|koek|cake|taart|gebak|croissant|donut|frisdrank|cola|energy drink|snoep|chocolade|\bijs\b|roomijs|waterijs|milkshake|wijn|bier|cocktail|likeur|salami|bacon|spek|frituur|patat|saus|mayonaise|ketchup|dessert|vla|pudding|worst|hamburger|rookvlees|cervelaat|limo|siroop|leverworst|frikandel|knakworst|shoarma/;
 const EXCLUDE_NAME_PATTERN = /sap|smoothie|supplement|poeder|vitamine|capsule|pil|saus|bouillon|kruidenmix|kruiden|specerijen/;
 const SWEET_DAIRY_PATTERN = /vla|pudding|dessert|choco|vanillevla|room|slagroom|ijs|drinkyoghurt|yoghurtdrink|vruchtenyoghurt|(?<!half)volle melk|volle yoghurt|volle kwark|chocomel|fristi|optimel/;
 const SALTED_NUTS_PATTERN = /gezouten|honing|karamel|choco|borrelnoten|gebrand gezouten|gesuikerd|kokos/;
@@ -141,6 +141,9 @@ function classifyMatchedProduct(product, itemName) {
   const name = normalizeName(product?.n || itemName);
 
   if (!name || EXCLUDE_NAME_PATTERN.test(name)) return { type: 'ignored' };
+  if (/\b(zilvervliesrijst|zilvervlies rijst|bruine rijst|brown rice)\b/.test(name)) {
+    return { type: 'category', category: 'volkoren', group };
+  }
   if (OUTSIDE_GROUPS.has(group) || OUTSIDE_NAME_PATTERN.test(name)) return { type: 'outside', group };
 
   for (const matcher of POSITIVE_GROUP_MATCHERS) {
@@ -159,6 +162,9 @@ function classifyMatchedProduct(product, itemName) {
 function classifyNameFallback(itemName) {
   const name = normalizeName(itemName);
   if (!name || EXCLUDE_NAME_PATTERN.test(name)) return { type: 'ignored' };
+  if (/\b(zilvervliesrijst|zilvervlies rijst|bruine rijst|brown rice)\b/.test(name)) {
+    return { type: 'category', category: 'volkoren' };
+  }
   if (OUTSIDE_NAME_PATTERN.test(name)) return { type: 'outside' };
 
   for (const matcher of NAME_FALLBACK_MATCHERS) {

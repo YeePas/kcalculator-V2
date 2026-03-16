@@ -198,10 +198,10 @@ export function openSmartImportPage(prefillName) {
   syncSmartImportMealButtons();
   const layout = document.querySelector('.layout');
   if (!layout) return;
-  layout.classList.remove('show-data', 'show-advies');
+  layout.classList.remove('show-data', 'show-advies', 'show-admin');
   if (window.innerWidth >= 781) layout.classList.add('show-import');
   else {
-    layout.classList.remove('mobile-view-invoer', 'mobile-view-overzicht', 'mobile-view-data', 'mobile-view-advies');
+    layout.classList.remove('mobile-view-invoer', 'mobile-view-overzicht', 'mobile-view-data', 'mobile-view-advies', 'mobile-view-admin');
     layout.classList.add('mobile-view-import');
     document.querySelectorAll('.mobile-tab').forEach((t, i) => t.classList.toggle('active', i === 4));
   }

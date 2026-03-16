@@ -4,28 +4,11 @@ import { nevoReady, nevoData } from '../state.js';
 import { r1 } from '../utils.js';
 import { loadCustomProducts } from '../storage.js';
 import { searchNevo } from './database.js';
+import { PORTION_ALIASES as SHARED_PORTION_ALIASES, parsePortionTextPart } from './quantity-parser.js';
+import { toMacroGram, resolveDensityForName, isLiquidLike } from './density.js';
 
 // ── Portion Aliases ───────────────────────────────────────
-export const PORTION_ALIASES = {
-  'snee':35,'sneetje':35,'boterham':35,'plak':20,'plakje':15,'plakken':20,
-  'glas':200,'beker':250,'kopje':150,'kop':150,'mok':250,'fles':500,'flesje':330,'blikje':330,'blik':330,
-  'bord':250,'portie':150,'opscheplepel':50,'schep':50,'lepel':15,
-  'eetlepel':15,'el':15,'theelepel':5,'tl':5,
-  'stuk':100,'stuks':100,
-  'hand':50,'handje':50,'handvol':50,'handjes':50,
-  'ei':60,'eitje':60,'eieren':60,
-  'teen':3,'teentje':3,
-  'takje':2,
-  'scheutje':15,'scheut':30,
-  'snuf':1,'snufje':1,'mespuntje':1,
-  'eetlepels':15,'theelepels':5,
-  'opscheplepels':50,'schepjes':50,
-  'glazen':200,'kopjes':150,'mokken':250,
-  'plakjes':15,'sneetjes':35,
-  'kommen':250,
-  'blikjes':330,'flesjes':330,
-  'ml':1,'gram':1,'gr':1,'g':1,'cl':10,'dl':100,'liter':1000,'l':1000,'kg':1000,
-};
+export const PORTION_ALIASES = SHARED_PORTION_ALIASES;
 
 // ── Food Synonyms ─────────────────────────────────────────
 export const FOOD_SYNONYMS = {
@@ -67,79 +50,7 @@ export function parseTextToItems(text) {
     .map(s => s.trim())
     .filter(s => s.length > 0);
 
-  return parts.map(part => {
-    let gram = null;
-    let count = 1;
-    let foodName = part.toLowerCase();
-
-    const numWords = {'een':1,'één':1,'twee':2,'drie':3,'vier':4,'vijf':5,'zes':6,'zeven':7,'acht':8,'negen':9,'tien':10,'half':0.5,'halve':0.5};
-
-    // Pattern: "<number> gram/g <food>"
-    let m = foodName.match(/^(\d+(?:[.,]\d+)?)\s*(?:gram|gr|g|ml|cl|dl|l|kg)\s+(.+)/i);
-    if (m) { gram = parseFloat(m[1].replace(',','.')); foodName = m[2].trim(); }
-
-    // Pattern: "<number> <portion_word> <food>"
-    if (!gram) {
-      m = foodName.match(/^(\d+(?:[.,]\d+)?)\s+(\w+)\s+(.+)/i);
-      if (m) {
-        const num = parseFloat(m[1].replace(',','.'));
-        const unit = m[2].toLowerCase();
-        if (PORTION_ALIASES[unit]) {
-          gram = num * PORTION_ALIASES[unit];
-          foodName = m[3].trim();
-        } else {
-          count = num;
-          foodName = (m[2] + ' ' + m[3]).trim();
-        }
-      }
-    }
-
-    // Pattern: "<word_number> <portion_word> <food>"
-    if (!gram) {
-      for (const [word, num] of Object.entries(numWords)) {
-        const regex = new RegExp(`^${word}\\s+(\\w+)\\s+(.+)`, 'i');
-        m = foodName.match(regex);
-        if (m) {
-          const unit = m[1].toLowerCase();
-          if (PORTION_ALIASES[unit]) {
-            gram = num * PORTION_ALIASES[unit];
-            foodName = m[2].trim();
-          } else {
-            count = num;
-            foodName = (m[1] + ' ' + m[2]).trim();
-          }
-          break;
-        }
-      }
-    }
-
-    // Pattern: "<number> <food>" (assume grams if ≥20, else count)
-    if (!gram) {
-      m = foodName.match(/^(\d+(?:[.,]\d+)?)\s+(.+)/i);
-      if (m) {
-        const num = parseFloat(m[1].replace(',','.'));
-        foodName = m[2].trim();
-        if (num >= 20) gram = num;
-        else count = num;
-      }
-    }
-
-    // Pattern: "<word_number> <food>"
-    if (!gram) {
-      for (const [word, num] of Object.entries(numWords)) {
-        const regex = new RegExp(`^${word}\\s+(.+)`, 'i');
-        m = foodName.match(regex);
-        if (m) { count = num; foodName = m[1].trim(); break; }
-      }
-    }
-
-    const cleanName = foodName
-      .replace(/\s+/g, ' ')
-      .replace(/^(een|het|de|wat|enkele)\s+/i, '')
-      .trim();
-
-    return { original: part.trim(), foodName: cleanName, gram, count };
-  });
+  return parts.map(part => parsePortionTextPart(part));
 }
 
 // ── Match item to NEVO database ───────────────────────────
@@ -223,6 +134,7 @@ export function matchItemToNevo(parsedItem) {
 
 // ── Resolve gram amount ───────────────────────────────────
 export function resolveGram(parsedItem, nevoMatch) {
+  if (parsedItem.ml) return parsedItem.ml;
   if (parsedItem.gram) return parsedItem.gram;
   const name = parsedItem.foodName.toLowerCase();
   const count = parsedItem.count || 1;
@@ -241,7 +153,11 @@ export function resolveGram(parsedItem, nevoMatch) {
 
 // ── Build meal item from match ────────────────────────────
 export function buildMealItem(naam, src, gram, isDrink) {
-  const factor = gram / 100;
+  const useMl = isLiquidLike(naam, isDrink);
+  const macroGram = toMacroGram(gram, useMl, naam);
+  const factor = macroGram / 100;
+  const roundedAmount = Math.round(gram);
+  const density = resolveDensityForName(naam);
   return {
     naam,
     kcal: Math.round((src.k || 0) * factor),
@@ -249,7 +165,8 @@ export function buildMealItem(naam, src, gram, isDrink) {
     vezels_g: r1((src.vz || 0) * factor),
     vetten_g: r1((src.v || 0) * factor),
     eiwitten_g: r1((src.e || 0) * factor),
-    portie: Math.round(gram) + 'g',
-    ml: isDrink ? Math.round(gram) : 0,
+    portie: useMl ? (roundedAmount + 'ml') : (roundedAmount + 'g'),
+    ml: useMl ? roundedAmount : 0,
+    _density: useMl ? density : null,
   };
 }

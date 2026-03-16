@@ -40,6 +40,12 @@
   .layout.mobile-view-import .data-col { display: none; }
   .layout.mobile-view-import .advies-col { display: none; }
   .layout.mobile-view-import .smart-import-col { display: block; }
+  .layout.mobile-view-admin .main-col { display: none; }
+  .layout.mobile-view-admin .sidebar { display: none; }
+  .layout.mobile-view-admin .data-col { display: none; }
+  .layout.mobile-view-admin .advies-col { display: none; }
+  .layout.mobile-view-admin .smart-import-col { display: none; }
+  .layout.mobile-view-admin .admin-col { display: block; }
 }
 
 /* ── Enhanced Mobile UX ───────────────────────────────────── */

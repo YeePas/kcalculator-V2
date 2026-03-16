@@ -6,6 +6,8 @@ import { esc, highlightMatches, emptyDay } from '../utils.js';
 import { searchNevo } from '../products/database.js';
 import { findPortie } from '../products/portions.js';
 import { buildMealItem } from '../products/matcher.js';
+import { isLiquidLike } from '../products/density.js';
+import { buildBugReportButton } from './bug-report.js';
 import { localData, currentDate } from '../state.js';
 import { saveDay } from '../supabase/data.js';
 import { _renderDayUI } from './render.js';
@@ -55,33 +57,44 @@ export function selectAcItem(idx) {
   const item = acResults[idx];
   if (!item) return;
   setAcSelectedItem(item);
+  const useMl = isLiquidLike(item.n, selMeal === 'drinken');
 
   const dd = document.getElementById('ac-dropdown');
   const porties = findPortie(item.n, item.g, item.sg);
   const badge = item._custom ? 'Eigen' : (item.b ? item.b : 'Database');
   const defaultGram = porties[0]?.g || 100;
+  const bugBtn = buildBugReportButton('autocomplete-product', {
+    product: item.n,
+    group: item._group || null,
+    brand: item.b || null,
+    meal: selMeal,
+    suggestedAmount: defaultGram,
+    portions: porties.slice(0, 6),
+  });
 
   let portieButtons = '';
   for (const p of porties) {
     const label = p.l || p.t;
     const encodedLabel = encodeURIComponent(label);
     if (p.t === 'gram' || p.t === 'ml') {
-      portieButtons += `<button class="ac-portie-quick" onclick="setPortie(${p.g},decodeURIComponent('${encodeURIComponent(`${p.g}${p.t === 'ml' ? 'ml' : 'g'}`)}'))">${p.g}${p.t === 'ml' ? 'ml' : 'g'}</button>`;
+      const unitLabel = useMl || p.t === 'ml' ? 'ml' : 'g';
+      portieButtons += `<button class="ac-portie-quick" onclick="setPortie(${p.g},decodeURIComponent('${encodeURIComponent(`${p.g}${unitLabel}`)}'))">${p.g}${unitLabel}</button>`;
     } else {
-      portieButtons += `<button class="ac-portie-quick" onclick="setPortie(${p.g},decodeURIComponent('${encodedLabel}'))">${esc(label)} (${p.g}g)</button>`;
+      const amountLabel = `${p.g}${useMl ? 'ml' : 'g'}`;
+      portieButtons += `<button class="ac-portie-quick" onclick="setPortie(${p.g},decodeURIComponent('${encodedLabel}'))">${esc(label)} (${amountLabel})</button>`;
       if (['stuk', 'snee', 'plak', 'ei'].includes(p.t)) {
         const doubleLabel = encodeURIComponent(`2x ${label}`);
-        portieButtons += `<button class="ac-portie-quick" onclick="setPortie(${p.g * 2},decodeURIComponent('${doubleLabel}'))">2x (${p.g * 2}g)</button>`;
+        portieButtons += `<button class="ac-portie-quick" onclick="setPortie(${p.g * 2},decodeURIComponent('${doubleLabel}'))">2x (${p.g * 2}${useMl ? 'ml' : 'g'})</button>`;
       }
     }
   }
 
   dd.innerHTML = `
-    <div class="ac-hint"><span class="ac-hint-badge">${esc(badge)}</span> ${esc(item.n)}</div>
+    <div class="ac-hint"><span class="ac-hint-badge">${esc(badge)}</span> ${esc(item.n)} ${bugBtn}</div>
     <div class="ac-portie-quicks">${portieButtons}</div>
     <div class="ac-portie-manual">
       <input type="number" class="ac-portie-input" id="ac-portie-gram" value="${defaultGram}" min="1" step="10" onkeydown="if(event.key==='Enter'){event.preventDefault();addNevoItem();}">
-      <span class="ac-portie-unit">gram</span>
+      <span class="ac-portie-unit">${useMl ? 'ml' : 'gram'}</span>
       <button class="ac-portie-add" onclick="addNevoItem()">+</button>
     </div>
     <div style="padding:0.3rem 0.9rem;font-size:0.72rem;color:var(--muted)">
@@ -105,9 +118,9 @@ export function addNevoItem(portieLabel) {
   const gramInput = document.getElementById('ac-portie-gram');
   const gram = parseFloat(gramInput?.value) || 100;
 
-  const isDrink = selMeal === 'drinken';
-  const item = buildMealItem(acSelectedItem.n, acSelectedItem, gram, isDrink);
-  item.portie = portieLabel || (gram === 100 ? '100g' : `${gram}g`);
+  const useMl = isLiquidLike(acSelectedItem.n, selMeal === 'drinken');
+  const item = buildMealItem(acSelectedItem.n, acSelectedItem, gram, useMl);
+  item.portie = portieLabel || (gram === 100 ? (useMl ? '100ml' : '100g') : `${gram}${useMl ? 'ml' : 'g'}`);
   item._gram = gram;
 
   const day = localData[currentDate] || emptyDay();

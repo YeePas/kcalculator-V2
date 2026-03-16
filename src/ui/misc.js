@@ -122,7 +122,7 @@ export async function goToDay(key) {
 /* ── Mobile view switching ───────────────────────────────── */
 function scrollMobileViewToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  document.querySelectorAll('.layout, .main-col, .sidebar, .data-col, .advies-col, .smart-import-col').forEach(el => {
+  document.querySelectorAll('.layout, .main-col, .sidebar, .data-col, .advies-col, .smart-import-col, .admin-col').forEach(el => {
     if (typeof el.scrollTo === 'function') el.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
@@ -134,7 +134,7 @@ export function switchMobileView(view, btn) {
     scrollMobileViewToTop();
     return;
   }
-  layout.classList.remove('mobile-view-invoer', 'mobile-view-overzicht', 'mobile-view-data', 'mobile-view-advies', 'mobile-view-import', 'show-advies', 'show-import');
+  layout.classList.remove('mobile-view-invoer', 'mobile-view-overzicht', 'mobile-view-data', 'mobile-view-advies', 'mobile-view-import', 'mobile-view-admin', 'show-advies', 'show-import', 'show-admin');
   layout.classList.add('mobile-view-' + view);
   document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
@@ -147,5 +147,8 @@ export function switchMobileView(view, btn) {
   }
   if (view === 'import') {
     import('../pages/smart-import.js').then(m => m.openSmartImportPage());
+  }
+  if (view === 'admin') {
+    import('../pages/admin.js').then(m => m.renderAdminPage());
   }
 }

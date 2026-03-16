@@ -31,7 +31,7 @@ function formatBalance(balance, hasData) {
 export function openWeekModal() {
   const layout = document.querySelector('.layout');
   if (!layout) return;
-  layout.classList.remove('show-import');
+  layout.classList.remove('show-import', 'show-admin');
   if (window.innerWidth >= 781) {
     layout.classList.toggle('show-data');
     if (layout.classList.contains('show-data')) renderDataOverzicht(_doCurrentDays);

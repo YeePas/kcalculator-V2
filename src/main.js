@@ -43,7 +43,8 @@ import { fetchUserAiKeyStatuses, saveUserAiKey } from './supabase/user-ai-keys.j
 
 // ── Products ─────────────────────────────────────────────────
 import { clearProductCache, loadNevo, searchNevo } from './products/database.js';
-import { parseTextToItems, matchItemToNevo } from './products/matcher.js';
+import { parseTextToItems, matchItemToNevo, buildMealItem } from './products/matcher.js';
+import { isLiquidLike } from './products/density.js';
 import {
   openCustomModal, closeCustomModal, updatePhotoModelSelect,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
@@ -72,6 +73,9 @@ import {
   initAutocomplete, closeAcDropdown,
   selectAcItem, setPortie, addNevoItem,
 } from './ui/autocomplete.js';
+import {
+  openBugReportModal, closeBugReportModal, submitBugReport,
+} from './ui/bug-report.js';
 
 // ── Modals ───────────────────────────────────────────────────
 import {
@@ -103,6 +107,9 @@ import {
 import {
   openSmartImportPage, closeSmartImportPage, initSmartImportListeners,
 } from './pages/smart-import.js';
+import {
+  openAdminPage, initAdminListeners,
+} from './pages/admin.js';
 
 // ══════════════════════════════════════════════════════════════
 // Expose functions needed by inline onclick handlers
@@ -115,6 +122,7 @@ Object.assign(window, {
   goToDay,
   updateMatchNevo, updateMatchGram, toggleManualMode,
   addMatchToFavs, aiLookupMatch,
+  openBugReportModal, closeBugReportModal, submitBugReport,
   runAdvies, switchMobileView,
   closeEditModal, closeMatchModal, moveItemToMeal, openEditRecipeGroupModal,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
@@ -556,6 +564,20 @@ function openGoalsModal() {
   document.getElementById('modal-overlay').classList.add('open');
 }
 
+function isAdminRoute() {
+  const normalized = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+  return normalized === '/admin';
+}
+
+function openAdminIfRoute() {
+  if (!isAdminRoute()) return;
+  if (!authUser?.access_token) {
+    showSetup('auth');
+    return;
+  }
+  openAdminPage();
+}
+
 // ══════════════════════════════════════════════════════════════
 // Manual Sync
 // ══════════════════════════════════════════════════════════════
@@ -719,9 +741,9 @@ function initEventListeners() {
   document.getElementById('brand-home-btn')?.addEventListener('click', () => {
     const layout = document.querySelector('.layout');
     if (!layout) return;
-    layout.classList.remove('show-data', 'show-advies', 'show-import');
+    layout.classList.remove('show-data', 'show-advies', 'show-import', 'show-admin');
     if (window.innerWidth < 781) {
-      layout.classList.remove('mobile-view-overzicht', 'mobile-view-data', 'mobile-view-advies', 'mobile-view-import');
+      layout.classList.remove('mobile-view-overzicht', 'mobile-view-data', 'mobile-view-advies', 'mobile-view-import', 'mobile-view-admin');
       layout.classList.add('mobile-view-invoer');
       document.querySelectorAll('.mobile-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
     }
@@ -748,6 +770,9 @@ function initEventListeners() {
   document.getElementById('smart-import-header-btn')?.addEventListener('click', () => openSmartImportPage());
   document.getElementById('smart-import-back-btn')?.addEventListener('click', closeSmartImportPage);
   initSmartImportListeners();
+
+  // Admin
+  initAdminListeners();
 
   // Week / Data overview
   document.getElementById('week-btn')?.addEventListener('click', openWeekModal);
@@ -862,6 +887,7 @@ function initEventListeners() {
         if (cfg.sbUrl && cfg.sbKey) await initSupabase();
         await loadUserPrefs(); setGoals(loadGoals()); syncUserPrefs();
         renderQuickFavs(); await renderMeals();
+        openAdminIfRoute();
       }, 400);
     } catch (e) { statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--danger)'; }
   });
@@ -881,7 +907,14 @@ function initEventListeners() {
         setLocalData(null); setGoals({ ...DEFAULT_GOALS });
         setAuthUser(result); setSyncStatus('synced', 'verbonden');
         statusEl.textContent = '✓ Account aangemaakt!'; statusEl.style.color = 'var(--green)';
-        setTimeout(async () => { hideSetup(); if (cfg.sbUrl && cfg.sbKey) await initSupabase(); await loadUserPrefs(); renderQuickFavs(); await renderMeals(); }, 400);
+        setTimeout(async () => {
+          hideSetup();
+          if (cfg.sbUrl && cfg.sbKey) await initSupabase();
+          await loadUserPrefs();
+          renderQuickFavs();
+          await renderMeals();
+          openAdminIfRoute();
+        }, 400);
       } else {
         statusEl.textContent = '✓ Bevestigingsmail verzonden — check je inbox.'; statusEl.style.color = 'var(--green)';
       }
@@ -1006,17 +1039,8 @@ function initEventListeners() {
     }
 
     // Add to current meal
-    const isDrink = selMeal === 'drinken';
-    const item = {
-      naam,
-      kcal: Math.round(per100.k * factor),
-      koolhydraten_g: r1(per100.kh * factor),
-      vezels_g: r1(per100.vz * factor),
-      vetten_g: r1(per100.v * factor),
-      eiwitten_g: r1(per100.e * factor),
-      portie: gram === 100 ? '100g' : `${gram}g`,
-      ml: isDrink ? Math.round(gram) : 0,
-    };
+    const useMl = isLiquidLike(naam, selMeal === 'drinken');
+    const item = buildMealItem(naam, per100, gram, useMl);
 
     const day = localData[currentDate] || emptyDay();
     MEAL_NAMES.forEach(m => { if (!day[m]) day[m] = []; });
@@ -1106,6 +1130,7 @@ function initNumericInputModes() {
       setSyncStatus(authUser ? 'synced' : 'offline', authUser ? 'verbonden' : 'lokaal');
       renderQuickFavs();
       await renderMeals();
+      openAdminIfRoute();
     } else {
       showSetup('auth');
       setSyncStatus('offline', 'lokaal');
