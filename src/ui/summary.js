@@ -1,6 +1,7 @@
 /* ── Summary Rendering ─────────────────────────────────────── */
 
 import { goals } from '../state.js';
+import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
 import { r1, pct, fmtVal, dayTotals } from '../utils.js';
 
 function getCalorieOverageTone(goal, calories) {
@@ -40,10 +41,41 @@ export function renderSummary(day) {
   infoRest.innerHTML = goals.kcal
     ? (restKcal >= 0 ? `<strong>${restKcal}</strong> kcal over` : `<span style="color:${overageTone?.colorVar || 'var(--danger)'}"><strong>${Math.abs(restKcal)}</strong> kcal te veel</span>`)
     : '';
+  document.getElementById('ring-info-carbs').innerHTML = `<strong>${r1(carbs)}g</strong> koolhydraten`;
   document.getElementById('ring-info-prot').innerHTML = `<strong>${r1(prot)}g</strong> eiwit`;
   document.getElementById('ring-info-fat').innerHTML = `<strong>${r1(fat)}g</strong> vet`;
 
-  import('../ui/charts.js').then(m => m.renderMacroDonut(carbs, fat, prot));
+  const mealShareTotalEl = document.getElementById('meal-share-total');
+  const mealShareListEl = document.getElementById('meal-share-list');
+  const mealShares = MEAL_NAMES
+    .map(meal => {
+      const mealCalories = Math.round((day?.[meal] || []).reduce((sum, item) => sum + (Number(item?.kcal) || 0), 0));
+      return {
+        meal,
+        label: MEAL_LABELS[meal] || meal,
+        kcal: mealCalories,
+        pct: cals > 0 ? Math.round((mealCalories / cals) * 100) : 0,
+      };
+    })
+    .filter(item => item.kcal > 0)
+    .sort((a, b) => b.kcal - a.kcal);
+
+  if (mealShareTotalEl) mealShareTotalEl.textContent = `${Math.round(cals)} kcal`;
+  if (mealShareListEl) {
+    mealShareListEl.innerHTML = mealShares.length
+      ? mealShares.map(item => `
+          <div class="meal-share-row">
+            <div class="meal-share-row-head">
+              <span class="meal-share-row-name">${item.label}</span>
+              <span class="meal-share-row-meta">${item.pct}% · ${item.kcal} kcal</span>
+            </div>
+            <div class="bar-track meal-share-track">
+              <div class="bar-fill bar-e" style="width:${item.pct}%"></div>
+            </div>
+          </div>
+        `).join('')
+      : '<div class="meal-share-empty">Nog geen eetmomenten ingevuld.</div>';
+  }
 
   document.getElementById('total-carbs').innerHTML = fmtVal(carbs, goals.carbs, 'g');
   document.getElementById('total-fat').innerHTML = fmtVal(fat, goals.fat, 'g');

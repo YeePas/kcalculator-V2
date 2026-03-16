@@ -78,17 +78,10 @@ export function applyDark(on) {
 
 /* ── Macro visibility toggles ────────────────────────────── */
 export function applyVis() {
-  const fiberRow = document.getElementById('row-fiber');
-  Object.keys(vis).forEach(key => {
-    if (key === 'fiber') return;
-    const row = document.getElementById('row-' + key);
-    if (row) row.style.display = vis[key] ? '' : 'none';
-    const btn = document.querySelector(`.macro-toggle[data-macro="${key}"]`);
-    if (btn) btn.classList.toggle('on', vis[key]);
+  ['row-carbs', 'row-fat', 'row-prot', 'row-water', 'row-fiber'].forEach(id => {
+    const row = document.getElementById(id);
+    if (row) row.style.display = '';
   });
-  if (fiberRow) fiberRow.style.display = (vis.fiber && vis.carbs) ? '' : 'none';
-  const fiberBtn = document.querySelector('.macro-toggle[data-macro="fiber"]');
-  if (fiberBtn) fiberBtn.classList.toggle('on', vis.fiber);
   localStorage.setItem(VIS_KEY, JSON.stringify(vis));
 }
 

@@ -613,46 +613,37 @@ Vet: 3.3g"></textarea>
         </button>
       </div>
 
-      <div class="cal-ring-wrap">
-        <div class="cal-ring">
-          <svg viewBox="0 0 110 110">
-            <circle class="ring-bg" cx="55" cy="55" r="47"/>
-            <circle class="ring-fill green" cx="55" cy="55" r="47" id="cal-ring-fill"
-              stroke-dasharray="295.3" stroke-dashoffset="295.3"/>
-          </svg>
-          <div class="cal-ring-center">
-            <div class="cal-ring-number" id="total-cals">0</div>
-            <div class="cal-ring-label" id="cal-ring-label">kcal</div>
+      <div class="summary-hero">
+        <div class="cal-ring-wrap">
+          <div class="cal-ring">
+            <svg viewBox="0 0 110 110">
+              <circle class="ring-bg" cx="55" cy="55" r="47"/>
+              <circle class="ring-fill green" cx="55" cy="55" r="47" id="cal-ring-fill"
+                stroke-dasharray="295.3" stroke-dashoffset="295.3"/>
+            </svg>
+            <div class="cal-ring-center">
+              <div class="cal-ring-number" id="total-cals">0</div>
+              <div class="cal-ring-label" id="cal-ring-label">kcal</div>
+            </div>
+          </div>
+          <div class="cal-ring-info">
+            <div class="cal-ring-info-row" id="ring-info-rest"></div>
+            <div class="cal-ring-info-row" id="ring-info-carbs"></div>
+            <div class="cal-ring-info-row" id="ring-info-prot"></div>
+            <div class="cal-ring-info-row" id="ring-info-fat"></div>
           </div>
         </div>
-        <div class="cal-ring-info">
-          <div class="cal-ring-info-row" id="ring-info-rest"></div>
-          <div class="cal-ring-info-row" id="ring-info-prot"></div>
-          <div class="cal-ring-info-row" id="ring-info-fat"></div>
+      </div>
+
+      <div class="meal-share-card" id="meal-share-card">
+        <div class="meal-share-header">
+          <div class="meal-share-title">Verdeling per eetmoment</div>
+          <div class="meal-share-total" id="meal-share-total">0 kcal</div>
         </div>
+        <div class="meal-share-list" id="meal-share-list"></div>
       </div>
 
-      <div class="macro-donut-wrap" id="macro-donut-wrap">
-        <div class="macro-donut">
-          <svg viewBox="0 0 80 80" id="macro-donut-svg">
-            <circle cx="40" cy="40" r="32" fill="none" stroke="var(--border)" stroke-width="10"/>
-          </svg>
-          <div class="macro-donut-center">
-            <div class="macro-donut-total" id="donut-total">0g</div>
-            <div class="macro-donut-label">macros</div>
-          </div>
-        </div>
-        <div class="macro-donut-legend" id="donut-legend"></div>
-      </div>
-
-      <div class="macro-toggles">
-        <button class="macro-toggle on" data-macro="carbs"><span class="chip-dot" style="background:var(--blue)"></span>Koolhydraten</button>
-        <button class="macro-toggle on" data-macro="fat"><span class="chip-dot" style="background:var(--danger)"></span>Vetten</button>
-        <button class="macro-toggle on" data-macro="prot"><span class="chip-dot" style="background:var(--green)"></span>Eiwitten</button>
-        <button class="macro-toggle on" data-macro="fiber"><span class="chip-dot" style="background:var(--fiber)"></span>Vezels</button>
-        <button class="macro-toggle on" data-macro="water"><span class="chip-dot" style="background:var(--water)"></span>Drinken</button>
-      </div>
-
+      <div class="macro-bars-card">
       <div class="macro-bars">
         <div id="row-carbs">
           <div class="macro-row-header"><span class="macro-row-name">Koolhydraten</span><span class="macro-row-val" id="total-carbs">0g</span></div>
@@ -674,6 +665,7 @@ Vet: 3.3g"></textarea>
           <div class="macro-row-header"><span class="macro-row-name">💧 Drinken</span><span class="macro-row-val" id="total-water">0 ml</span></div>
           <div class="bar-track"><div class="bar-fill bar-w" id="bar-w" style="width:0%"></div></div>
         </div>
+      </div>
       </div>
     </div>
 

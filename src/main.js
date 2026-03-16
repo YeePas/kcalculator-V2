@@ -713,11 +713,6 @@ function initEventListeners() {
   // Dark mode
   document.getElementById('dark-toggle')?.addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));
 
-  // Macro toggles
-  document.querySelectorAll('.macro-toggle').forEach(btn => {
-    btn.addEventListener('click', () => { vis[btn.dataset.macro] = !vis[btn.dataset.macro]; applyVis(); });
-  });
-
   // Provider buttons
   document.querySelectorAll('.provider-btn').forEach(btn => {
     btn.addEventListener('click', () => setProviderUI(btn.dataset.provider));
