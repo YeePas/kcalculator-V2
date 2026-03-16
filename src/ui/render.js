@@ -88,6 +88,7 @@ export function _renderDayUI(day) {
   });
 
   renderSummary(day);
+  refreshMealFoldControls();
   // These are called from main.js or other modules, fire them via events
   import('../ui/charts.js').then(m => { m.renderWeekSpark(); });
   import('../ui/misc.js').then(m => { m.renderHistory(); });
@@ -95,6 +96,28 @@ export function _renderDayUI(day) {
 
 export function toggleMealSection(header) {
   header.closest('.meal-section').classList.toggle('collapsed');
+  refreshMealFoldControls();
+}
+
+function refreshMealFoldControls() {
+  const btn = document.getElementById('toggle-all-meals-btn');
+  if (!btn) return;
+  const sections = Array.from(document.querySelectorAll('.meal-section'));
+  if (!sections.length) {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = '';
+  const allCollapsed = sections.every(sec => sec.classList.contains('collapsed'));
+  btn.textContent = allCollapsed ? '↕️ Alles uitklappen' : '↕️ Alles inklappen';
+}
+
+export function toggleAllMealSections() {
+  const sections = Array.from(document.querySelectorAll('.meal-section'));
+  if (!sections.length) return;
+  const allCollapsed = sections.every(sec => sec.classList.contains('collapsed'));
+  sections.forEach(sec => sec.classList.toggle('collapsed', !allCollapsed));
+  refreshMealFoldControls();
 }
 
 /* ── renderMealItems: handle recipe groups ────────────────── */

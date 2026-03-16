@@ -120,6 +120,7 @@ export function loadCfg() {
     sbKey: cleanString(raw.sbKey || SUPABASE_ANON_KEY),
     claudeKey: '',
     keys: sessionKeys,
+    openFoodFactsLiveSearch: raw.openFoodFactsLiveSearch !== false,
     supermarketExclusions: normalizeSupermarketFilters(raw.supermarketExclusions),
     provider: raw.provider || 'claude',
     model: raw.model || '',

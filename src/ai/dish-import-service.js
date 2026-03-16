@@ -305,19 +305,28 @@ export async function analyzeDishNameWithAI(input) {
 }
 
 export function parseManualNutritionInput(input) {
+  const portionGrams = Math.max(1, Math.round(toNum(input.portionGrams, 100)));
+  const factor = portionGrams / 100;
+
+  const caloriesPer100 = Math.max(0, Math.round(toNum(input.calories, 0)));
+  const proteinPer100 = Math.max(0, toNum(input.protein_g, 0));
+  const carbsPer100 = Math.max(0, toNum(input.carbs_g, 0));
+  const fatPer100 = Math.max(0, toNum(input.fat_g, 0));
+  const fiberPer100 = Math.max(0, toNum(input.fiber_g, 0));
+
   return createDishProposal({
     sourceType: 'manual_nutrition',
     title: input.title,
     recognizedAs: 'Handmatig ingevoerd per 100 gram',
     confidence: 'high',
     portionLabel: input.portionLabel || 'Standaard portie',
-    portionGrams: input.portionGrams || 100,
-    calories: input.calories,
-    protein_g: input.protein_g,
-    carbs_g: input.carbs_g,
-    fat_g: input.fat_g,
-    fiber_g: input.fiber_g,
-    assumptions: ['Waarden rechtstreeks overgenomen uit handmatige invoer.'],
+    portionGrams,
+    calories: Math.round(caloriesPer100 * factor),
+    protein_g: Number((proteinPer100 * factor).toFixed(1)),
+    carbs_g: Number((carbsPer100 * factor).toFixed(1)),
+    fat_g: Number((fatPer100 * factor).toFixed(1)),
+    fiber_g: Number((fiberPer100 * factor).toFixed(1)),
+    assumptions: [`Invoer was per 100g; omgerekend naar ${portionGrams}g portie.`],
     alternatives: [],
     rawSourceInput: input.rawSourceInput || input.title,
     providerUsed: 'manual',

@@ -61,7 +61,7 @@ import { hasAiProxyConfig } from './ai/providers.js';
 import { parseFood } from './ai/parser.js';
 
 // ── UI ───────────────────────────────────────────────────────
-import { renderMeals, _renderDayUI, toggleMealSection, renderMealItems, renderItem } from './ui/render.js';
+import { renderMeals, _renderDayUI, toggleMealSection, toggleAllMealSections, renderMealItems, renderItem } from './ui/render.js';
 import { renderSummary } from './ui/summary.js';
 import { renderDashboard, renderWeekSpark, renderMacroDonut } from './ui/charts.js';
 import { setSyncStatus } from './ui/sync-status.js';
@@ -72,7 +72,7 @@ import {
 } from './ui/misc.js';
 import {
   initAutocomplete, closeAcDropdown,
-  selectAcItem, setPortie, addNevoItem,
+  selectAcItem, setPortie, addNevoItem, importAcItemToCustom,
 } from './ui/autocomplete.js';
 import {
   openBugReportModal, closeBugReportModal, submitBugReport,
@@ -116,10 +116,10 @@ import {
 // Expose functions needed by inline onclick handlers
 // ══════════════════════════════════════════════════════════════
 Object.assign(window, {
-  toggleMealSection, saveMealAsRecipe, deleteRecipeGroup,
+  toggleMealSection, toggleAllMealSections, saveMealAsRecipe, deleteRecipeGroup,
   saveItemAsFavorite, openEditModal, deleteItem,
   addFavToMeal, toggleFavExpand, deleteFav, openEditFavModal, recalcEditFavTotals,
-  selectAcItem, setPortie, addNevoItem, openSmartImportPage, closeCustomModal,
+  selectAcItem, setPortie, addNevoItem, importAcItemToCustom, openSmartImportPage, closeCustomModal,
   goToDay,
   updateMatchNevo, updateMatchGram, toggleManualMode,
   addMatchToFavs, aiLookupMatch,
@@ -493,6 +493,8 @@ function showSetup(panel) {
     document.getElementById('setup-status').textContent = '';
     setProviderUI(cfg.provider || 'claude');
     syncSupermarketFilterUI(cfg.supermarketExclusions || []);
+    const offToggle = document.getElementById('settings-off-live-toggle');
+    if (offToggle) offToggle.checked = cfg.openFoodFactsLiveSearch !== false;
     const greeting = document.getElementById('setup-user-greeting');
     if (greeting) {
       if (authUser) {
@@ -626,6 +628,7 @@ async function manualSync() {
         adviesModel: cfg.adviesModel || '',
         importProvider: cfg.importProvider || '',
         importModel: cfg.importModel || '',
+        openFoodFactsLiveSearch: cfg.openFoodFactsLiveSearch !== false,
         supermarketExclusions: cfg.supermarketExclusions || [],
         vis,
         showDrinks,
@@ -856,6 +859,7 @@ function initEventListeners() {
         .filter(option => !document.getElementById(`supermarket-filter-${option.id}`)?.checked)
         .map(option => option.id);
       const supermarketExclusions = normalizeSupermarketFilters(uncheckedSupermarkets);
+      const openFoodFactsLiveSearch = document.getElementById('settings-off-live-toggle')?.checked !== false;
 
       const nextCfg = {
         ...cfg,
@@ -863,6 +867,7 @@ function initEventListeners() {
         keys: loadSessionAiKeys(),
         provider,
         model: cfg.model,
+        openFoodFactsLiveSearch,
         supermarketExclusions,
       };
       setCfg(nextCfg);

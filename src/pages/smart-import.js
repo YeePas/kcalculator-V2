@@ -54,7 +54,7 @@ function renderManualProposalCard(targetId, proposal) {
   const assumes = assumptions.length
     ? '<details class="smart-assumptions-details"><summary>Aannames</summary><ul class="smart-assumptions">' + assumptions.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></details>' : '';
   el.innerHTML = '<div class="smart-card smart-card-compact">'
-    + '<div class="smart-card-inline-head"><strong>' + esc(proposal.title) + '</strong><span class="smart-card-inline-meta">' + proposal.calories + ' kcal · ' + proposal.carbs_g + 'g kh · ' + proposal.protein_g + 'g eiwit</span></div>'
+    + '<div class="smart-card-inline-head"><strong>' + esc(proposal.title) + '</strong><span class="smart-card-inline-meta">Portie ' + proposal.portionGrams + 'g: ' + proposal.calories + ' kcal · ' + proposal.carbs_g + 'g kh · ' + proposal.protein_g + 'g eiwit</span></div>'
     + assumes
     + '<div class="smart-actions">'
     + '<button class="btn-primary" data-action="apply" data-target="' + targetId + '">' + getApplyButtonLabel() + '</button>'

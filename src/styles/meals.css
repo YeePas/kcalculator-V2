@@ -64,6 +64,25 @@ textarea#food-input::placeholder { color: var(--tertiary); }
 
 .main-col { }
 
+.meal-fold-controls { display: flex; justify-content: flex-end; margin: -0.35rem 0 0.85rem; }
+.meal-fold-btn {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-strong) 92%, var(--surface-soft));
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
+  transition: all 0.15s;
+}
+.meal-fold-btn:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  transform: translateY(-1px);
+}
+
 /* ── Meal Sections ────────────────────────────────────────── */
 
 .meal-section { background: color-mix(in srgb, var(--surface-strong) 86%, transparent); border-radius: calc(var(--radius-lg) - 2px); border: 1px solid var(--border-subtle); margin-bottom: 1rem; overflow: hidden; box-shadow: var(--shadow-sm); transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s; }

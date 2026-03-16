@@ -11,9 +11,103 @@ import { shouldIncludeProductForSupermarketFilters } from './supermarket-filter.
 
 const PRODUCTS_CACHE_KEY = 'kcalculator_products_v5';
 const LEGACY_PRODUCTS_CACHE_KEYS = ['kcalculator_products_v4', 'kcalculator_products_v3', 'kcalculator_products_v2', 'kcalculator_products_v1'];
+const OFF_SEARCH_CACHE_KEY = 'kcalculator_off_search_v1';
+const OFF_SEARCH_TTL_MS = 1000 * 60 * 60 * 12;
+
+function round1(v) {
+  return Math.round((Number(v) || 0) * 10) / 10;
+}
+
+function offKcalPer100(nutriments = {}) {
+  const fromKcal = Number(
+    nutriments['energy-kcal_100g']
+    ?? nutriments.energy_kcal_100g
+    ?? nutriments['energy-kcal']
+    ?? nutriments.energy_kcal
+    ?? 0
+  );
+  if (Number.isFinite(fromKcal) && fromKcal > 0) return Math.round(fromKcal);
+  const kj = Number(
+    nutriments.energy_100g
+    ?? nutriments['energy-kj_100g']
+    ?? nutriments.energy_kj_100g
+    ?? 0
+  );
+  if (Number.isFinite(kj) && kj > 0) return Math.round(kj / 4.184);
+  return 0;
+}
+
+function mapOffApiProduct(product) {
+  const n = String(product.product_name_nl || product.product_name || '').trim();
+  if (!n) return null;
+  const nutriments = product.nutriments || {};
+  return {
+    n,
+    b: String(product.brands || '').trim(),
+    k: offKcalPer100(nutriments),
+    kh: round1(nutriments.carbohydrates_100g),
+    vz: round1(nutriments.fiber_100g),
+    v: round1(nutriments.fat_100g),
+    e: round1(nutriments.proteins_100g),
+    s: String(product.quantity || '').trim(),
+    src: 'off-api',
+    _group: 'Open Food Facts (live)',
+    _offCode: String(product.code || '').trim(),
+  };
+}
+
+function readOffSearchCache() {
+  try {
+    const raw = localStorage.getItem(OFF_SEARCH_CACHE_KEY);
+    const data = raw ? JSON.parse(raw) : {};
+    return data && typeof data === 'object' ? data : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeOffSearchCache(cache) {
+  try { localStorage.setItem(OFF_SEARCH_CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+async function searchOffLive(query, terms, limit = 10) {
+  const normalized = String(query || '').toLowerCase().trim();
+  if (!normalized || normalized.length < 3) return [];
+
+  const cache = readOffSearchCache();
+  const cached = cache[normalized];
+  if (cached && cached.ts && (Date.now() - cached.ts) < OFF_SEARCH_TTL_MS && Array.isArray(cached.items)) {
+    return cached.items;
+  }
+
+  try {
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(normalized)}&search_simple=1&action=process&json=1&page_size=25&fields=code,product_name,product_name_nl,brands,quantity,nutriments`;
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    const payload = await response.json();
+    const products = Array.isArray(payload.products) ? payload.products : [];
+
+    const mapped = products
+      .map(mapOffApiProduct)
+      .filter(Boolean)
+      .filter(item => shouldIncludeProductForSupermarketFilters(item, cfg.supermarketExclusions))
+      .filter(item => {
+        const text = `${item.n} ${item.b || ''} ${item.s || ''}`.toLowerCase();
+        return terms.every(t => text.includes(t));
+      })
+      .slice(0, limit);
+
+    cache[normalized] = { ts: Date.now(), items: mapped };
+    writeOffSearchCache(cache);
+    return mapped;
+  } catch {
+    return [];
+  }
+}
 
 export function clearProductCache() {
   try { localStorage.removeItem(PRODUCTS_CACHE_KEY); } catch {}
+  try { localStorage.removeItem(OFF_SEARCH_CACHE_KEY); } catch {}
   for (const legacyKey of LEGACY_PRODUCTS_CACHE_KEYS) {
     try { localStorage.removeItem(legacyKey); } catch {}
   }
@@ -95,7 +189,7 @@ export function searchNevo(query) {
   // 2) Search product database (RIVM + OFF merged)
   if (nevoReady && nevoData) {
     for (const item of nevoData.items) {
-      if (!shouldIncludeProductForSupermarketFilters(item, cfg.supermarketFilters)) continue;
+      if (!shouldIncludeProductForSupermarketFilters(item, cfg.supermarketExclusions)) continue;
       const searchText = (item.n + ' ' + (item.s || '') + ' ' + (item.b || '')).toLowerCase();
       if (!terms.every(t => searchText.includes(t))) continue;
 
@@ -122,4 +216,33 @@ export function searchNevo(query) {
 
   results.sort((a, b) => b._score - a._score);
   return results.slice(0, 8);
+}
+
+export async function searchNevoHybrid(query, limit = 8) {
+  const localResults = searchNevo(query);
+  if (cfg.openFoodFactsLiveSearch === false) return localResults.slice(0, limit);
+  if (String(query || '').trim().length < 3) return localResults.slice(0, limit);
+
+  const normalizedQuery = String(query || '').toLowerCase().trim();
+  const terms = normalizedQuery.split(/\s+/).filter(t => t.length >= 2);
+  if (!terms.length) return localResults.slice(0, limit);
+
+  const liveOff = await searchOffLive(query, terms, limit * 2);
+  if (!liveOff.length) return localResults.slice(0, limit);
+
+  // Keep local results leading, but reserve a few slots so live OFF matches are visible.
+  const localPrimaryCount = Math.max(4, limit - 2);
+  const primaryLocal = localResults.slice(0, localPrimaryCount);
+  const overflowLocal = localResults.slice(localPrimaryCount);
+
+  const seen = new Set();
+  const merged = [];
+  for (const item of [...primaryLocal, ...liveOff, ...overflowLocal]) {
+    const key = `${String(item.n || '').toLowerCase()}|${String(item.b || '').toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+    if (merged.length >= limit) break;
+  }
+  return merged;
 }

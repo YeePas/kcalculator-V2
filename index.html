@@ -170,6 +170,13 @@
           <div class="settings-tab" id="settings-tab-data">
             <h3 class="settings-tab-title">Data</h3>
             <p class="settings-tab-sub">Beheer doelen, imports, exports en lokale caches.</p>
+            <div class="setup-field" style="margin-bottom:0.9rem">
+              <label style="text-transform:none;letter-spacing:0;font-size:0.82rem;display:flex;align-items:flex-start;gap:0.55rem;cursor:pointer">
+                <input type="checkbox" id="settings-off-live-toggle" style="margin-top:0.22rem;width:16px;height:16px;accent-color:var(--accent)">
+                <span>Zoek ook in OpenFoodFacts.org API (live)</span>
+              </label>
+              <div class="setup-hint" style="margin-left:1.5rem">Uit = alleen lokale database. Aan = lokale database + live OpenFoodFacts.org resultaten.</div>
+            </div>
             <div class="setup-action-grid">
               <button class="btn-secondary setup-action-btn" id="settings-goals-btn">🎯 Doelen</button>
               <button class="btn-secondary setup-action-btn" id="settings-import-btn">📥 Apple Health</button>
@@ -400,7 +407,6 @@
       <label>Verplaats naar ander moment</label>
       <div style="display:flex;gap:0.5rem">
         <select id="edit-move-meal" class="edit-select"></select>
-        <button class="btn-secondary" id="edit-move-btn" style="white-space:nowrap">↗️ Verplaats</button>
       </div>
     </div>
     <div class="modal-btns">
@@ -665,6 +671,10 @@ Vet: 3.3g"></textarea>
       <div class="quick-favs" id="quick-favs"></div>
     </div>
 
+    <div class="meal-fold-controls">
+      <button class="meal-fold-btn" id="toggle-all-meals-btn" onclick="toggleAllMealSections()">↕️ Alles inklappen</button>
+    </div>
+
     <div id="meals-container"></div>
   </div>
 
@@ -839,21 +849,22 @@ Vet: 3.3g"></textarea>
       <!-- TAB: Plakken -->
       <section class="smart-section" data-section="manual_nutrition" style="display:none">
         <div class="smart-form-row">
-          <label for="smart-manual-paste">Plak voedingswaarden</label>
-          <textarea id="smart-manual-paste" rows="5" placeholder="Calorieën ±214 kcal&#10;Koolhydraten ±46 g&#10;Eiwit ±8,7 g&#10;Vet ±1,2 g&#10;Vezels ±7-8 g"></textarea>
+          <label for="smart-manual-paste">Plak voedingswaarden (liefst per 100g)</label>
+          <textarea id="smart-manual-paste" rows="5" placeholder="Per 100g&#10;Calorieën 214 kcal&#10;Koolhydraten 46 g&#10;Eiwit 8,7 g&#10;Vet 1,2 g&#10;Vezels 7-8 g"></textarea>
         </div>
         <div class="smart-actions">
           <button class="btn-primary" id="smart-manual-parse-btn">📋 Herken en vul in</button>
         </div>
         <div class="smart-form-grid">
           <div class="smart-form-row"><label for="smart-manual-title">Titel</label><input id="smart-manual-title" type="text" placeholder="Bijv. Linzensoep" /></div>
-          <div class="smart-form-row"><label for="smart-manual-kcal">kcal</label><input id="smart-manual-kcal" type="number" min="0" step="1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-protein">eiwit g</label><input id="smart-manual-protein" type="number" min="0" step="0.1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-carbs">koolh. g</label><input id="smart-manual-carbs" type="number" min="0" step="0.1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-fat">vet g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-fiber">vezels g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-portion">portie g</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" /></div>
+          <div class="smart-form-row"><label for="smart-manual-kcal">kcal per 100g</label><input id="smart-manual-kcal" type="number" min="0" step="1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-protein">eiwit g per 100g</label><input id="smart-manual-protein" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-carbs">koolh. g per 100g</label><input id="smart-manual-carbs" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fat">vet g per 100g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fiber">vezels g per 100g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-portion">Portiegrootte (g)</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" /></div>
         </div>
+        <div class="setup-hint" style="margin-top:0.35rem">Waarden hierboven zijn per 100g. De app rekent automatisch om naar jouw portiegrootte.</div>
         <div class="smart-result" id="smart-manual-result"></div>
       </section>
 

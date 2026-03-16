@@ -150,9 +150,11 @@ export function initEditModalListeners() {
   document.getElementById('edit-save-btn').addEventListener('click', async () => {
     if (editMeal === null || editIdx === null) return;
     const day = localData[currentDate] || emptyDay();
+    const fromMeal = editMeal;
     const item = day[editMeal][editIdx];
     if (!item) return;
     const gram = parseFloat(document.getElementById('edit-gram').value) || 100;
+    const targetMeal = document.getElementById('edit-move-meal').value || fromMeal;
     item.naam = document.getElementById('edit-naam').value.trim() || item.naam;
     item.portie = `${Math.round(gram)}g`;
     item.kcal = parseFloat(document.getElementById('edit-kcal').value) || 0;
@@ -161,18 +163,23 @@ export function initEditModalListeners() {
     item.vetten_g = parseFloat(document.getElementById('edit-fat').value) || 0;
     item.eiwitten_g = parseFloat(document.getElementById('edit-prot').value) || 0;
     item.ml = parseInt(document.getElementById('edit-ml').value) || 0;
+
+    if (targetMeal !== fromMeal) {
+      day[fromMeal].splice(editIdx, 1);
+      if (!day[targetMeal]) day[targetMeal] = [];
+      day[targetMeal].push(item);
+    }
+
     localData[currentDate] = day;
     saveDay(currentDate, day);
     closeEditModal();
     _renderDayUI(day);
-  });
 
-  // Move item to different meal
-  document.getElementById('edit-move-btn').addEventListener('click', () => {
-    if (editMeal === null || editIdx === null) return;
-    const targetMeal = document.getElementById('edit-move-meal').value;
-    if (!targetMeal || targetMeal === editMeal) return;
-    moveItemToMeal(editMeal, editIdx, targetMeal);
+    if (targetMeal !== fromMeal) {
+      const status = document.getElementById('status');
+      const label = MEAL_LABELS[targetMeal] || targetMeal;
+      if (status) status.textContent = `✅ "${item.naam}" opgeslagen en verplaatst naar ${label}`;
+    }
   });
 
   // Close on backdrop click

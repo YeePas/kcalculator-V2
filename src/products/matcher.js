@@ -98,7 +98,7 @@ export function matchItemToNevo(parsedItem) {
     if (!termWords.length) continue;
 
     for (const item of allItems) {
-      if (!shouldIncludeProductForSupermarketFilters(item, cfg.supermarketFilters)) continue;
+      if (!shouldIncludeProductForSupermarketFilters(item, cfg.supermarketExclusions)) continue;
       const itemName = item.n.toLowerCase();
       const itemSearch = itemName + ' ' + (item.s || '').toLowerCase() + ' ' + (item.b || '').toLowerCase();
 
