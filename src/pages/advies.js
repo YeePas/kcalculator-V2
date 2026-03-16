@@ -100,11 +100,37 @@ function _syncAdviesModel() {
   cfg.adviesModel = model;
 }
 
-const ALLOWED_ADVIES_TAGS = new Set(['h4', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'br']);
+const ALLOWED_ADVIES_TAGS = new Set(['h4', 'h3', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'br', 'hr']);
+
+/** Convert markdown to basic HTML before sanitizing */
+function markdownToHtml(text) {
+  if (!text) return '';
+  // If already contains HTML block tags, assume it's HTML
+  if (/<(h[34]|ul|ol|p)\b/i.test(text)) return text;
+  let html = text;
+  // Headers: ### or #### → h4
+  html = html.replace(/^#{3,4}\s+(.+)$/gm, '<h4>$1</h4>');
+  // Bold: **text** → <strong>
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic: *text* → <em>
+  html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+  // Unordered list items: - item or * item
+  html = html.replace(/^[\-\*]\s+(.+)$/gm, '<li>$1</li>');
+  // Numbered list items: 1. item
+  html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+  // Wrap consecutive <li> in <ul>
+  html = html.replace(/((?:<li>.*?<\/li>\n?)+)/g, '<ul>$1</ul>');
+  // Paragraphs: wrap remaining non-tag lines
+  html = html.replace(/^(?!<[hupol])((?!<).+)$/gm, '<p>$1</p>');
+  // Clean up empty paragraphs
+  html = html.replace(/<p>\s*<\/p>/g, '');
+  return html;
+}
 
 function sanitizeAdviesHTML(unsafeHtml) {
+  const converted = markdownToHtml(unsafeHtml);
   const template = document.createElement('template');
-  template.innerHTML = String(unsafeHtml || '');
+  template.innerHTML = String(converted || '');
 
   const sanitizeNode = (node) => {
     if (node.nodeType === Node.ELEMENT_NODE) {
@@ -147,12 +173,19 @@ export async function runAdvies(tab) {
   }
 }
 
+const ADVIES_SYSTEM = `Je bent een deskundige, enthousiaste Nederlandse voedingscoach gespecialiseerd in de Schijf van Vijf.
+Je schrijft uitgebreide, gedetailleerde analyses. Elk onderdeel bevat minstens 3-4 alinea's.
+Je noemt ALTIJD specifieke producten bij naam en geeft concrete hoeveelheden.
+Je analyseert zowel macronutriënten als voedingskwaliteit (Schijf van Vijf).
+Schrijf in HTML met <h4>, <p>, <ul>/<li>, <strong>, <em> tags. Geen markdown.
+Wees datagedreven: noem getallen, percentages en vergelijk met doelen.`;
+
 async function claudeCall(prompt, maxTokens = 3000) {
   const provider = cfg.adviesProvider || cfg.provider || 'claude';
   const origModel = cfg.model;
   if (cfg.adviesModel) cfg.model = cfg.adviesModel;
   try {
-    const text = await aiCall(provider, null, prompt, maxTokens, false);
+    const text = await aiCall(provider, ADVIES_SYSTEM, prompt, maxTokens, false);
     return { ok: true, json: async () => ({ content: [{ text }] }) };
   } finally {
     cfg.model = origModel;
@@ -213,27 +246,42 @@ async function getAvondAdvies() {
 
   const schijf = buildSchijfContext(day);
 
-  const r = await claudeCall(`Je bent een enthousiaste Nederlandse voedingscoach.
+  const alleItemsLijst = MEAL_NAMES.filter(m => m !== 'avondeten' && m !== 'drinken').flatMap(m =>
+    (day[m] || []).map(i => `  - ${i.naam}${i.portie ? ' (' + i.portie + ')' : ''}: ${i.kcal} kcal, ${i.koolhydraten_g}g kh, ${i.vetten_g}g vet, ${i.eiwitten_g}g eiwit, ${i.vezels_g || 0}g vezel`)
+  ).join('\n');
 
-Vandaag gegeten: ${gegeten || 'Nog niets'}
-Totalen: ${Math.round(tot.cals)} kcal, ${r1(tot.carbs)}g koolh, ${r1(tot.fat)}g vet, ${r1(tot.prot)}g eiwit, ${r1(tot.fiber)}g vezel
-Doelen: ${goals.kcal} kcal, ${goals.carbs}g koolh, ${goals.fat}g vet, ${goals.prot}g eiwit, ${goals.fiber}g vezel
-Nog over voor avondeten: ${rKcal} kcal, ${r1(rCarbs)}g koolh, ${r1(rFat)}g vet, ${r1(rProt)}g eiwit, ${r1(rFiber)}g vezel
+  const r = await claudeCall(`CONTEXT — Voedingsdata van vandaag:
 
+Gegeten vandaag (per item):
+${alleItemsLijst || '(Nog niets ingevoerd)'}
+
+Samenvatting gegeten: ${gegeten || 'Nog niets'}
+
+Macro-totalen tot nu toe: ${Math.round(tot.cals)} kcal | ${r1(tot.carbs)}g koolhydraten | ${r1(tot.fat)}g vet | ${r1(tot.prot)}g eiwit | ${r1(tot.fiber)}g vezels
+Dagdoelen: ${goals.kcal} kcal | ${goals.carbs}g koolhydraten | ${goals.fat}g vet | ${goals.prot}g eiwit | ${goals.fiber}g vezels
+Nog over voor avondeten: ${rKcal} kcal | ${r1(rCarbs)}g koolhydraten | ${r1(rFat)}g vet | ${r1(rProt)}g eiwit | ${r1(rFiber)}g vezels
+
+VOEDINGSKWALITEIT (Schijf van Vijf):
 ${schijf.text}
 
-Geef 2-3 concrete Nederlandse avondeten-opties die:
-1. Passen bij de resterende macro's (${rKcal} kcal, ${r1(rProt)}g eiwit, ${r1(rFiber)}g vezel over)
-2. ${schijf.missing.length ? 'De ontbrekende Schijf-categorieën aanvullen: ' + schijf.missing.join(', ') : 'De goede Schijf-score behouden'}
+OPDRACHT:
+Geef 2-3 concrete, gedetailleerde Nederlandse avondmaaltijden die:
+1. Precies passen bij de resterende macro's (${rKcal} kcal, ${r1(rProt)}g eiwit, ${r1(rFiber)}g vezel over)
+2. ${schijf.missing.length ? 'De ontbrekende Schijf van Vijf categorieën aanvullen: ' + schijf.missing.join(', ') : 'De goede Schijf van Vijf score behouden'}
+3. Rekening houden met wat al gegeten is (niet herhalen)
 
-Per optie geef je:
-- <h4> met naam van het gerecht
-- Ingrediëntenlijst met hoeveelheden
-- Korte bereidingswijze (3-5 stappen)
-- Geschatte macro's (kcal, eiwit, koolh, vet, vezel)
-- Welke Schijf-categorieën het afdekt
+Schrijf per gerecht:
+<h4>[Gerechtnaam + emoji]</h4>
+<p>Korte beschrijving waarom dit gerecht goed past bij de resterende macro's en Schijf-gaten.</p>
+<p><strong>Ingrediënten:</strong></p>
+<ul><li>ingredient + hoeveelheid in grammen</li>... (minimaal 5 ingrediënten)</ul>
+<p><strong>Bereiding:</strong></p>
+<ol><li>stap</li>... (3-5 stappen)</ol>
+<p><strong>Voedingswaarden:</strong> ~X kcal | Xg eiwit | Xg koolhydraten | Xg vet | Xg vezels</p>
+<p><strong>Schijf van Vijf:</strong> dekt categorieën X, Y, Z</p>
 
-Wees uitgebreid en concreet. Gebruik <h4> voor titels, <p> voor tekst, <ul>/<li> voor lijsten.`, 3000);
+Eindig met een korte <h4>💡 Tip</h4> over welke optie het beste aansluit bij de dag.
+Schrijf UITGEBREID — minimaal 400 woorden totaal.`, 3500);
 
   if (!r.ok) throw new Error('API fout');
   const res = await r.json();
@@ -252,32 +300,49 @@ async function getDagAdvies() {
 
   const schijf = buildSchijfContext(day);
 
-  const r = await claudeCall(`Je bent een deskundige Nederlandse voedingscoach. Analyseer deze dag grondig.
+  const macroAnalyse = [
+    tot.cals > goals.kcal * 1.1 ? `Calorie-overschot: ${Math.round(tot.cals - goals.kcal)} kcal boven doel` : tot.cals < goals.kcal * 0.8 ? `Calorietekort: ${Math.round(goals.kcal - tot.cals)} kcal onder doel` : `Calorieën op schema (${Math.round(tot.cals)}/${goals.kcal})`,
+    tot.prot < goals.prot * 0.8 ? `Eiwitten te laag: ${r1(tot.prot)}g van ${goals.prot}g doel (${Math.round(tot.prot / goals.prot * 100)}%)` : null,
+    tot.fiber < goals.fiber * 0.8 ? `Vezels te laag: ${r1(tot.fiber)}g van ${goals.fiber}g doel (${Math.round(tot.fiber / goals.fiber * 100)}%)` : null,
+    tot.fat > goals.fat * 1.2 ? `Vetten te hoog: ${r1(tot.fat)}g vs ${goals.fat}g doel` : null,
+  ].filter(Boolean).join('\n');
 
-Datum: ${formatDate(currentDate)}
-Gegeten:
+  const r = await claudeCall(`VOLLEDIGE VOEDINGSDATA VOOR ${formatDate(currentDate)}:
+
+Alle gegeten items (per product, met maaltijdtype):
 ${itemLijst}
 
-Totalen: ${Math.round(tot.cals)} kcal, ${r1(tot.prot)}g eiwit, ${r1(tot.fiber)}g vezel, ${r1(tot.fat)}g vet, ${r1(tot.carbs)}g koolh
-Doelen: ${goals.kcal} kcal, ${goals.prot}g eiwit, ${goals.fiber}g vezel, ${goals.fat}g vet, ${goals.carbs}g koolh, ${goals.water}ml water
+MACRO-TOTALEN:
+- Calorieën: ${Math.round(tot.cals)} kcal (doel: ${goals.kcal} kcal) → ${Math.round(tot.cals / goals.kcal * 100)}% van doel
+- Eiwitten: ${r1(tot.prot)}g (doel: ${goals.prot}g) → ${Math.round(tot.prot / goals.prot * 100)}%
+- Koolhydraten: ${r1(tot.carbs)}g (doel: ${goals.carbs}g) → ${Math.round(tot.carbs / goals.carbs * 100)}%
+- Vetten: ${r1(tot.fat)}g (doel: ${goals.fat}g) → ${Math.round(tot.fat / goals.fat * 100)}%
+- Vezels: ${r1(tot.fiber)}g (doel: ${goals.fiber}g) → ${Math.round(tot.fiber / goals.fiber * 100)}%
 
+KERNPUNTEN:
+${macroAnalyse}
+
+SCHIJF VAN VIJF ANALYSE:
 ${schijf.text}
 
-Geef een uitgebreide, persoonlijke daganalyse gebaseerd op zowel macro's als voedingskwaliteit (Schijf van Vijf). Schrijf minstens 4 alinea's per sectie.
+OPDRACHT — Schrijf een uitgebreide daganalyse van minimaal 500 woorden:
 
-<h4>📊 Voedingskwaliteit</h4>
-Analyseer de Schijf van Vijf score in detail. Benoem per categorie hoe het scoort en waarom. Refereer aan specifieke producten die je hebt gegeten — noem ze bij naam. Leg uit wat "buiten de Schijf" producten zijn en welke impact ze hebben.
+<h4>📊 Voedingskwaliteit (Schijf van Vijf)</h4>
+Analyseer ELKE Schijf van Vijf categorie apart. Noem per categorie: welke producten eraan bijdragen (bij naam!), hoeveel gram er gegeten is vs het doel, en of het voldoende is. Benoem producten die buiten de Schijf vallen en wat hun impact is op de totale score. Leg uit wat de totaalscore van ${schijf.result.score}% concreet betekent.
 
-<h4>✅ Wat goed gaat</h4>
-Benoem concrete sterke punten met voorbeelden. Benoem welke producten bijdragen aan goede scores. Vergelijk met de doelen en benoem waar je op schema ligt.
+<h4>✅ Sterke punten vandaag</h4>
+Noem minstens 3 concrete positieve punten. Benoem specifieke producten en waarom ze goed zijn. Vergelijk macro's met doelen en benoem wat op schema ligt. Benoem gezonde keuzes en patronen.
 
 <h4>⚠️ Aandachtspunten</h4>
-Benoem specifieke Schijf-gaten en macro-afwijkingen. Noem concrete producten die "buiten de Schijf" vallen en waarom. Benoem tekorten (eiwit, vezel, etc.) en welk effect dit kan hebben.
+Benoem specifieke tekorten met getallen. Noem producten die buiten de Schijf vallen en leg uit waarom. Benoem gezondheidsimpact van de tekorten (bijv. te weinig vezels → spijsvertering, te weinig eiwit → spierherstel). Vergelijk met de ADH.
 
-<h4>💡 Concrete tips voor morgen</h4>
-Geef 2-3 haalbare verbeteringen met specifieke productaanbevelingen. Benoem hoeveel gram/porties nodig zijn om een categorie te verbeteren.
+<h4>💡 Concrete verbeterpunten</h4>
+Geef minstens 3 specifieke, haalbare tips:
+- Noem EXACTE producten met hoeveelheden (bijv. "150g broccoli toevoegen bij avondeten")
+- Bereken hoeveel dat bijdraagt aan de ontbrekende macro's/categorieën
+- Geef alternatieven voor buiten-Schijf producten
 
-Wees vriendelijk, motiverend maar eerlijk, en altijd datagedreven. Gebruik <p> voor tekst, <ul>/<li> voor lijsten.`, 3500);
+Wees persoonlijk, motiverend en datagedreven. Verwijs naar ALLE bovenstaande data.`, 4000);
 
   if (!r.ok) throw new Error('API fout');
   const res = await r.json();
@@ -315,32 +380,60 @@ async function getWeekAdvies() {
   }
   const consistentMissing = Object.entries(missingCats).filter(([, count]) => count >= Math.ceil(n / 2)).map(([name]) => name);
 
-  const r = await claudeCall(`Je bent een deskundige Nederlandse voedingscoach. Analyseer deze week grondig.
+  // Also gather top foods across the week
+  const foodCounts = {};
+  for (const d of dagenMetData) {
+    const day = localData[d] || emptyDay();
+    MEAL_NAMES.forEach(m => (day[m] || []).forEach(i => {
+      foodCounts[i.naam] = (foodCounts[i.naam] || 0) + 1;
+    }));
+  }
+  const topFoods = Object.entries(foodCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([naam, count]) => `${naam} (${count}×)`).join(', ');
 
-Weekdata (${n} van 7 dagen ingevuld):
+  const r = await claudeCall(`WEEKOVERZICHT — Volledige voedingsdata van ${n} dagen:
+
+DAGELIJKSE OVERZICHTEN (inclusief Schijf van Vijf scores):
 ${weekData}
 
-Gemiddeld: ${Math.round(gem.cals / n)} kcal, ${r1(gem.prot / n)}g eiwit, ${r1(gem.fiber / n)}g vezel
-Doelen per dag: ${goals.kcal} kcal, ${goals.prot}g eiwit, ${goals.fiber}g vezel, ${goals.fat}g vet, ${goals.carbs}g koolh
+WEEKGEMIDDELDEN:
+- Calorieën: ${Math.round(gem.cals / n)} kcal/dag (doel: ${goals.kcal}) → ${Math.round(gem.cals / n / goals.kcal * 100)}% van doel
+- Eiwitten: ${r1(gem.prot / n)}g/dag (doel: ${goals.prot}g) → ${Math.round(gem.prot / n / goals.prot * 100)}%
+- Koolhydraten: ${r1(gem.carbs / n)}g/dag (doel: ${goals.carbs}g) → ${Math.round(gem.carbs / n / goals.carbs * 100)}%
+- Vetten: ${r1(gem.fat / n)}g/dag (doel: ${goals.fat}g) → ${Math.round(gem.fat / n / goals.fat * 100)}%
+- Vezels: ${r1(gem.fiber / n)}g/dag (doel: ${goals.fiber}g) → ${Math.round(gem.fiber / n / goals.fiber * 100)}%
 
-Gemiddelde Schijf van Vijf score: ${avgSchijf}%
-Categorieën die consequent missen (>50% van de dagen): ${consistentMissing.length ? consistentMissing.join(', ') : 'geen'}
+VOEDINGSKWALITEIT:
+- Gemiddelde Schijf van Vijf score: ${avgSchijf}%
+- Categorieën die consequent missen (>50% van de dagen): ${consistentMissing.length ? consistentMissing.join(', ') : 'geen'}
+- Laagste dagscore: ${Math.min(...schijfScores.map(s => s.score))}%
+- Hoogste dagscore: ${Math.max(...schijfScores.map(s => s.score))}%
 
-Geef een uitgebreide, persoonlijke weekanalyse gebaseerd op macro's én voedingskwaliteit. Schrijf minstens 3-4 alinea's per sectie.
+MEEST GEGETEN PRODUCTEN DEZE WEEK:
+${topFoods}
 
-<h4>📈 Trends die opvallen</h4>
-Analyseer de dagelijkse Schijf-scores en macro-patronen in detail. Is er verbetering of verslechtering over de week? Vergelijk individuele dagen — benoem de beste en slechtste dagen bij naam. Analyseer de caloriefluctuaties.
+OPDRACHT — Schrijf een uitgebreide weekanalyse van minimaal 600 woorden:
 
-<h4>✅ Sterke punten</h4>
-Wat gaat consequent goed? Welke Schijf-categorieën worden structureel behaald? Benoem patronen die positief zijn (bijv. consistent hoog eiwitgehalte, goede vezels, etc.).
+<h4>📈 Weektrends & patronen</h4>
+Analyseer de schommelingen in calorieën en Schijf-scores per dag. Benoem de beste en slechtste dag bij naam met hun scores. Is er een opwaartse of neerwaartse trend? Zijn weekenddagen anders dan doordeweeks? Hoeveel variatie zit er in de intake (${Math.round(Math.max(...dagenMetData.map(d => dayTotals(localData[d]).cals)) - Math.min(...dagenMetData.map(d => dayTotals(localData[d]).cals)))} kcal verschil tussen hoogste en laagste dag)?
 
-<h4>⚠️ Verbeterpunten</h4>
-Welke Schijf-categorieën worden structureel gemist? Zijn er macro-afwijkingen die consequent terugkomen? Benoem concrete producten of gewoontes die bijdragen aan tekorten. Bereken hoeveel er gemist wordt.
+<h4>✅ Sterke punten deze week</h4>
+Welke macro's worden consequent gehaald? Welke Schijf-categorieën scoren structureel goed? Benoem gezonde producten die vaak terugkomen. Vergelijk het weekgemiddelde met de doelen en benoem successen.
 
-<h4>🎯 Focus voor volgende week</h4>
-Geef 2-3 concrete, haalbare verbeterpunten met praktische tips. Benoem specifieke producten die je kunt toevoegen en welke categorieën ze verbeteren. Geef een concreet dagmenu-voorbeeld dat alle verbeterpunten adresseert.
+<h4>⚠️ Structurele verbeterpunten</h4>
+Welke categorieën worden structureel gemist en op hoeveel dagen? Bereken het concrete tekort (bijv. "gemiddeld ${r1(Math.max(0, goals.fiber - gem.fiber / n))}g vezels per dag te weinig"). Benoem producten die vaak terugkomen maar buiten de Schijf vallen. Wat is het effect van deze tekorten op lange termijn?
 
-Wees vriendelijk, concreet en altijd datagedreven. Gebruik <p> voor tekst, <ul>/<li> voor lijsten.`, 4000);
+<h4>🎯 Actieplan voor volgende week</h4>
+Geef een concreet actieplan met:
+<ul>
+<li>3 specifieke producten om toe te voegen (met hoeveelheden en welke categorie ze verbeteren)</li>
+<li>1-2 producten om te vervangen of verminderen</li>
+<li>Een voorbeeld-dagmenu dat alle verbeterpunten combineert</li>
+</ul>
+
+<h4>🏆 Weekcijfer</h4>
+Geef een cijfer van 1-10 voor deze week met korte onderbouwing.
+
+Wees concreet, persoonlijk en verwijs naar ALLE bovenstaande data. Noem producten bij naam.`, 4500);
 
   if (!r.ok) throw new Error('API fout');
   const res = await r.json();

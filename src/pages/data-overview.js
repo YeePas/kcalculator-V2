@@ -15,6 +15,7 @@ import { kpiCard, doInsight, renderDOChart, renderDOMacroChart, renderMacroDonut
 import { exportPeriodCSV, exportWeekrapportPrint } from './export.js';
 import { renderWeightChart } from './weight.js';
 import { loadWeight } from '../storage.js';
+import { estimateMicroHeuristic, renderMicroDashboard, RDA } from './micronutrients.js';
 
 function balanceColor(balance, hasData) {
   if (!hasData || balance === null || balance === undefined) return 'var(--muted)';
@@ -257,6 +258,23 @@ export async function renderDataOverzicht(numDays) {
       html += '</ul></div>';
     }
 
+    // Micronutrient estimate (heuristic, no AI needed)
+    const allPeriodItems = entries.flatMap(({ day }) => {
+      if (!day) return [];
+      return MEAL_NAMES.flatMap(m => (day[m] || []).map(i => i));
+    });
+    if (allPeriodItems.length > 0) {
+      const microTotals = estimateMicroHeuristic(allPeriodItems);
+      // Average per active day
+      const microAvg = {};
+      for (const key of Object.keys(RDA)) {
+        microAvg[key] = Math.round((microTotals[key] / Math.max(a.activeDays, 1)) * 10) / 10;
+      }
+      html += '<div class="do-section"><h3>💊 Micronutriënten (schatting)</h3>';
+      html += '<div class="do-section-sub">Gemiddeld per dag op basis van ' + a.activeDays + ' dagen — inschatting o.b.v. productcategorie</div>';
+      html += '<div id="do-micro-chart"></div></div>';
+    }
+
     // Export buttons (bottom, subtle)
     html += '<div style="display:flex;gap:0.5rem;justify-content:center;padding:1.5rem 0 0.5rem;border-top:1px solid var(--border);margin-top:1rem">';
     html += '<button class="btn-secondary" id="do-export-csv" style="font-size:0.72rem;padding:0.3rem 0.7rem;opacity:0.7">📄 CSV export</button>';
@@ -271,6 +289,17 @@ export async function renderDataOverzicht(numDays) {
     document.getElementById('do-export-csv')?.addEventListener('click', () => exportPeriodCSV(numDays));
     document.getElementById('do-export-print')?.addEventListener('click', () => exportWeekrapportPrint());
     renderWeightChart(document.getElementById('do-weight-chart'), numDays);
+
+    // Render micronutrient heuristic chart
+    const microEl = document.getElementById('do-micro-chart');
+    if (microEl && allPeriodItems.length > 0) {
+      const microTotals = estimateMicroHeuristic(allPeriodItems);
+      const microAvg = {};
+      for (const key of Object.keys(RDA)) {
+        microAvg[key] = Math.round((microTotals[key] / Math.max(a.activeDays, 1)) * 10) / 10;
+      }
+      renderMicroDashboard(microEl, microAvg, 'Heuristische schatting');
+    }
   } catch (err) {
     console.error('[renderDataOverzicht]', err);
     contentEl.innerHTML = '<div class="do-empty">Data-overzicht kon niet laden.<br><small style="color:var(--danger)">' + esc(err?.message || 'Onbekende fout') + '</small></div>';
