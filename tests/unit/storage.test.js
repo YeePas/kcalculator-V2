@@ -5,6 +5,8 @@ import {
   safeParse,
   loadCfg,
   saveCfg,
+  loadSessionAiKeys,
+  saveSessionAiKey,
   loadFavs,
   saveFavs,
   loadGoals,
@@ -60,7 +62,7 @@ describe('safeParse', () => {
 
 // ── Config ───────────────────────────────────────────────────
 describe('loadCfg / saveCfg', () => {
-  it('stores sensitive API keys in sessionStorage only', () => {
+  it('does not persist sensitive API keys in browser storage', () => {
     saveCfg({
       sbUrl: 'https://example.supabase.co',
       sbKey: 'anon-key',
@@ -76,13 +78,10 @@ describe('loadCfg / saveCfg', () => {
       provider: 'openai',
       model: 'gpt-4o-mini',
     });
-    expect(JSON.parse(sessionStorage.getItem(CFG_SESSION_KEY))).toEqual({
-      claudeKey: 'legacy-secret',
-      keys: { openai: 'secret-openai-key' },
-    });
+    expect(sessionStorage.getItem(CFG_SESSION_KEY)).toBe(null);
   });
 
-  it('loads legacy keys from localStorage once and migrates them to sessionStorage', () => {
+  it('drops legacy browser-stored keys during migration', () => {
     localStorage.setItem(CFG_KEY, JSON.stringify({
       sbUrl: 'https://example.supabase.co',
       provider: 'claude',
@@ -92,16 +91,26 @@ describe('loadCfg / saveCfg', () => {
 
     const cfg = loadCfg();
 
-    expect(cfg.keys).toEqual({ claude: 'old-secret' });
-    expect(cfg.claudeKey).toBe('old-secret');
-    expect(JSON.parse(sessionStorage.getItem(CFG_SESSION_KEY))).toEqual({
-      claudeKey: 'old-secret',
-      keys: { claude: 'old-secret' },
-    });
+    expect(cfg.keys).toEqual({});
+    expect(cfg.claudeKey).toBe('');
+    expect(sessionStorage.getItem(CFG_SESSION_KEY)).toBe(null);
     expect(JSON.parse(localStorage.getItem(CFG_KEY))).toEqual({
       sbUrl: 'https://example.supabase.co',
       provider: 'claude',
     });
+  });
+
+  it('loads a local-only session key without persisting it to localStorage', () => {
+    saveSessionAiKey('gemini', 'test-gemini-key');
+
+    const cfg = loadCfg();
+
+    expect(loadSessionAiKeys()).toEqual({ gemini: 'test-gemini-key' });
+    expect(cfg.keys).toEqual({ gemini: 'test-gemini-key' });
+    expect(JSON.parse(sessionStorage.getItem(CFG_SESSION_KEY))).toEqual({
+      keys: { gemini: 'test-gemini-key' },
+    });
+    expect(localStorage.getItem(CFG_KEY)).toBe(null);
   });
 });
 

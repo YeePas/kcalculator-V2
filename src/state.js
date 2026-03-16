@@ -5,7 +5,7 @@
 
 import { DEFAULT_GOALS } from './constants.js';
 
-/** @type {{ sbUrl:string, sbKey:string, claudeKey:string, keys:Record<string,string>, provider:string, model:string }} */
+/** @type {{ sbUrl:string, sbKey:string, claudeKey:string, keys:Record<string,string>, provider:string, model:string, adviesProvider?:string, adviesModel?:string, importProvider?:string, importModel?:string }} */
 export let cfg = {};
 
 /** @type {{ kcal:number, carbs:number, fat:number, prot:number, fiber:number, water:number }} */

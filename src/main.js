@@ -23,13 +23,14 @@ import {
 import {
   safeParse, loadCfg, saveCfg, loadGoals, saveGoals,
   loadFavs, saveFavs, loadVis, loadCustomProducts, saveCustomProducts,
+  isLocalDevHost, loadSessionAiKeys, saveSessionAiKey,
 } from './storage.js';
 
 // ── Supabase ─────────────────────────────────────────────────
 import { sbHeaders } from './supabase/config.js';
 import {
   sbAuthRegister, sbAuthLogin, sbAuthRefresh,
-  setAuthUser, updateAccountUI, restoreAuth,
+  setAuthUser, updateAccountUI, restoreAuth, updateAuthProfile,
 } from './supabase/auth.js';
 import { initSupabase, loadDay, saveDay } from './supabase/data.js';
 import {
@@ -38,9 +39,10 @@ import {
   syncUserPrefs,
   loadUserPrefs,
 } from './supabase/sync.js';
+import { fetchUserAiKeyStatuses, saveUserAiKey } from './supabase/user-ai-keys.js';
 
 // ── Products ─────────────────────────────────────────────────
-import { loadNevo, searchNevo } from './products/database.js';
+import { clearProductCache, loadNevo, searchNevo } from './products/database.js';
 import { parseTextToItems, matchItemToNevo } from './products/matcher.js';
 import {
   openCustomModal, closeCustomModal, updatePhotoModelSelect,
@@ -53,6 +55,7 @@ import {
 
 // ── AI ───────────────────────────────────────────────────────
 import { updateInlineModelSelect } from './ai/providers.js';
+import { hasAiProxyConfig } from './ai/providers.js';
 import { parseFood } from './ai/parser.js';
 
 // ── UI ───────────────────────────────────────────────────────
@@ -61,7 +64,7 @@ import { renderSummary } from './ui/summary.js';
 import { renderDashboard, renderWeekSpark, renderMacroDonut } from './ui/charts.js';
 import { setSyncStatus } from './ui/sync-status.js';
 import {
-  renderHistory, renderQuickFavs, updateStreak,
+  renderHistory, renderQuickFavs,
   applyDark, applyVis, deleteItem, deleteRecipeGroup,
   goToDay, switchMobileView,
 } from './ui/misc.js';
@@ -381,12 +384,12 @@ async function copyMealsFromDay() {
   const sourceDate = input.value;
   if (!sourceDate) {
     status.textContent = 'Kies eerst een datum.';
-    status.className = 'setup-status error';
+    status.className = 'setup-status err';
     return;
   }
   if (sourceDate === currentDate) {
     status.textContent = 'Kies een andere dag dan de huidige dag.';
-    status.className = 'setup-status error';
+    status.className = 'setup-status err';
     return;
   }
 
@@ -397,7 +400,7 @@ async function copyMealsFromDay() {
   const hasMeals = Object.values(sourceDay).some(items => Array.isArray(items) && items.length > 0);
   if (!hasMeals) {
     status.textContent = 'Op die datum zijn geen maaltijden gevonden.';
-    status.className = 'setup-status error';
+    status.className = 'setup-status err';
     return;
   }
 
@@ -460,9 +463,24 @@ function showSetup(panel) {
   if (userEl) userEl.style.display = 'none';
 
   if (panel === 'user' || authUser) {
-    document.getElementById('setup-key-claude').value = cfg.keys?.claude || cfg.claudeKey || '';
-    document.getElementById('setup-key-gemini').value = cfg.keys?.gemini || '';
-    document.getElementById('setup-key-openai').value = cfg.keys?.openai || '';
+    const sessionAiKeys = loadSessionAiKeys();
+    const hasLocalGeminiKey = isLocalDevHost() && Boolean(sessionAiKeys.gemini);
+    document.getElementById('setup-display-name').value = authUser?.display_name || '';
+    ['claude', 'gemini', 'openai'].forEach(provider => {
+      const input = document.getElementById(`setup-key-${provider}`);
+      const status = document.getElementById(`setup-key-status-${provider}`);
+      if (input) {
+        input.value = '';
+        input.placeholder = provider === 'gemini' && hasLocalGeminiKey
+          ? 'Lokaal in deze sessie opgeslagen'
+          : (provider === 'gemini' ? 'AIza…' : 'sk-…');
+      }
+      if (status) {
+        status.textContent = provider === 'gemini' && hasLocalGeminiKey
+          ? 'Alleen lokaal in deze browsersessie'
+          : (authUser ? 'Laden…' : 'Log in om veilig op te slaan');
+      }
+    });
     document.getElementById('setup-status').textContent = '';
     setProviderUI(cfg.provider || 'claude');
     const greeting = document.getElementById('setup-user-greeting');
@@ -475,9 +493,35 @@ function showSetup(panel) {
         const lb2 = document.getElementById('logout-settings-btn'); if (lb2) lb2.style.display = 'none';
       }
     }
-    const dbAdminBtn = document.getElementById('settings-db-admin-btn');
-    if (dbAdminBtn) dbAdminBtn.style.display = isLocalhostEnv() ? '' : 'none';
     if (userEl) userEl.style.display = '';
+    if (authUser?.access_token && cfg.sbUrl && cfg.sbKey) {
+      fetchUserAiKeyStatuses().then(statuses => {
+        ['claude', 'gemini', 'openai'].forEach(provider => {
+          const input = document.getElementById(`setup-key-${provider}`);
+          const status = document.getElementById(`setup-key-status-${provider}`);
+          const isLocalGemini = provider === 'gemini' && hasLocalGeminiKey;
+          if (input) {
+            input.placeholder = isLocalGemini
+              ? 'Lokaal in deze sessie opgeslagen'
+              : (statuses[provider] ? 'Veilig opgeslagen in Supabase' : (provider === 'gemini' ? 'AIza…' : 'sk-…'));
+          }
+          if (status) {
+            status.textContent = isLocalGemini
+              ? 'Alleen lokaal in deze browsersessie'
+              : (statuses[provider] ? 'Veilig opgeslagen' : 'Nog geen sleutel opgeslagen');
+          }
+        });
+      }).catch(() => {
+        ['claude', 'gemini', 'openai'].forEach(provider => {
+          const status = document.getElementById(`setup-key-status-${provider}`);
+          if (status) {
+            status.textContent = provider === 'gemini' && hasLocalGeminiKey
+              ? 'Alleen lokaal in deze browsersessie'
+              : 'Kon status niet laden';
+          }
+        });
+      });
+    }
   } else {
     const authSt = document.getElementById('auth-status'); if (authSt) authSt.textContent = '';
     const ae = document.getElementById('auth-email'); if (ae) ae.value = '';
@@ -494,17 +538,12 @@ function setProviderUI(provider) {
   document.querySelectorAll('.provider-btn').forEach(b => b.classList.toggle('active', b.dataset.provider === provider));
   ['claude', 'gemini', 'openai'].forEach(p => {
     const el = document.getElementById('key-field-' + p);
-    if (el) el.style.display = (p === provider) ? '' : 'none';
+    if (el) el.style.display = '';
   });
   updateInlineModelSelect(provider);
 }
 
 function hideSetup() { document.getElementById('setup-screen').style.display = 'none'; }
-
-function isLocalhostEnv() {
-  const host = window.location.hostname;
-  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
-}
 
 function openGoalsModal() {
   hideSetup();
@@ -540,7 +579,18 @@ async function manualSync() {
     });
     const prefsRecord = {
       user_id: authUser.id, date: '9999-01-01',
-      data: { favs: loadFavs(), goals: loadGoals(), custom: loadCustomProducts(), provider: cfg.provider || '', vis, showDrinks },
+      data: {
+        favs: loadFavs(),
+        goals: loadGoals(),
+        custom: loadCustomProducts(),
+        provider: cfg.provider || '',
+        adviesProvider: cfg.adviesProvider || '',
+        adviesModel: cfg.adviesModel || '',
+        importProvider: cfg.importProvider || '',
+        importModel: cfg.importModel || '',
+        vis,
+        showDrinks,
+      },
     };
     await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
       method: 'POST', headers: { ...sbHeaders(true), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
@@ -563,7 +613,7 @@ async function manualSync() {
 function refreshProductDB() {
   const btn = document.getElementById('refresh-db-btn');
   btn.textContent = '⏳ Laden...'; btn.disabled = true;
-  localStorage.removeItem('kcalculator_products_v2');
+  clearProductCache();
   localStorage.removeItem('eetdagboek_nevo_v1');
   localStorage.removeItem('kcalculator_off_v1');
   loadNevo().then(() => {
@@ -610,10 +660,6 @@ function initEventListeners() {
   document.getElementById('settings-export-btn')?.addEventListener('click', () => {
     hideSetup();
     exportAllData();
-  });
-  document.getElementById('settings-db-admin-btn')?.addEventListener('click', () => {
-    if (!isLocalhostEnv()) return;
-    window.open('/db-beheer.html', '_blank', 'noopener');
   });
   document.getElementById('cancel-settings')?.addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
   document.getElementById('modal-overlay')?.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
@@ -691,7 +737,10 @@ function initEventListeners() {
       showAdviesContent();
     });
   });
-  document.getElementById('advies-refresh-btn')?.addEventListener('click', () => runAdvies(activeAdviesTab));
+  document.getElementById('advies-refresh-btn')?.addEventListener('click', () => {
+    if (activeAdviesTab === 'schijf') showAdviesContent();
+    else runAdvies(activeAdviesTab);
+  });
   document.getElementById('advies-back-btn')?.addEventListener('click', closeAdviesPage);
   initAdviesListeners();
 
@@ -720,21 +769,66 @@ function initEventListeners() {
 
   // Setup save
   document.getElementById('setup-save-btn')?.addEventListener('click', async () => {
+    const saveBtn = document.getElementById('setup-save-btn');
     const provider = document.querySelector('.provider-btn.active')?.dataset.provider || 'claude';
-    const keys = {
-      claude: document.getElementById('setup-key-claude').value.trim(),
-      gemini: document.getElementById('setup-key-gemini').value.trim(),
-      openai: document.getElementById('setup-key-openai').value.trim(),
-    };
-    const claudeKey = keys[provider];
+    const displayName = document.getElementById('setup-display-name').value.trim();
     const statusEl = document.getElementById('setup-status');
-    setCfg({ ...cfg, claudeKey, keys, provider, model: cfg.model });
-    saveCfg(cfg);
-    if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');
-    else if (!cfg.sbUrl) setSyncStatus('offline', 'lokaal');
-    statusEl.textContent = claudeKey ? '✓ Opgeslagen!' : '✓ Opgeslagen (zonder AI-advies)';
-    statusEl.className = 'setup-status ok';
-    setTimeout(() => { hideSetup(); renderMeals(); }, 600);
+    if (statusEl) {
+      statusEl.textContent = 'Opslaan…';
+      statusEl.className = 'setup-status';
+    }
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+      let savedLocalGemini = false;
+      if (isLocalDevHost()) {
+        const geminiInput = document.getElementById('setup-key-gemini');
+        const geminiValue = geminiInput?.value?.trim() || '';
+        if (geminiValue) {
+          saveSessionAiKey('gemini', geminiValue);
+          savedLocalGemini = true;
+          if (geminiInput) geminiInput.value = '';
+          const geminiStatus = document.getElementById('setup-key-status-gemini');
+          if (geminiStatus) geminiStatus.textContent = 'Alleen lokaal in deze browsersessie';
+        }
+      }
+
+      const nextCfg = { ...cfg, claudeKey: '', keys: loadSessionAiKeys(), provider, model: cfg.model };
+      setCfg(nextCfg);
+      saveCfg(nextCfg);
+
+      if (cfg.sbUrl && cfg.sbKey && authUser?.access_token) {
+        for (const providerName of ['claude', 'gemini', 'openai']) {
+          const input = document.getElementById(`setup-key-${providerName}`);
+          const rawValue = input?.value?.trim() || '';
+          if (input && rawValue) {
+            await saveUserAiKey(providerName, rawValue);
+            input.value = '';
+            const keyStatusEl = document.getElementById(`setup-key-status-${providerName}`);
+            if (keyStatusEl) keyStatusEl.textContent = 'Veilig opgeslagen in Supabase';
+          }
+        }
+      }
+
+      if (cfg.sbUrl && cfg.sbKey && authUser?.id) await updateAuthProfile({ displayName });
+      if (cfg.sbUrl && cfg.sbKey && authUser?.id) await syncUserPrefs(true);
+      if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');
+      else if (!cfg.sbUrl) setSyncStatus('offline', 'lokaal');
+
+      statusEl.textContent = savedLocalGemini
+        ? '✓ Opgeslagen. Gemini draait lokaal in deze browsersessie.'
+        : (hasAiProxyConfig()
+          ? (authUser?.id ? '✓ Opgeslagen. AI loopt nu via de beveiligde serverproxy.' : '✓ Opgeslagen. AI loopt via de beveiligde serverproxy.')
+          : '✓ Opgeslagen. Koppel Supabase om de beveiligde AI-proxy te gebruiken.');
+      statusEl.className = 'setup-status ok';
+      setTimeout(() => { hideSetup(); renderMeals(); }, 600);
+    } catch (error) {
+      console.error('[SetupSave] Error:', error);
+      statusEl.textContent = error instanceof Error ? error.message : 'Opslaan mislukt.';
+      statusEl.className = 'setup-status err';
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
   });
 
   // Open config
@@ -950,6 +1044,34 @@ function initEventListeners() {
   initAutocomplete();
 }
 
+function inferNumericInputMode(input) {
+  const step = input.getAttribute('step');
+  return step && (step === 'any' || step.includes('.')) ? 'decimal' : 'numeric';
+}
+
+function applyNumericInputModes(root = document) {
+  root.querySelectorAll?.('input[type="number"]').forEach(input => {
+    input.setAttribute('inputmode', inferNumericInputMode(input));
+    input.setAttribute('enterkeyhint', 'done');
+  });
+}
+
+function initNumericInputModes() {
+  applyNumericInputModes();
+
+  const observer = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      mutation.addedNodes.forEach(node => {
+        if (!(node instanceof HTMLElement)) return;
+        if (node.matches?.('input[type="number"]')) applyNumericInputModes(node.parentElement || document);
+        else applyNumericInputModes(node);
+      });
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
 // ══════════════════════════════════════════════════════════════
 // Boot Sequence
 // ══════════════════════════════════════════════════════════════
@@ -959,6 +1081,7 @@ function initEventListeners() {
     applyDark(localStorage.getItem(DARK_KEY) === '1');
     applyVis();
     setCfg(loadCfg());
+    initNumericInputModes();
     initEventListeners();
 
     await loadNevo();

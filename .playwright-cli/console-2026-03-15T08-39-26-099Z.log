@@ -1,0 +1,21 @@
+[   12980ms] [ERROR] Failed to load resource: net::ERR_EMPTY_RESPONSE @ http://127.0.0.1:5173/src/styles/index.css?t=1773563973038:0
+[   12982ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12987ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/src/styles/index.css?t=1773563978091:0
+[   12987ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12989ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/src/styles/index.css?t=1773563978096:0
+[   12989ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12991ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/src/styles/index.css?t=1773563978098:0
+[   12991ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12992ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/src/styles/index.css?t=1773563978099:0
+[   12992ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12993ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/src/styles/index.css?t=1773563978102:0
+[   12993ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12994ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/src/styles/index.css?t=1773563978104:0
+[   12994ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12994ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12995ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12996ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/src/styles/index.css?t=1773563978106:0
+[   12996ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   12997ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/src/styles/index.css?t=1773563978110:0
+[   12997ms] [ERROR] [vite] Failed to reload /src/styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5173/@vite/client:881
+[   13005ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5173/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5173/@vite/client:1034

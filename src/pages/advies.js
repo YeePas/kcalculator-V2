@@ -8,12 +8,19 @@ import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
 import { dateKey, emptyDay, r1, formatDate, dayTotals } from '../utils.js';
 import { saveCfg } from '../storage.js';
 import { loadDay } from '../supabase/data.js';
-import { aiCall } from '../ai/providers.js';
+import { aiCall, hasAiAvailable, hasAiProxyConfig, hasLocalSessionAi } from '../ai/providers.js';
 import { renderSchijfAnalyse } from './schijf.js';
-import { renderWeekrapport } from './weekrapport.js';
 import { switchMobileView } from '../ui/misc.js';
 
+const LOCAL_ADVIES_TABS = new Set(['schijf']);
+const AI_ADVIES_TABS = new Set(['avond', 'dag', 'week']);
+
+function getSafeAdviesTab(tab) {
+  return LOCAL_ADVIES_TABS.has(tab) || AI_ADVIES_TABS.has(tab) ? tab : 'schijf';
+}
+
 export function openAdviesModal() {
+  setActiveAdviesTab(getSafeAdviesTab(activeAdviesTab));
   updateAdviesModelSelect();
   const layout = document.querySelector('.layout');
   if (!layout) return;
@@ -38,10 +45,11 @@ export function closeAdviesPage() {
 }
 
 export function showAdviesContent() {
-  const localTabs = ['schijf', 'weekrapport'];
-  if (localTabs.includes(activeAdviesTab)) {
-    if (activeAdviesTab === 'schijf') renderSchijfAnalyse();
-    else if (activeAdviesTab === 'weekrapport') renderWeekrapport();
+  const safeTab = getSafeAdviesTab(activeAdviesTab);
+  if (safeTab !== activeAdviesTab) setActiveAdviesTab(safeTab);
+
+  if (LOCAL_ADVIES_TABS.has(safeTab)) {
+    if (safeTab === 'schijf') renderSchijfAnalyse();
   } else {
     showAdviesPrompt();
   }
@@ -61,23 +69,24 @@ export function updateAdviesModelSelect() {
   const sel = document.getElementById('advies-model-select');
   if (!sel) return;
   const opts = [
-    {value:'claude|claude-haiku-4-5-20251001', label:'Claude Haiku'},
-    {value:'claude|claude-sonnet-4-5',         label:'Claude Sonnet'},
+    {value:'claude|claude-haiku-4-5-20250514', label:'Claude Haiku'},
+    {value:'claude|claude-sonnet-4-5-20250514', label:'Claude Sonnet'},
     {value:'gemini|gemini-2.5-flash',           label:'Gemini Flash (gratis)'},
     {value:'gemini|gemini-2.5-pro',             label:'Gemini Pro'},
     {value:'openai|gpt-4o-mini',                label:'GPT-4o mini'},
     {value:'openai|gpt-4o',                     label:'GPT-4o'},
   ];
   const available = opts.filter(o => {
-    const prov = o.value.split('|')[0];
-    return (cfg.keys && cfg.keys[prov]) || (prov === (cfg.provider || 'claude') && cfg.claudeKey);
+    if (hasAiProxyConfig()) return true;
+    return hasLocalSessionAi('gemini') && o.value.startsWith('gemini|');
   });
   sel.innerHTML = available.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
   const saved = cfg.adviesProvider && cfg.adviesModel ? cfg.adviesProvider + '|' + cfg.adviesModel : null;
   if (saved && available.some(o => o.value === saved)) sel.value = saved;
   else {
-    const def = (cfg.provider || 'claude') + '|' + (cfg.model || 'claude-haiku-4-5-20251001');
+    const def = (cfg.provider || 'claude') + '|' + (cfg.model || 'claude-haiku-4-5-20250514');
     if (available.some(o => o.value === def)) sel.value = def;
+    else if (available[0]) sel.value = available[0].value;
   }
   _syncAdviesModel();
 }
@@ -113,12 +122,17 @@ function sanitizeAdviesHTML(unsafeHtml) {
 }
 
 export async function runAdvies(tab) {
-  setActiveAdviesTab(tab);
-  document.querySelectorAll('.advies-page-tabs .advies-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  const safeTab = getSafeAdviesTab(tab);
+  setActiveAdviesTab(safeTab);
+  document.querySelectorAll('.advies-page-tabs .advies-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === safeTab));
+  if (LOCAL_ADVIES_TABS.has(safeTab)) {
+    showAdviesContent();
+    return;
+  }
   document.getElementById('advies-body').innerHTML = '<div class="advies-loading"><span class="spin">⏳</span> Genereren…</div>';
   try {
-    if (tab === 'avond') await getAvondAdvies();
-    else if (tab === 'dag') await getDagAdvies();
+    if (safeTab === 'avond') await getAvondAdvies();
+    else if (safeTab === 'dag') await getDagAdvies();
     else await getWeekAdvies();
   } catch (e) {
     const body = document.getElementById('advies-body');
@@ -148,7 +162,7 @@ function setAdviesHTML(html) {
 }
 
 async function getAvondAdvies() {
-  if (!cfg.claudeKey && !cfg.keys?.[cfg.provider]) throw new Error('Geen API key ingesteld');
+  if (!hasAiAvailable()) throw new Error('AI niet beschikbaar');
   const day = localData[currentDate] || emptyDay();
   const tot = dayTotals(day);
   const rKcal = Math.max(0, (goals.kcal || 2000) - tot.cals);
@@ -188,7 +202,7 @@ Geef 2 concrete Nederlandse avondeten-opties die passen bij de resterende ruimte
 }
 
 async function getDagAdvies() {
-  if (!cfg.claudeKey && !cfg.keys?.[cfg.provider]) throw new Error('Geen API key ingesteld');
+  if (!hasAiAvailable()) throw new Error('AI niet beschikbaar');
   const day = localData[currentDate] || emptyDay();
   const tot = dayTotals(day);
   const alleItems = MEAL_NAMES.flatMap(m => (day[m] || []).map(i => ({ ...i, maaltijd: m })));
@@ -217,7 +231,7 @@ Vriendelijk, motiverend, specifiek. Gebruik <p> voor tekst.`);
 }
 
 async function getWeekAdvies() {
-  if (!cfg.claudeKey && !cfg.keys?.[cfg.provider]) throw new Error('Geen API key ingesteld');
+  if (!hasAiAvailable()) throw new Error('AI niet beschikbaar');
   const last7 = [];
   for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() - i); last7.push(dateKey(d)); }
   for (const d of last7) if (!localData[d]) localData[d] = await loadDay(d);

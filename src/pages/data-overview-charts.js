@@ -145,7 +145,7 @@ export function renderMacroDonutChart(a, container) {
     { label: 'Vetten', val: totalFat, color: 'var(--danger)' },
     { label: 'Eiwitten', val: totalProt, color: 'var(--green)' },
   ];
-  const R = 48, r = 30, cx = 55, cy = 55;
+  const R = 62, r = 38, cx = 70, cy = 70;
   let svg = '', startAngle = -Math.PI / 2;
   for (const s of slices) {
     const pct = s.val / totalG;
@@ -163,13 +163,13 @@ export function renderMacroDonutChart(a, container) {
     }
     startAngle = endAngle;
   }
-  svg += `<text x="${cx}" y="${cy - 3}" text-anchor="middle" fill="var(--text)" font-size="9" font-weight="700" font-family="var(--font-display)">${Math.round(totalG)}g</text>`;
-  svg += `<text x="${cx}" y="${cy + 7}" text-anchor="middle" fill="var(--muted)" font-size="6.5" font-family="var(--font-body)">totaal</text>`;
+  svg += `<text x="${cx}" y="${cy - 5}" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700" font-family="var(--font-display)">${Math.round(totalG)}g</text>`;
+  svg += `<text x="${cx}" y="${cy + 10}" text-anchor="middle" fill="var(--muted)" font-size="8" font-family="var(--font-body)">totaal</text>`;
   let legendHtml = '<div class="do-macro-donut-legend">';
   for (const s of slices) {
     const pct = Math.round(s.val / totalG * 100);
     legendHtml += `<div class="do-macro-donut-item"><span class="do-macro-donut-dot" style="background:${s.color}"></span><span>${s.label}</span><span class="do-macro-donut-val">${Math.round(s.val)}g · ${pct}%</span></div>`;
   }
   legendHtml += '</div>';
-  container.innerHTML = `<div class="do-macro-donut"><svg viewBox="0 0 110 110" width="70" height="70">${svg}</svg>${legendHtml}</div>`;
+  container.innerHTML = `<div class="do-macro-donut"><svg viewBox="0 0 140 140" width="140" height="140">${svg}</svg>${legendHtml}</div>`;
 }

@@ -143,7 +143,7 @@ export async function renderDataOverzicht(numDays) {
     html += kpiCard(consistency.score + '%', 'consistentie', consistency.score >= 70 ? 'var(--green)' : consistency.score >= 40 ? '#e67e22' : 'var(--danger)');
     if (a.daysWithEnergy > 0) html += kpiCard((a.avgBalance > 0 ? '+' : '') + a.avgBalance, 'gem. balans/dag', balanceColor(a.avgBalance, true));
     if (goals.kcal) html += kpiCard(a.daysOnTarget, 'dagen op doel', 'var(--green)');
-    html += kpiCard(a.avgProt + 'g', 'eiwit/dag', 'var(--green)');
+    html += kpiCard(a.avgFiber + 'g', 'vezels/dag', 'var(--fiber)');
     html += '</div>';
 
     // Energy chart

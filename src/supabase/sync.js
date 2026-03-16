@@ -2,7 +2,7 @@
 
 import {
   cfg, authUser, goals, vis, showDrinks, localData,
-  setVis,
+  setCfg, setVis,
   favoritesSyncTimer, setFavoritesSyncTimer,
   customProductsSyncTimer, setCustomProductsSyncTimer,
   prefsSyncTimer, setPrefsSyncTimer,
@@ -16,6 +16,7 @@ import {
   saveGoals,
   loadCustomProducts,
   saveCustomProducts,
+  saveCfg,
   safeSetJson,
 } from '../storage.js';
 import { sbHeaders } from './config.js';
@@ -95,6 +96,10 @@ export async function syncUserPrefs(immediate = false) {
           goals: loadGoals(),
           custom: loadCustomProducts(),
           provider: cfg.provider || '',
+          adviesProvider: cfg.adviesProvider || '',
+          adviesModel: cfg.adviesModel || '',
+          importProvider: cfg.importProvider || '',
+          importModel: cfg.importModel || '',
           vis,
           showDrinks,
         },
@@ -125,6 +130,17 @@ export function resolvePrefsArray(prefsValue, legacyValue, localValue) {
   if (localArray.length) return { value: localArray, source: 'local' };
   if (prefsArray) return { value: prefsArray, source: 'prefs' };
   if (legacyArray) return { value: legacyArray, source: 'legacy' };
+  return { value: null, source: 'none' };
+}
+
+export function resolvePrefsObject(prefsValue, localValue) {
+  const prefsObject = prefsValue && typeof prefsValue === 'object' && !Array.isArray(prefsValue) ? prefsValue : null;
+  const localObject = localValue && typeof localValue === 'object' && !Array.isArray(localValue) ? localValue : null;
+
+  if (prefsObject && Object.keys(prefsObject).length > 0) return { value: prefsObject, source: 'prefs' };
+  if (localObject && Object.keys(localObject).length > 0) return { value: localObject, source: 'local' };
+  if (prefsObject) return { value: prefsObject, source: 'prefs' };
+  if (localObject) return { value: localObject, source: 'local' };
   return { value: null, source: 'none' };
 }
 
@@ -162,6 +178,17 @@ export async function loadUserPrefs() {
       setVis(prefs.vis);
       safeSetJson(getLocalStorage(), VIS_KEY, prefs.vis);
     }
+
+    const nextCfg = {
+      ...cfg,
+      provider: prefs.provider || cfg.provider || '',
+      adviesProvider: prefs.adviesProvider || cfg.adviesProvider || '',
+      adviesModel: prefs.adviesModel || cfg.adviesModel || '',
+      importProvider: prefs.importProvider || cfg.importProvider || '',
+      importModel: prefs.importModel || cfg.importModel || '',
+    };
+    setCfg(nextCfg);
+    saveCfg(nextCfg);
 
     if (shouldBackfillPrefs) await syncUserPrefs(true);
   } catch (e) { console.error('[LoadPrefs]', e); }

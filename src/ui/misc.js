@@ -51,24 +51,6 @@ export function renderQuickFavs() {
   }).join('');
 }
 
-/* ── Streak ───────────────────────────────────────────────── */
-export function updateStreak() {
-  const allLocal = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
-  let streak = 0;
-  for (let i = 0; i < 60; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const key = dateKey(d);
-    const day = allLocal[key];
-    if (!day) break;
-    const totCals = MEAL_NAMES.reduce((s, m) => s + (day[m] || []).reduce((ss, ii) => ss + (ii.kcal || 0), 0), 0);
-    if (totCals === 0) break;
-    streak++;
-  }
-  const el = document.getElementById('streak-display');
-  if (streak >= 2) el.innerHTML = `<span class="streak-badge" title="${streak} dagen op rij bijgehouden!">🔥 ${streak} dagen</span>`;
-  else el.innerHTML = '';
-}
-
 /* ── Dark mode ────────────────────────────────────────────── */
 export function applyDark(on) {
   document.body.classList.toggle('dark', on);
@@ -131,9 +113,20 @@ export async function goToDay(key) {
 }
 
 /* ── Mobile view switching ───────────────────────────────── */
+function scrollMobileViewToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelectorAll('.layout, .main-col, .sidebar, .data-col, .advies-col, .smart-import-col').forEach(el => {
+    if (typeof el.scrollTo === 'function') el.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
 export function switchMobileView(view, btn) {
   const layout = document.querySelector('.layout');
   if (!layout) return;
+  if (btn?.classList.contains('active')) {
+    scrollMobileViewToTop();
+    return;
+  }
   layout.classList.remove('mobile-view-invoer', 'mobile-view-overzicht', 'mobile-view-data', 'mobile-view-advies', 'mobile-view-import', 'show-advies', 'show-import');
   layout.classList.add('mobile-view-' + view);
   document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));

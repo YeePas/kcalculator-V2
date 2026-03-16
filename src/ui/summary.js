@@ -76,6 +76,8 @@ export function renderSummary(day) {
         `).join('')
       : '<div class="meal-share-empty">Nog geen eetmomenten ingevuld.</div>';
   }
+  import('../ui/charts.js').then(m => m.renderMacroDonut(carbs, fat, prot));
+  renderMealShare(day, cals);
 
   document.getElementById('total-carbs').innerHTML = fmtVal(carbs, goals.carbs, 'g');
   document.getElementById('total-fat').innerHTML = fmtVal(fat, goals.fat, 'g');
@@ -88,4 +90,41 @@ export function renderSummary(day) {
   setBar('bar-e', prot, goals.prot, 'bar-e');
   setBar('bar-f', fiber, goals.fiber, 'bar-f');
   setBar('bar-w', water, goals.water, 'bar-w');
+}
+
+function renderMealShare(day, totalCals) {
+  const wrapEl = document.getElementById('meal-share-wrap');
+  const listEl = document.getElementById('meal-share-list');
+  const totalEl = document.getElementById('meal-share-total');
+  if (!wrapEl || !listEl || !totalEl) return;
+
+  totalEl.textContent = `${Math.round(totalCals)} kcal`;
+
+  const meals = MEAL_NAMES
+    .map(meal => {
+      const mealCals = (day[meal] || []).reduce((sum, item) => sum + (item.kcal || 0), 0);
+      const pctOfDay = totalCals > 0 ? Math.round((mealCals / totalCals) * 100) : 0;
+      return { meal, label: (MEAL_LABELS[meal] || meal).replace(/^[^\s]+\s/, ''), mealCals, pctOfDay };
+    })
+    .filter(entry => entry.mealCals > 0)
+    .sort((a, b) => b.mealCals - a.mealCals);
+
+  if (!meals.length) {
+    wrapEl.style.display = 'none';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  wrapEl.style.display = '';
+  listEl.innerHTML = meals.map(entry => `
+    <div class="meal-share-item">
+      <div class="meal-share-row">
+        <span class="meal-share-name">${entry.label}</span>
+        <span class="meal-share-values">${entry.pctOfDay}% · ${Math.round(entry.mealCals)} kcal</span>
+      </div>
+      <div class="meal-share-track">
+        <div class="meal-share-fill" style="width:${entry.pctOfDay}%"></div>
+      </div>
+    </div>
+  `).join('');
 }

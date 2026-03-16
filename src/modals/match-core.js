@@ -13,8 +13,11 @@ import { searchNevo } from '../products/database.js';
 import { matchItemToNevo, resolveGram } from '../products/matcher.js';
 import { _renderDayUI } from '../ui/render.js';
 import { trapFocus, releaseFocus } from '../ui/focus.js';
+import { closeAcDropdown } from '../ui/autocomplete.js';
 
 export function openMatchModal(parsedItems) {
+  closeAcDropdown();
+  document.getElementById('food-input')?.blur();
   setMatchState(parsedItems.map(pi => {
     const nevoMatch = matchItemToNevo(pi);
     const gram = resolveGram(pi, nevoMatch);
@@ -89,8 +92,8 @@ export function renderMatchList() {
         <input type="number" class="match-portie-input" value="${Math.round(ms.gram)}" min="1" step="10"
           oninput="updateMatchGram(${i}, this.value)">
         <span style="font-size:0.75rem;color:var(--muted)">gram</span>
-        ${actionBtns.join(' ')}
       </div>
+      <div class="match-item-actions">${actionBtns.join(' ')}</div>
       <div id="match-ai-status-${i}" style="font-size:0.75rem;margin-top:0.3rem"></div>
       ${manualForm}
     </div>`;

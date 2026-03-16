@@ -15,7 +15,7 @@ import {
   mapAiResultToFoodItem,
   saveImportedFood,
 } from '../ai/dish-import-service.js';
-import { handlePhotoUpload } from './smart-import-photo.js';
+import { hasAiProxyConfig } from '../ai/providers.js';
 import { handleUrlImport } from './smart-import-url.js';
 import { renderManageList, openEditProduct, deleteProduct, deleteFavoriteFromManage } from './smart-import-manage.js';
 import { openEditFavModal } from '../modals/favourites.js';
@@ -47,7 +47,28 @@ function feedbackNear(btn, message, tone = 'ok') {
 
 /* ── Proposal card ───────────────────────────────────────── */
 
+function renderManualProposalCard(targetId, proposal) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  const assumptions = (proposal.assumptions || []).filter(a => !/AI-respons was onvolledig/i.test(a));
+  const assumes = assumptions.length
+    ? '<details class="smart-assumptions-details"><summary>Aannames</summary><ul class="smart-assumptions">' + assumptions.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></details>' : '';
+  el.innerHTML = '<div class="smart-card smart-card-compact">'
+    + '<div class="smart-card-inline-head"><strong>' + esc(proposal.title) + '</strong><span class="smart-card-inline-meta">' + proposal.calories + ' kcal · ' + proposal.carbs_g + 'g kh · ' + proposal.protein_g + 'g eiwit</span></div>'
+    + assumes
+    + '<div class="smart-actions">'
+    + '<button class="btn-primary" data-action="apply" data-target="' + targetId + '">' + getApplyButtonLabel() + '</button>'
+    + '<button class="btn-secondary" data-action="favorite" data-target="' + targetId + '">⭐ Favoriet</button>'
+    + '<button class="btn-secondary" data-action="cancel" data-target="' + targetId + '">✗</button>'
+    + '</div></div>';
+  el.dataset.proposal = JSON.stringify(proposal);
+}
+
 function renderProposalCard(targetId, proposal) {
+  if (proposal?.sourceType === 'manual_nutrition' && targetId === 'smart-manual-result') {
+    renderManualProposalCard(targetId, proposal);
+    return;
+  }
   const el = document.getElementById(targetId);
   if (!el) return;
   const cls = proposal.confidence === 'high' ? 'smart-conf-high'
@@ -119,17 +140,45 @@ function syncProviderSelects() {
   const mSel = document.getElementById('smart-import-model-select');
   if (!pSel || !mSel) return;
   const cur = pSel.value || cfg.importProvider || cfg.provider || 'gemini';
-  const provs = ['gemini', 'openai', 'claude'].filter(p => cfg.keys?.[p] || (p === cfg.provider && cfg.claudeKey));
+  const provs = hasAiProxyConfig() ? ['gemini', 'openai', 'claude'] : [];
   pSel.innerHTML = provs.map(p => '<option value="' + p + '">' + p.toUpperCase() + '</option>').join('');
-  pSel.value = provs.includes(cur) ? cur : (provs[0] || 'gemini');
+  pSel.disabled = provs.length === 0;
+  pSel.value = provs.includes(cur) ? cur : (provs[0] || '');
   const models = PROVIDER_MODELS[pSel.value] || [];
   const curM = mSel.value || cfg.importModel || cfg.model || '';
   mSel.innerHTML = models.map(m => '<option value="' + m.id + '">' + m.label + '</option>').join('');
+  mSel.disabled = models.length === 0;
   mSel.value = models.some(m => m.id === curM) ? curM : (models[0]?.id || '');
   cfg.importProvider = pSel.value;
   cfg.importModel = mSel.value;
   saveCfg(cfg);
   syncSmartImportMealButtons();
+}
+
+function buildManualProposalFromFields() {
+  const title = document.getElementById('smart-manual-title')?.value.trim();
+  if (!title) return null;
+  return createFoodFromManualNutrition({
+    title,
+    calories: document.getElementById('smart-manual-kcal')?.value,
+    protein_g: document.getElementById('smart-manual-protein')?.value,
+    carbs_g: document.getElementById('smart-manual-carbs')?.value,
+    fat_g: document.getElementById('smart-manual-fat')?.value,
+    fiber_g: document.getElementById('smart-manual-fiber')?.value,
+    portionGrams: document.getElementById('smart-manual-portion')?.value || 100,
+    portionLabel: 'Handmatige portie',
+  });
+}
+
+function refreshManualProposal() {
+  const result = document.getElementById('smart-manual-result');
+  if (!result) return;
+  const proposal = buildManualProposalFromFields();
+  if (!proposal) {
+    result.innerHTML = '';
+    return;
+  }
+  renderProposalCard('smart-manual-result', proposal);
 }
 
 function switchTab(tab) {
@@ -204,10 +253,6 @@ export function initSmartImportListeners() {
     runDishAnalysis();
   });
 
-  document.getElementById('smart-photo-input')?.addEventListener('change', e => {
-    if (e.target.files[0]) handlePhotoUpload(e.target.files[0], renderProposalCard, feedbackNear);
-  });
-
   document.getElementById('smart-manual-parse-btn')?.addEventListener('click', () => {
     const raw = document.getElementById('smart-manual-paste').value.trim();
     if (!raw) return;
@@ -217,24 +262,22 @@ export function initSmartImportListeners() {
     document.getElementById('smart-manual-carbs').value = p.carbs_g;
     document.getElementById('smart-manual-fat').value = p.fat_g;
     document.getElementById('smart-manual-fiber').value = p.fiber_g;
-    const result = document.getElementById('smart-manual-result');
-    if (result) {
-      result.innerHTML = '<p class="smart-help">Waarden herkend en ingevuld. Controleer en klik op "Toon voorstel".</p>';
+    if (!document.getElementById('smart-manual-title').value.trim()) {
+      document.getElementById('smart-manual-title').value = p.title;
     }
+    refreshManualProposal();
   });
 
-  document.getElementById('smart-manual-create-btn')?.addEventListener('click', () => {
-    const title = document.getElementById('smart-manual-title').value.trim();
-    if (!title) return;
-    renderProposalCard('smart-manual-result', createFoodFromManualNutrition({
-      title, calories: document.getElementById('smart-manual-kcal').value,
-      protein_g: document.getElementById('smart-manual-protein').value,
-      carbs_g: document.getElementById('smart-manual-carbs').value,
-      fat_g: document.getElementById('smart-manual-fat').value,
-      fiber_g: document.getElementById('smart-manual-fiber').value,
-      portionGrams: document.getElementById('smart-manual-portion').value || 100,
-      portionLabel: 'Handmatige portie',
-    }));
+  [
+    'smart-manual-title',
+    'smart-manual-kcal',
+    'smart-manual-protein',
+    'smart-manual-carbs',
+    'smart-manual-fat',
+    'smart-manual-fiber',
+    'smart-manual-portion',
+  ].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', refreshManualProposal);
   });
 
   document.getElementById('smart-url-import-btn')?.addEventListener('click', function () { handleUrlImport(this, renderProposalCard, feedbackNear); });

@@ -63,17 +63,51 @@ export function safeRemove(storage, key) {
   catch { /* ignore */ }
 }
 
+function normalizeSessionKeys(value) {
+  if (!value || typeof value !== 'object') return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([provider, key]) => [String(provider || '').trim().toLowerCase(), cleanString(key)])
+      .filter(([provider, key]) => provider && key)
+  );
+}
+
+export function isLocalDevHost() {
+  const hostname = globalThis.location?.hostname || '';
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
+
+export function loadSessionAiKeys() {
+  const raw = safeParseFromStorage(getSessionStorage(), CFG_SESSION_KEY, {});
+  return normalizeSessionKeys(raw.keys);
+}
+
+export function saveSessionAiKey(provider, value) {
+  const storage = getSessionStorage();
+  if (!storage) return false;
+  const normalizedProvider = String(provider || '').trim().toLowerCase();
+  if (!normalizedProvider) return false;
+
+  const keys = {
+    ...loadSessionAiKeys(),
+    [normalizedProvider]: cleanString(value),
+  };
+
+  if (!keys[normalizedProvider]) delete keys[normalizedProvider];
+
+  if (Object.keys(keys).length === 0) {
+    safeRemove(storage, CFG_SESSION_KEY);
+    return true;
+  }
+
+  return safeSetJson(storage, CFG_SESSION_KEY, { keys });
+}
+
 // ── Config ────────────────────────────────────────────────
 export function loadCfg() {
   const raw = safeParse(CFG_KEY, {});
-  const sessionSecrets = safeParseFromStorage(getSessionStorage(), CFG_SESSION_KEY, {});
-  const secrets = {
-    claudeKey: cleanString(sessionSecrets.claudeKey || raw.claudeKey || ''),
-    keys: sessionSecrets.keys || raw.keys || {},
-  };
-
-  if ((raw.claudeKey || raw.keys) && getSessionStorage()) {
-    safeSetJson(getSessionStorage(), CFG_SESSION_KEY, secrets);
+  const sessionKeys = loadSessionAiKeys();
+  if (raw.claudeKey || raw.keys) {
     const migrated = { ...raw };
     delete migrated.claudeKey;
     delete migrated.keys;
@@ -83,8 +117,8 @@ export function loadCfg() {
   return {
     sbUrl: normalizeSupabaseUrl(raw.sbUrl || SUPABASE_URL),
     sbKey: cleanString(raw.sbKey || SUPABASE_ANON_KEY),
-    claudeKey: secrets.claudeKey,
-    keys: secrets.keys,
+    claudeKey: '',
+    keys: sessionKeys,
     provider: raw.provider || 'claude',
     model: raw.model || '',
     adviesProvider: raw.adviesProvider || '',
@@ -99,16 +133,6 @@ export function saveCfg(cfg) {
   delete persisted.claudeKey;
   delete persisted.keys;
   safeSetJson(getLocalStorage(), CFG_KEY, persisted);
-
-  const secrets = {
-    claudeKey: cfg?.claudeKey || '',
-    keys: cfg?.keys || {},
-  };
-  if (secrets.claudeKey || Object.keys(secrets.keys).length > 0) {
-    safeSetJson(getSessionStorage(), CFG_SESSION_KEY, secrets);
-  } else {
-    safeRemove(getSessionStorage(), CFG_SESSION_KEY);
-  }
 }
 
 // ── Goals ─────────────────────────────────────────────────

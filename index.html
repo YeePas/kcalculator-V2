@@ -60,82 +60,98 @@
       <h2>⚙️ Instellingen</h2>
       <p id="setup-user-greeting"></p>
 
-      <div class="setup-field">
-        <label>AI Provider <span style="font-weight:300;text-transform:none">(optioneel, voor advies-functie)</span></label>
-        <div class="provider-picker" id="provider-picker">
-          <button class="provider-btn active" data-provider="claude">
-            <span class="provider-check"></span>
-            <span class="provider-text">
-              <span class="provider-name">Claude</span>
-              <span class="provider-sub">Anthropic · betaald</span>
-            </span>
-          </button>
-          <button class="provider-btn" data-provider="gemini">
-            <span class="provider-check"></span>
-            <span class="provider-text">
-              <span class="provider-name">Gemini 2.5 Flash</span>
-              <span class="provider-sub">Google · <strong>gratis</strong></span>
-            </span>
-          </button>
-          <button class="provider-btn" data-provider="openai">
-            <span class="provider-check"></span>
-            <span class="provider-text">
-              <span class="provider-name">GPT-4o mini</span>
-              <span class="provider-sub">OpenAI · betaald</span>
-            </span>
-          </button>
-        </div>
-      </div>
-      <div class="setup-field" id="key-field-claude">
-        <label>Claude API Key</label>
-        <input type="password" id="setup-key-claude" placeholder="sk-ant-…">
-        <div class="setup-hint">Via <a href="https://console.anthropic.com" target="_blank" rel="noreferrer noopener">console.anthropic.com</a> · alleen nodig voor AI-advies</div>
-      </div>
-      <div class="setup-field" id="key-field-gemini" style="display:none">
-        <label>Gemini API Key <span style="font-weight:300;color:var(--green)">(gratis)</span></label>
-        <input type="password" id="setup-key-gemini" placeholder="AIza…">
-        <div class="setup-hint">Gratis via <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer noopener">aistudio.google.com/apikey</a></div>
-      </div>
-      <div class="setup-field" id="key-field-openai" style="display:none">
-        <label>OpenAI API Key</label>
-        <input type="password" id="setup-key-openai" placeholder="sk-…">
-        <div class="setup-hint">Via <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer noopener">platform.openai.com/api-keys</a></div>
+      <div class="setup-sections">
+        <section class="setup-section-card">
+          <div class="setup-section-head">
+            <div>
+              <h3>Profiel</h3>
+              <p>Persoonlijke weergave en accountidentiteit.</p>
+            </div>
+          </div>
+          <div class="setup-field">
+            <label>Naam <span style="font-weight:300;text-transform:none">(optioneel, voor initialen)</span></label>
+            <input type="text" id="setup-display-name" placeholder="Bijv. Joep Willemsen" autocomplete="name">
+            <div class="setup-hint">Als je een naam invult, tonen we je initialen in de accountknop.</div>
+          </div>
+        </section>
+
+        <section class="setup-section-card">
+          <div class="setup-section-head">
+            <div>
+              <h3>AI & Advies</h3>
+              <p>Kies je model. Je eigen AI-sleutels worden normaal versleuteld in Supabase opgeslagen; op localhost kan Gemini ook alleen lokaal in je huidige sessie blijven.</p>
+            </div>
+          </div>
+          <div class="setup-field">
+            <label>AI Provider <span style="font-weight:300;text-transform:none">(optioneel, voor advies-functie)</span></label>
+            <div class="provider-picker" id="provider-picker">
+              <button class="provider-btn active" data-provider="claude">
+                <span class="provider-check"></span>
+                <span class="provider-text">
+                  <span class="provider-name">Claude</span>
+                  <span class="provider-sub">Anthropic · betaald</span>
+                </span>
+              </button>
+              <button class="provider-btn" data-provider="gemini">
+                <span class="provider-check"></span>
+                <span class="provider-text">
+                  <span class="provider-name">Gemini 2.5 Flash</span>
+                  <span class="provider-sub">Google · <strong>gratis</strong></span>
+                </span>
+              </button>
+              <button class="provider-btn" data-provider="openai">
+                <span class="provider-check"></span>
+                <span class="provider-text">
+                  <span class="provider-name">GPT-4o mini</span>
+                  <span class="provider-sub">OpenAI · betaald</span>
+                </span>
+              </button>
+            </div>
+          </div>
+          <div class="setup-field" id="key-field-claude">
+            <label>Claude API Key</label>
+            <input type="password" id="setup-key-claude" placeholder="sk-ant-…">
+            <div class="setup-hint" id="setup-key-status-claude">Log in om veilig op te slaan</div>
+          </div>
+          <div class="setup-field" id="key-field-gemini">
+            <label>Gemini API Key</label>
+            <input type="password" id="setup-key-gemini" placeholder="AIza…">
+            <div class="setup-hint" id="setup-key-status-gemini">Log in om veilig op te slaan</div>
+          </div>
+          <div class="setup-field" id="key-field-openai">
+            <label>OpenAI API Key</label>
+            <input type="password" id="setup-key-openai" placeholder="sk-…">
+            <div class="setup-hint" id="setup-key-status-openai">Log in om veilig op te slaan</div>
+          </div>
+          <div class="setup-hint">Op productie blijft de sleutel niet in de browser staan. Alleen de server kan hem ontsleutelen en gebruiken. Op localhost mag Gemini tijdelijk alleen in deze sessie blijven voor tests.</div>
+        </section>
+
+        <section class="setup-section-card">
+          <div class="setup-section-head">
+            <div>
+              <h3>Data</h3>
+              <p>Beheer doelen, imports, exports en lokale caches.</p>
+            </div>
+          </div>
+          <div class="setup-action-grid">
+            <button class="btn-secondary setup-action-btn" id="settings-goals-btn">🎯 Doelen</button>
+            <button class="btn-secondary setup-action-btn" id="settings-import-btn">📥 Apple Health</button>
+            <button class="btn-secondary setup-action-btn" id="settings-export-btn">📤 Exporteer data</button>
+            <button class="btn-secondary setup-action-btn" id="open-data-mgmt-btn">🗑️ Data verwijderen</button>
+          </div>
+          <div class="setup-field setup-inline-action" style="margin-top:1rem">
+            <label>Productdatabase</label>
+            <button class="btn-secondary setup-inline-btn" id="refresh-db-btn">🔄 Vernieuw cache</button>
+            <div class="setup-hint">Wis de lokale cache om de nieuwste producten te laden.</div>
+          </div>
+        </section>
       </div>
 
-      <button class="setup-save-btn" id="setup-save-btn">Opslaan &amp; beginnen</button>
-
-      <div class="setup-field" style="margin-top:1rem">
-        <label style="display:flex;align-items:center;justify-content:space-between">
-          <span>Productdatabase</span>
-          <button class="btn-secondary" id="refresh-db-btn" style="padding:0.3rem 0.7rem;font-size:0.75rem">🔄 Vernieuw cache</button>
-        </label>
-        <div class="setup-hint">Wis de lokale cache om de nieuwste producten te laden.</div>
-      </div>
-
-      <div class="setup-field" style="margin-top:1rem">
-        <label style="display:flex;align-items:center;justify-content:space-between">
-          <span>Appbeheer</span>
-        </label>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-          <button class="btn-secondary" id="settings-goals-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem">🎯 Doelen</button>
-          <button class="btn-secondary" id="settings-import-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem">📥 Apple Health</button>
-          <button class="btn-secondary" id="settings-export-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem">📤 Exporteer data</button>
-          <button class="btn-secondary" id="settings-db-admin-btn" style="padding:0.45rem 0.7rem;font-size:0.78rem;display:none">🧰 Database beheer</button>
-        </div>
-        <div class="setup-hint">Beheer doelen en importeer of exporteer je gegevens vanuit een centrale plek.</div>
-      </div>
-
-      <div class="setup-field" style="margin-top:1rem">
-        <label style="display:flex;align-items:center;justify-content:space-between">
-          <span>Gegevens beheren</span>
-          <button class="btn-secondary" id="open-data-mgmt-btn" style="padding:0.3rem 0.7rem;font-size:0.75rem">🗑️ Data verwijderen</button>
-        </label>
-        <div class="setup-hint">Verwijder voedingsdata per datum of alles in één keer.</div>
-      </div>
+      <button class="setup-save-btn" id="setup-save-btn">Opslaan</button>
 
       <div class="setup-status" id="setup-status"></div>
 
-      <div style="border-top:1px solid var(--border);margin-top:1rem;padding-top:0.8rem;display:flex;gap:1rem;flex-wrap:wrap">
+      <div class="setup-footer-actions">
         <button style="background:none;border:none;color:var(--danger);font-size:0.78rem;cursor:pointer;padding:0" id="logout-settings-btn" class="logout-btn-settings">Uitloggen</button>
       </div>
     </div>
@@ -548,12 +564,11 @@ Vet: 3.3g"></textarea>
     </div>
   </button>
   <div class="header-actions">
-    <span id="streak-display"></span>
-    <button class="sync-indicator" id="sync-btn" title="Klik om te synchroniseren" type="button"><div class="sync-dot offline" id="sync-dot"></div><span id="sync-label">lokaal</span></button>
+    <button class="sync-indicator" id="sync-btn" title="Klik om te synchroniseren" type="button"><div class="sync-dot offline" id="sync-dot"></div><span class="sync-label" id="sync-label">lokaal</span></button>
     <button class="icon-btn" id="dark-toggle" title="Dark mode" aria-label="Schakel donkere modus">🌙</button>
     <button class="icon-btn" id="week-btn" title="Weekoverzicht" aria-label="Weekoverzicht openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="6" width="3" height="9" rx="1" fill="currentColor" opacity="0.4"/><rect x="6" y="3" width="3" height="12" rx="1" fill="currentColor" opacity="0.65"/><rect x="11" y="1" width="3" height="14" rx="1" fill="currentColor"/></svg></button>
     <button class="icon-btn icon-btn-beta" id="smart-import-header-btn" title="Product of gerecht toevoegen (BETA)" aria-label="Product of gerecht toevoegen (BETA)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 8h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 2.5v11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.2"/></svg></button>
-    <button class="icon-btn" id="advies-header-btn" title="Advies & analyse" aria-label="Advies en analyse openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.7 1 2 3.5 2 6.5c0 1.8 1 3.4 2.5 4.3V13a1 1 0 001 1h5a1 1 0 001-1v-2.2C13 9.9 14 8.3 14 6.5 14 3.5 11.3 1 8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M6 14.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="1" fill="currentColor"/><path d="M8 7v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+    <button class="icon-btn" id="advies-header-btn" title="Analyse" aria-label="Analyse openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.7 1 2 3.5 2 6.5c0 1.8 1 3.4 2.5 4.3V13a1 1 0 001 1h5a1 1 0 001-1v-2.2C13 9.9 14 8.3 14 6.5 14 3.5 11.3 1 8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M6 14.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="1" fill="currentColor"/><path d="M8 7v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
     <button class="icon-btn" id="open-config" title="Instellingen" aria-label="Instellingen openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.7 1.2h2.6l.35 1.9a5.5 5.5 0 011.2.7l1.8-.75 1.3 2.25-1.45 1.2c.06.4.06.82 0 1.2l1.45 1.2-1.3 2.25-1.8-.75a5.5 5.5 0 01-1.2.7l-.35 1.9H6.7l-.35-1.9a5.5 5.5 0 01-1.2-.7l-1.8.75L2.05 8.7l1.45-1.2a5.5 5.5 0 010-1.2L2.05 5.1l1.3-2.25 1.8.75c.37-.28.77-.52 1.2-.7l.35-1.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/></svg></button>
     <button class="icon-btn" id="account-btn" style="display:none"></button>
   </div>
@@ -566,7 +581,12 @@ Vet: 3.3g"></textarea>
     <div class="day-nav">
       <button id="prev-day" aria-label="Vorige dag">‹</button>
       <button id="today-btn" title="Spring naar vandaag" aria-label="Spring naar vandaag">Vandaag</button>
-      <button id="copy-day-btn" title="Kopieer maaltijden van een andere dag" aria-label="Kopieer maaltijden van een andere dag">Kopieer dag</button>
+      <button id="copy-day-btn" title="Kopieer maaltijden van een andere dag" aria-label="Kopieer maaltijden van een andere dag">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="9" y="7" width="10" height="12" rx="2.2" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </button>
       <span id="day-label">Vandaag</span>
       <button id="next-day" aria-label="Volgende dag">›</button>
     </div>
@@ -694,12 +714,11 @@ Vet: 3.3g"></textarea>
   <!-- ADVIES & ANALYSE PAGE -->
   <div class="advies-col" id="advies-page">
     <div class="advies-page-header">
-      <h2>💡 Advies & Analyse</h2>
+      <h2>💡 Analyse</h2>
       <button class="do-back" id="advies-back-btn">← Terug</button>
     </div>
     <div class="advies-page-tabs">
-      <button class="advies-tab active" data-tab="schijf">🥗 Schijf van 5</button>
-      <button class="advies-tab" data-tab="weekrapport">📊 Weekrapport</button>
+      <button class="advies-tab active" data-tab="schijf">🥗 <span>Schijf van 5</span></button>
       <button class="advies-tab" data-tab="avond">🍽️ Avondeten</button>
       <button class="advies-tab" data-tab="dag">📋 Daganalyse</button>
       <button class="advies-tab" data-tab="week">📈 AI Week</button>
@@ -716,7 +735,7 @@ Vet: 3.3g"></textarea>
   <!-- SMART IMPORT PAGE -->
   <div class="smart-import-col" id="smart-import-page">
     <div class="smart-import-header">
-      <h2>➕ Product of gerecht</h2>
+      <h2><span>➕</span> <span>Product of gerecht</span></h2>
       <div class="smart-import-header-right">
         <button class="do-back" id="smart-import-back-btn">← Terug</button>
       </div>
@@ -748,14 +767,9 @@ Vet: 3.3g"></textarea>
         </div>
         <div class="smart-actions">
           <button class="btn-primary" id="smart-dish-analyze-btn">🔎 Analyseer</button>
-          <label class="btn-secondary smart-photo-label" id="smart-photo-label">
-            📸 Foto
-            <input type="file" id="smart-photo-input" accept="image/*" capture="environment" style="display:none" />
-          </label>
           <select id="smart-import-provider-select" title="AI-provider" class="smart-inline-select"></select>
           <select id="smart-import-model-select" title="Model" class="smart-inline-select"></select>
         </div>
-        <img id="smart-photo-preview" class="smart-photo-preview" style="display:none" alt="Foto preview" />
         <div class="smart-result" id="smart-dish-result"></div>
       </section>
 
@@ -766,7 +780,7 @@ Vet: 3.3g"></textarea>
           <textarea id="smart-manual-paste" rows="5" placeholder="Calorieën ±214 kcal&#10;Koolhydraten ±46 g&#10;Eiwit ±8,7 g&#10;Vet ±1,2 g&#10;Vezels ±7-8 g"></textarea>
         </div>
         <div class="smart-actions">
-          <button class="btn-primary" id="smart-manual-parse-btn">📋 Herkennen &gt; Invullen</button>
+          <button class="btn-primary" id="smart-manual-parse-btn">📋 Herken en vul in</button>
         </div>
         <div class="smart-form-grid">
           <div class="smart-form-row"><label for="smart-manual-title">Titel</label><input id="smart-manual-title" type="text" placeholder="Bijv. Linzensoep" /></div>
@@ -776,9 +790,6 @@ Vet: 3.3g"></textarea>
           <div class="smart-form-row"><label for="smart-manual-fat">vet g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" /></div>
           <div class="smart-form-row"><label for="smart-manual-fiber">vezels g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" /></div>
           <div class="smart-form-row"><label for="smart-manual-portion">portie g</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" /></div>
-        </div>
-        <div class="smart-actions">
-          <button class="btn-primary" id="smart-manual-create-btn">Toon voorstel</button>
         </div>
         <div class="smart-result" id="smart-manual-result"></div>
       </section>
@@ -814,7 +825,15 @@ Vet: 3.3g"></textarea>
       Invoer
     </button>
     <button class="mobile-tab" data-view="overzicht">
-      <span class="mobile-tab-icon">🍕</span>
+      <span class="mobile-tab-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5" stroke="#41b8cf" stroke-width="4" stroke-linecap="round"/>
+          <path d="M20.1 13.9a8.5 8.5 0 0 1-12 5.7" stroke="#41b8cf" stroke-width="4" stroke-linecap="round" opacity="0.96"/>
+          <path d="M6.5 17.6A8.5 8.5 0 0 1 4.1 6.3" stroke="#e35c55" stroke-width="4" stroke-linecap="round"/>
+          <path d="M5.2 5.2A8.5 8.5 0 0 1 12 3.5" stroke="#1fbe63" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="5.3" fill="var(--surface-strong)"/>
+        </svg>
+      </span>
       Dag
     </button>
     <button class="mobile-tab" data-view="data">
@@ -823,10 +842,16 @@ Vet: 3.3g"></textarea>
     </button>
     <button class="mobile-tab" data-view="advies">
       <span class="mobile-tab-icon">💡</span>
-      Advies
+      Analyse
     </button>
     <button class="mobile-tab" data-view="import">
-      <span class="mobile-tab-icon">🧠</span>
+      <span class="mobile-tab-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 4v10" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+          <path d="M8.5 10.5 12 14l3.5-3.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 16.5v1A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        </svg>
+      </span>
       Import
     </button>
   </div>

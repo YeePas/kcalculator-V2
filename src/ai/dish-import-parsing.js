@@ -5,10 +5,26 @@ import { cfg } from '../state.js';
 function avgFromRange(raw) {
   const m = String(raw || '').match(/(\d+(?:[.,]\d+)?)\s*[–-]\s*(\d+(?:[.,]\d+)?)/);
   if (!m) return null;
-  const a = parseFloat(m[1].replace(',', '.'));
-  const b = parseFloat(m[2].replace(',', '.'));
+  const a = parseLocalizedNumber(m[1]);
+  const b = parseLocalizedNumber(m[2]);
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
   return (a + b) / 2;
+}
+
+function parseLocalizedNumber(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return NaN;
+
+  if (/,/.test(value) && /\./.test(value)) {
+    return parseFloat(value.replace(/\./g, '').replace(',', '.'));
+  }
+  if (/,/.test(value)) {
+    return parseFloat(value.replace(',', '.'));
+  }
+  if (/^\d{1,3}(?:\.\d{3})+$/.test(value)) {
+    return parseFloat(value.replace(/\./g, ''));
+  }
+  return parseFloat(value);
 }
 
 function numberNearLabel(text, labels) {
@@ -18,16 +34,32 @@ function numberNearLabel(text, labels) {
     if (!m) continue;
     const ranged = avgFromRange(m[1]);
     if (ranged !== null) return ranged;
-    const n = parseFloat(m[1].replace(',', '.'));
+    const n = parseLocalizedNumber(m[1]);
     if (Number.isFinite(n)) return n;
   }
   return 0;
 }
 
+function extractCalories(text) {
+  const kcalAfterNumber = text.match(/(\d+(?:[.,]\d+)?)\s*kcal\b/i);
+  if (kcalAfterNumber) {
+    const value = parseLocalizedNumber(kcalAfterNumber[1]);
+    if (Number.isFinite(value)) return Math.round(value);
+  }
+
+  const kcalAfterLabel = text.match(/\bkcal\b[^\d]{0,12}(\d+(?:[.,]\d+)?)/i);
+  if (kcalAfterLabel) {
+    const value = parseLocalizedNumber(kcalAfterLabel[1]);
+    if (Number.isFinite(value)) return Math.round(value);
+  }
+
+  return Math.round(numberNearLabel(text, ['calorie[eë]n', 'energie']));
+}
+
 export function parsePastedNutrition(rawText) {
   const text = String(rawText || '').replace(/\t/g, ' ').replace(/±/g, '').trim();
   return {
-    calories: Math.round(numberNearLabel(text, ['calorie[eë]n', 'energie', 'kcal'])),
+    calories: extractCalories(text),
     carbs_g: Number(numberNearLabel(text, ['koolhydraten', 'kh']).toFixed(1)),
     protein_g: Number(numberNearLabel(text, ['eiwit(?:ten)?', 'prote[iï]ne']).toFixed(1)),
     fat_g: Number(numberNearLabel(text, ['vet(?:ten)?']).toFixed(1)),

@@ -1,6 +1,6 @@
 /* ── Match Review Modal Actions ───────────────────────────── */
 
-import { localData, currentDate, selMeal, cfg, matchState } from '../state.js';
+import { localData, currentDate, selMeal, matchState } from '../state.js';
 import { MEAL_NAMES } from '../constants.js';
 import { emptyDay } from '../utils.js';
 import { loadFavs, saveFavs } from '../storage.js';
@@ -8,6 +8,7 @@ import { saveDay } from '../supabase/data.js';
 import { syncFavoritesToSupabase } from '../supabase/sync.js';
 import { buildMealItem } from '../products/matcher.js';
 import { parseFood } from '../ai/parser.js';
+import { hasAiProxyConfig } from '../ai/providers.js';
 import { _renderDayUI } from '../ui/render.js';
 import { renderQuickFavs } from '../ui/misc.js';
 import { closeMatchModal, renderMatchList, addMatchedItemsToDay } from './match-core.js';
@@ -17,8 +18,8 @@ export async function aiLookupMatch(idx) {
   const statusEl = document.getElementById(`match-ai-status-${idx}`);
   if (!statusEl) return;
 
-  if (!cfg.claudeKey && !cfg.keys?.[cfg.provider]) {
-    statusEl.textContent = '⚠️ Geen API key ingesteld — ga naar ⚙️ Instellingen';
+  if (!hasAiProxyConfig()) {
+    statusEl.textContent = '⚠️ AI-proxy niet beschikbaar — koppel eerst Supabase';
     statusEl.style.color = 'var(--danger)';
     return;
   }
