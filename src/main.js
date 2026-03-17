@@ -203,7 +203,7 @@ function importData() {
   fileInput.value = ''; dateInput.value = '';
   fileInput.disabled = false; dateInput.disabled = false;
   fileLabel.classList.remove('has-file');
-  fileText.textContent = '📄 Kies een XML-bestand…';
+  fileText.textContent = '📄 Kies een XML- of CSV-bestand…';
   startBtn.disabled = true; startBtn.textContent = '🚀 Importeren';
   startBtn.style.display = '';
   cancelBtn.textContent = 'Annuleren';
@@ -212,15 +212,113 @@ function importData() {
   btnsEl.style.display = '';
   modal.classList.add('open');
 
+  function parseCsvLine(line) {
+    const cells = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i += 1;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === ',' && !inQuotes) {
+        cells.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    cells.push(current);
+    return cells.map(cell => cell.trim());
+  }
+
+  function normalizeImportHeader(header) {
+    return String(header || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  function readNumericFromRow(row, candidates) {
+    for (const key of candidates) {
+      const raw = row[key];
+      if (raw === undefined || raw === null || raw === '') continue;
+      const normalized = String(raw).replace(/\./g, '').replace(',', '.').trim();
+      const value = parseFloat(normalized);
+      if (!isNaN(value)) return value;
+    }
+    return null;
+  }
+
+  function kjToKcal(kj) {
+    return kj === null || kj === undefined ? null : kj / 4.184;
+  }
+
+  function processCsvText(text, fromDate, dailyActive, dailyBasal) {
+    const lines = String(text || '')
+      .replace(/^\uFEFF/, '')
+      .split(/\r?\n/)
+      .filter(Boolean);
+    if (lines.length < 2) return { skippedRecords: 0 };
+
+    const headers = parseCsvLine(lines[0]).map(normalizeImportHeader);
+    let skippedRecords = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const cells = parseCsvLine(lines[i]);
+      if (!cells.length) continue;
+      const row = {};
+      headers.forEach((header, idx) => { row[header] = cells[idx] || ''; });
+
+      const rawDate = String(row['datum/tijd'] || '').trim();
+      const date = rawDate.slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      if (fromDate && date < fromDate) { skippedRecords++; continue; }
+
+      const activeKj = readNumericFromRow(row, [
+        'actieve energie (kj)',
+        'active energy (kj)',
+        'actieve energie (kcal)',
+        'active energy (kcal)',
+      ]);
+      const restingKj = readNumericFromRow(row, [
+        'rustenergie (kj)',
+        'resting energy (kj)',
+        'basal energy burned (kj)',
+        'rustenergie (kcal)',
+        'resting energy (kcal)',
+      ]);
+
+      const activeValue = row['actieve energie (kcal)'] !== undefined || row['active energy (kcal)'] !== undefined
+        ? activeKj
+        : kjToKcal(activeKj);
+      const restingValue = row['rustenergie (kcal)'] !== undefined || row['resting energy (kcal)'] !== undefined
+        ? restingKj
+        : kjToKcal(restingKj);
+
+      if (activeValue !== null && !isNaN(activeValue)) dailyActive[date] = (dailyActive[date] || 0) + activeValue;
+      if (restingValue !== null && !isNaN(restingValue)) dailyBasal[date] = (dailyBasal[date] || 0) + restingValue;
+    }
+
+    return { skippedRecords };
+  }
+
   fileInput.onchange = () => {
     const file = fileInput.files[0];
-    if (file && file.name.toLowerCase().endsWith('.xml')) {
+    const isSupported = file && /\.(xml|csv)$/i.test(file.name);
+    if (isSupported) {
       fileLabel.classList.add('has-file');
       fileText.textContent = `✓ ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
       startBtn.disabled = false;
     } else {
       fileLabel.classList.remove('has-file');
-      fileText.textContent = '📄 Kies een XML-bestand…';
+      fileText.textContent = '📄 Kies een XML- of CSV-bestand…';
       startBtn.disabled = true;
     }
   };
@@ -231,6 +329,9 @@ function importData() {
   startBtn.onclick = () => {
     const file = fileInput.files[0];
     if (!file) return;
+    const isXml = file.name.toLowerCase().endsWith('.xml');
+    const isCsv = file.name.toLowerCase().endsWith('.csv');
+    if (!isXml && !isCsv) return;
     const fromDate = dateInput.value || null;
     startBtn.disabled = true; startBtn.textContent = '⏳ Bezig…';
     fileInput.disabled = true; dateInput.disabled = true;
@@ -263,7 +364,7 @@ function importData() {
       }
     }
 
-    function processChunk() {
+    function processXmlChunk() {
       const slice = file.slice(offset, offset + CHUNK);
       const reader = new FileReader();
       reader.onload = function (e) {
@@ -274,7 +375,7 @@ function importData() {
         progressFill.style.width = Math.min(100, Math.round(offset / file.size * 100)) + '%';
         statusText.textContent = `Bestand verwerken… ${Math.min(100, Math.round(offset / file.size * 100))}%`;
         if (offset < file.size) {
-          setTimeout(processChunk, 0);
+          setTimeout(processXmlChunk, 0);
         } else {
           if (remainder) processRecordPart(remainder);
           finishImport();
@@ -285,6 +386,31 @@ function importData() {
         startBtn.textContent = '🚀 Importeren'; startBtn.disabled = false; fileInput.disabled = false; dateInput.disabled = false;
       };
       reader.readAsText(slice);
+    }
+
+    function processCsvFile() {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const result = processCsvText(e.target.result, fromDate, dailyActive, dailyBasal);
+          skippedRecords += result.skippedRecords || 0;
+          progressFill.style.width = '100%';
+          statusText.textContent = 'CSV verwerkt, opslaan…';
+          finishImport();
+        } catch (err) {
+          statusText.textContent = '✗ CSV kon niet verwerkt worden';
+          statusText.className = 'import-status-text error';
+          startBtn.textContent = '🚀 Importeren';
+          startBtn.disabled = false;
+          fileInput.disabled = false;
+          dateInput.disabled = false;
+        }
+      };
+      reader.onerror = function () {
+        statusText.textContent = '✗ Fout bij lezen bestand'; statusText.className = 'import-status-text error';
+        startBtn.textContent = '🚀 Importeren'; startBtn.disabled = false; fileInput.disabled = false; dateInput.disabled = false;
+      };
+      reader.readAsText(file);
     }
 
     async function finishImport() {
@@ -361,7 +487,8 @@ function importData() {
       cancelBtn.textContent = 'Sluiten'; startBtn.style.display = 'none';
     }
 
-    processChunk();
+    if (isXml) processXmlChunk();
+    else processCsvFile();
   };
 }
 
