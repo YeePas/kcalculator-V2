@@ -78,6 +78,8 @@ import {
   openBugReportModal, closeBugReportModal, submitBugReport,
 } from './ui/bug-report.js';
 
+const ALLOW_REGISTRATION = ['true', '1', 'yes', 'on'].includes(String(import.meta.env.VITE_ALLOW_REGISTRATION || '').toLowerCase());
+
 // ── Modals ───────────────────────────────────────────────────
 import {
   openFavModal, renderFavList, saveFavorite,
@@ -668,6 +670,13 @@ function showSetup(panel) {
     const authSt = document.getElementById('auth-status'); if (authSt) authSt.textContent = '';
     const ae = document.getElementById('auth-email'); if (ae) ae.value = '';
     const ap = document.getElementById('auth-pass'); if (ap) ap.value = '';
+    const registerBtn = document.getElementById('auth-register-btn');
+    const registerNote = document.getElementById('auth-register-note');
+    if (registerBtn) {
+      registerBtn.hidden = !ALLOW_REGISTRATION;
+      registerBtn.disabled = !ALLOW_REGISTRATION;
+    }
+    if (registerNote) registerNote.hidden = ALLOW_REGISTRATION;
     if (!cfg.sbUrl || !cfg.sbKey) {
       authSt.textContent = 'Inloggen is nu niet beschikbaar. Je kunt wel lokaal verder zonder account.';
       authSt.className = 'setup-status';
@@ -1066,6 +1075,12 @@ function initEventListeners() {
     const email = document.getElementById('auth-email').value.trim();
     const pass = document.getElementById('auth-pass').value;
     const statusEl = document.getElementById('auth-status');
+    if (!ALLOW_REGISTRATION) {
+      statusEl.textContent = 'Registreren staat nu uit. Vraag een account aan bij de beheerder.';
+      statusEl.style.color = 'var(--danger)';
+      statusEl.className = 'setup-status err';
+      return;
+    }
     if (!email || !pass) { statusEl.textContent = 'Vul email en wachtwoord in.'; statusEl.style.color = 'var(--danger)'; return; }
     if (pass.length < 6) { statusEl.textContent = 'Wachtwoord moet minimaal 6 tekens zijn.'; statusEl.style.color = 'var(--danger)'; return; }
     statusEl.textContent = 'Registreren…'; statusEl.style.color = '';

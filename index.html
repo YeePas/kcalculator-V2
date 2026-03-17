@@ -26,8 +26,22 @@
 
     <!-- STATE 1: Login / Register -->
     <div id="setup-auth">
-      <h2 style="font-family:var(--font-display);font-weight:700;font-size:2.2rem;letter-spacing:-0.03em;line-height:1.1"><span style="color:var(--accent)">K</span>calculator</h2>
-      <p style="color:var(--muted);font-size:0.9rem">Log in om te beginnen met bijhouden.</p>
+      <div class="auth-hero">
+        <div class="auth-brand">
+          <div class="auth-brand-mark">
+            <img src="icon-192.png" alt="" width="72" height="72">
+          </div>
+          <div class="auth-brand-copy">
+            <span class="auth-eyebrow">Slim voedingsdashboard</span>
+            <h2><span>K</span>calculator</h2>
+            <p>Log in om te syncen, inzichten te bewaren en slimmer verder te bouwen vanuit je eigen data.</p>
+          </div>
+        </div>
+        <div class="auth-hero-note">
+          <strong>Persoonlijke toegang</strong>
+          <span>Nieuwe accounts staan nu standaard uit. Toegang geef je voorlopig handmatig.</span>
+        </div>
+      </div>
 
       <div class="setup-field">
         <label>Email</label>
@@ -38,18 +52,21 @@
         <input type="password" id="auth-pass" placeholder="minimaal 6 tekens" autocomplete="current-password">
       </div>
 
-      <div style="display:flex;gap:0.5rem;margin-top:1rem">
-        <button class="setup-save-btn" style="flex:1" id="auth-login-btn">Inloggen</button>
-        <button class="btn-secondary" style="flex:1;padding:0.8rem" id="auth-register-btn">Registreren</button>
+      <div class="auth-action-row">
+        <button class="setup-save-btn auth-login-btn" id="auth-login-btn">Inloggen</button>
+        <button class="btn-secondary auth-register-btn" id="auth-register-btn">Registreren</button>
       </div>
+      <div class="auth-register-note" id="auth-register-note" hidden>Registreren staat nu uit. Vraag een account aan bij de beheerder.</div>
 
-      <button style="background:none;border:none;color:var(--accent);font-size:0.78rem;margin-top:0.6rem;cursor:pointer;padding:0" id="auth-magic-btn">🔗 Stuur magic link (inloggen zonder wachtwoord)</button>
-      <button style="background:none;border:none;color:var(--muted);font-size:0.78rem;margin-top:0.3rem;cursor:pointer;padding:0" id="auth-forgot-btn">Wachtwoord vergeten?</button>
+      <div class="auth-link-actions">
+        <button class="auth-link-btn auth-link-btn-primary" id="auth-magic-btn">🔗 Stuur magic link</button>
+        <button class="auth-link-btn" id="auth-forgot-btn">Wachtwoord vergeten?</button>
+      </div>
 
       <div class="setup-status" id="auth-status"></div>
 
-      <div style="border-top:1px solid var(--border);margin-top:1.2rem;padding-top:1rem">
-        <button style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;padding:0" id="skip-login-btn">
+      <div class="auth-local-mode">
+        <button class="auth-link-btn auth-local-link" id="skip-login-btn">
           ↳ Zonder account verder (alleen lokaal, geen sync)
         </button>
       </div>

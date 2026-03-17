@@ -87,8 +87,21 @@ Optioneel kun je tijdens build/deploy deze variabelen meegeven:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `VITE_ALLOW_REGISTRATION`
 
 Zonder deze variabelen werkt de app lokaal/offline nog steeds, maar niet met Supabase-sync tenzij een gebruiker die handmatig invult.
+
+Voor `VITE_ALLOW_REGISTRATION` geldt:
+
+- standaard is registreren uit
+- zet `VITE_ALLOW_REGISTRATION=true` alleen als je openbare signup echt wilt openen
+
+Voor GitHub Actions / GitHub Pages is een repository variable meestal het handigst:
+
+1. `Settings -> Secrets and variables -> Actions`
+2. tab `Variables`
+3. voeg `VITE_ALLOW_REGISTRATION` toe
+4. zet die op `false` voor handmatig accountbeheer
 
 ## URL-import proxy via Supabase
 
