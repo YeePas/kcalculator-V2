@@ -240,28 +240,26 @@ function parseAiMicroResponse(text) {
 }
 
 export function renderMicroDashboard(container, data, label = 'AI-schatting', showSources = false) {
-  let html = '<div style="display:grid;gap:0.45rem">';
+  let html = '<div class="micro-grid">';
 
   for (const [key, meta] of Object.entries(RDA)) {
     const val = data[key] || 0;
     const pct = Math.min(Math.round((val / meta.doel) * 100), 200);
     const barPct = Math.min(pct, 100);
     const color = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--warning, #e6b94f)' : 'var(--danger)';
-    const lowSource = showSources && pct < 60 ? `<div style="font-size:0.65rem;color:var(--muted);margin-top:1px;padding-left:88px">💡 ${meta.bronnen}</div>` : '';
+    const lowSource = showSources && pct < 60 ? `<div class="micro-source">💡 ${meta.bronnen}</div>` : '';
 
     html += `<div>
-      <div style="display:flex;align-items:center;gap:0.5rem">
-        <div style="width:82px;font-size:0.73rem;font-weight:500;flex-shrink:0">${meta.naam}</div>
-        <div style="flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden">
-          <div style="height:100%;width:${barPct}%;background:${color};border-radius:5px;transition:width 0.3s"></div>
-        </div>
-        <div style="width:72px;text-align:right;font-size:0.68rem;color:var(--muted);flex-shrink:0">${val}${meta.unit} / ${meta.doel}${meta.unit}</div>
-        <div style="width:30px;text-align:right;font-size:0.68rem;font-weight:600;color:${color};flex-shrink:0">${pct}%</div>
+      <div class="micro-row">
+        <div class="micro-name">${meta.naam}</div>
+        <div class="micro-bar"><div class="micro-bar-fill" style="width:${barPct}%;background:${color}"></div></div>
+        <div class="micro-val">${val}${meta.unit}/${meta.doel}</div>
+        <div class="micro-pct" style="color:${color}">${pct}%</div>
       </div>${lowSource}
     </div>`;
   }
 
   html += '</div>';
-  html += `<div style="margin-top:0.6rem;font-size:0.65rem;color:var(--muted)">${label} op basis van productcategorie \u2014 geen medisch advies.</div>`;
+  html += `<div class="micro-disclaimer">${label} op basis van productcategorie \u2014 geen medisch advies.</div>`;
   container.innerHTML = html;
 }

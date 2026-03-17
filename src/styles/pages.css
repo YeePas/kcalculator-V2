@@ -36,13 +36,13 @@
 .do-period-tab.active, .advies-page-tabs .advies-tab.active, .smart-import-tab.active { background: linear-gradient(135deg, #21be5c, #189846); color: white; box-shadow: 0 14px 24px rgba(29, 185, 84, 0.2); }
 .advies-page-tabs .advies-tab,
 .smart-import-tab { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
-.do-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.9rem; margin-bottom: 1.35rem; }
-.do-kpi { background: color-mix(in srgb, var(--surface-strong) 88%, transparent); border: 1px solid var(--border); border-radius: calc(var(--radius-md) + 6px); padding: 1.1rem 1rem; text-align: center; box-shadow: var(--shadow-sm); }
-.do-kpi-val { font-size: 1.7rem; font-weight: 700; font-family: var(--font-display); line-height: 1.1; }
-.do-kpi-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.15rem; }
-.do-section, .advies-page-body, .smart-import-body { background: color-mix(in srgb, var(--surface-strong) 88%, transparent); border: 1px solid var(--border); border-radius: calc(var(--radius-lg) - 2px); padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow-md); }
-.do-section h3 { font-family: var(--font-display); font-size: 1.08rem; margin: 0 0 0.9rem; letter-spacing: -0.03em; }
-.do-section-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.7rem; }
+.do-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 0.35rem; margin-bottom: 0.6rem; }
+.do-kpi { background: color-mix(in srgb, var(--surface-strong) 88%, transparent); border: 1px solid var(--border); border-radius: calc(var(--radius-md) + 4px); padding: 0.55rem 0.45rem; text-align: center; box-shadow: var(--shadow-sm); }
+.do-kpi-val { font-size: 1.2rem; font-weight: 700; font-family: var(--font-display); line-height: 1.1; }
+.do-kpi-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.08rem; }
+.do-section, .advies-page-body, .smart-import-body { background: color-mix(in srgb, var(--surface-strong) 88%, transparent); border: 1px solid var(--border); border-radius: calc(var(--radius-lg) - 2px); padding: 0.85rem; margin-bottom: 0.55rem; box-shadow: var(--shadow-md); }
+.do-section h3 { font-family: var(--font-display); font-size: 0.92rem; margin: 0 0 0.45rem; letter-spacing: -0.03em; }
+.do-section-sub { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.4rem; }
 .do-chart { width: 100%; overflow-x: auto; }
 .do-chart svg { width: 100%; height: auto; display: block; }
 .do-legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; }
@@ -53,10 +53,10 @@
 .do-macro-donut-item { display: flex; align-items: center; gap: 0.45rem; }
 .do-macro-donut-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .do-macro-donut-val { color: var(--muted); font-size: 0.76rem; margin-left: auto; padding-left: 0.65rem; white-space: nowrap; }
-.do-insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.do-insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; }
 @media (max-width: 500px) { .do-insight-grid { grid-template-columns: 1fr; } }
-.do-insight { background: color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong)); border-radius: calc(var(--radius-md) + 2px); padding: 0.85rem 0.95rem; font-size: 0.8rem; border: 1px solid var(--border); }
-.do-insight strong { display: block; font-size: 1.04rem; margin-bottom: 0.12rem; letter-spacing: -0.02em; }
+.do-insight { background: color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong)); border-radius: calc(var(--radius-md) + 2px); padding: 0.45rem 0.6rem; font-size: 0.72rem; border: 1px solid var(--border); }
+.do-insight strong { display: block; font-size: 0.88rem; margin-bottom: 0.05rem; letter-spacing: -0.02em; }
 .do-top-list { list-style: none; padding: 0; margin: 0; }
 .do-top-list li { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border-subtle); font-size: 0.82rem; }
 .do-top-list li:last-child { border-bottom: none; }
@@ -65,13 +65,42 @@
 .do-insight-item { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.52rem 0; border-bottom: 1px solid var(--border-subtle); font-size: 0.82rem; }
 .do-insight-item:last-child { border-bottom: none; }
 .do-insight-emoji { flex-shrink: 0; }
-.do-meal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; }
-.do-meal-card { background: color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong)); border-radius: calc(var(--radius-md) + 2px); padding: 0.85rem; border: 1px solid var(--border); }
-.do-meal-title { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.do-meal-pct { font-size: 1.7rem; font-weight: 700; font-family: var(--font-display); color: var(--accent); line-height: 1.05; }
+.do-meal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.3rem; }
+.do-meal-card { background: color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong)); border-radius: calc(var(--radius-md) + 2px); padding: 0.45rem 0.6rem; border: 1px solid var(--border); }
+.do-meal-title { font-size: 0.7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.do-meal-pct { font-size: 1.1rem; font-weight: 700; font-family: var(--font-display); color: var(--accent); line-height: 1.05; }
 .do-meal-detail { font-size: 0.72rem; color: var(--muted); }
 .do-meal-macros { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
-.do-meal-warn { font-size: 0.72rem; color: var(--danger); margin-top: 0.2rem; }
+.do-meal-warn { font-size: 0.68rem; color: var(--danger); margin-top: 0.15rem; }
+
+/* ── Data overview layout utilities ────────────────────── */
+.do-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+@media (max-width: 900px) { .do-two-col { grid-template-columns: 1fr; } }
+.do-insights-list { display: flex; flex-wrap: wrap; gap: 0.15rem 0.5rem; font-size: 0.72rem; line-height: 1.35; }
+.do-insights-list span { color: var(--text); }
+.do-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem; }
+.do-stat { display: flex; justify-content: space-between; align-items: baseline; padding: 0.28rem 0.45rem; font-size: 0.72rem; background: color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong)); border-radius: var(--radius-md); border: 1px solid var(--border); }
+.do-stat-label { color: var(--muted); }
+.do-stat-val { font-weight: 700; font-size: 0.82rem; }
+.do-products-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; font-size: 0.72rem; }
+@media (max-width: 600px) { .do-products-3col { grid-template-columns: 1fr 1fr; } }
+.do-products-3col h4 { font-size: 0.65rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.15rem; }
+.do-product-row { display: flex; justify-content: space-between; padding: 0.1rem 0; border-bottom: 1px solid var(--border); }
+.do-product-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+.do-product-row span:last-child { color: var(--muted); flex-shrink: 0; }
+.do-export-bar { display: flex; gap: 0.4rem; justify-content: center; padding: 0.8rem 0 0.3rem; opacity: 0.5; }
+.do-export-bar button { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
+
+/* ── Micronutrient bars ─────────────────────────────────── */
+.micro-grid { display: grid; gap: 0.35rem; }
+.micro-row { display: flex; align-items: center; gap: 0.4rem; }
+.micro-name { min-width: 70px; font-size: 0.7rem; font-weight: 500; flex-shrink: 0; }
+.micro-bar { flex: 1; height: 9px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.micro-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s; }
+.micro-val { min-width: 55px; text-align: right; font-size: 0.63rem; color: var(--muted); flex-shrink: 0; white-space: nowrap; }
+.micro-pct { min-width: 28px; text-align: right; font-size: 0.63rem; font-weight: 600; flex-shrink: 0; }
+.micro-source { font-size: 0.6rem; color: var(--muted); margin-top: 1px; padding-left: 74px; }
+.micro-disclaimer { margin-top: 0.5rem; font-size: 0.6rem; color: var(--muted); }
 
 /* ── Advies Page ──────────────────────────────────────────── */
 

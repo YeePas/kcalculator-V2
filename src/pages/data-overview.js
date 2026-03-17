@@ -35,12 +35,14 @@ function formatBalance(balance, hasData) {
 export function openWeekModal() {
   const layout = document.querySelector('.layout');
   if (!layout) return;
-  layout.classList.remove('show-import', 'show-admin', 'show-advies');
+  layout.classList.remove('show-import', 'show-admin', 'show-advies',
+    'mobile-view-invoer', 'mobile-view-overzicht', 'mobile-view-advies', 'mobile-view-import', 'mobile-view-admin');
   if (window.innerWidth >= 781) {
     layout.classList.toggle('show-data');
     if (layout.classList.contains('show-data')) renderDataOverzicht(_doCurrentDays);
   } else {
-    switchMobileView('data');
+    layout.classList.remove('show-data');
+    layout.classList.add('mobile-view-data');
     document.querySelectorAll('.mobile-tab').forEach((t, i) => t.classList.toggle('active', i === 2));
     renderDataOverzicht(_doCurrentDays);
   }
@@ -128,14 +130,13 @@ export async function renderDataOverzicht(numDays) {
 
     let html = '';
 
-    // Smart insights (compact 2-col)
+    // Smart insights
     if (insights.length > 0) {
-      html += '<div class="do-section do-insights-section" style="padding:0.75rem">';
-      html += '<h3 style="margin:0 0 0.3rem;font-size:0.88rem">🧠 Smart Insights <span style="font-weight:400;font-size:0.75rem;color:var(--muted)">— ' + periodLabel + '</span></h3>';
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.3rem">';
+      html += '<div class="do-section do-insights-section"><h3>🧠 Insights <span class="do-section-sub">' + periodLabel + '</span></h3>';
+      html += '<div class="do-insights-list">';
       for (const ins of insights) {
-        const border = ins.priority === 'high' ? 'var(--accent)' : ins.priority === 'medium' ? 'var(--blue)' : 'var(--border)';
-        html += '<div style="display:flex;gap:0.3rem;align-items:flex-start;border-left:2px solid ' + border + ';padding:0.2rem 0.4rem;font-size:0.73rem;line-height:1.3"><span style="flex-shrink:0">' + ins.emoji + '</span><span style="color:var(--text)">' + esc(ins.message) + '</span></div>';
+        const color = ins.priority === 'high' ? 'var(--accent)' : ins.priority === 'medium' ? 'var(--blue)' : 'var(--muted)';
+        html += '<span>' + ins.emoji + ' <span style="color:' + color + '">' + esc(ins.message) + '</span></span>';
       }
       html += '</div></div>';
     }
@@ -145,63 +146,68 @@ export async function renderDataOverzicht(numDays) {
     html += kpiCard(a.avgIntake, 'kcal/dag', 'var(--accent)');
     html += kpiCard(a.activeDays + '/' + a.totalDays, 'actieve dagen', 'var(--text)');
     html += kpiCard(consistency.score + '%', 'consistentie', consistency.score >= 70 ? 'var(--green)' : consistency.score >= 40 ? '#e67e22' : 'var(--danger)');
-    if (a.daysWithEnergy > 0) html += kpiCard((a.avgBalance > 0 ? '+' : '') + a.avgBalance, 'gem. balans/dag', balanceColor(a.avgBalance, true));
-    if (goals.kcal) html += kpiCard(a.daysOnTarget, 'dagen op doel', 'var(--green)');
+    if (a.daysWithEnergy > 0) html += kpiCard((a.avgBalance > 0 ? '+' : '') + a.avgBalance, 'gem. balans', balanceColor(a.avgBalance, true));
+    if (goals.kcal) html += kpiCard(a.daysOnTarget, 'op doel', 'var(--green)');
     html += kpiCard(a.avgFiber + 'g', 'vezels/dag', 'var(--fiber)');
     html += '</div>';
 
     // Energy chart
-    html += '<div class="do-section"><h3>📈 Dagelijkse intake' + (a.daysWithEnergy > 0 ? ' vs verbruik' : '') + '</h3>';
+    html += '<div class="do-section"><h3>📈 Intake' + (a.daysWithEnergy > 0 ? ' vs verbruik' : '') + '</h3>';
     html += '<div class="do-chart" id="do-energy-chart"></div>';
     html += '<div class="do-legend"><span><span class="do-legend-dot" style="background:var(--accent)"></span>Intake</span>';
     if (a.daysWithEnergy > 0) html += '<span><span class="do-legend-dot" style="background:var(--tdee-line)"></span>TDEE</span>';
     if (goals.kcal) html += '<span><span class="do-legend-dot" style="background:var(--muted)"></span>Doel (' + goals.kcal + ')</span>';
     html += '</div></div>';
 
-    // Macro chart
+    // Macro chart + donut
     html += '<div class="do-section"><h3>🥗 Macro-verdeling</h3>';
-    html += '<div class="do-section-sub">Dagelijkse verdeling in gram — ' + periodLabel + ' (' + a.activeDays + ' dagen met invoer)</div>';
-    html += '<div class="do-chart" id="do-macro-chart"></div>';
-    html += '<div class="do-legend" style="margin-bottom:1rem"><span><span class="do-legend-dot" style="background:var(--blue)"></span>Koolhydraten</span><span><span class="do-legend-dot" style="background:var(--danger)"></span>Vetten</span><span><span class="do-legend-dot" style="background:var(--green)"></span>Eiwitten</span></div>';
-    html += '<h4 style="font-family:var(--font-display);font-size:0.92rem;margin:0 0 0.5rem">Macroverdeling ' + periodLabel + ' (%)</h4>';
-    html += '<div class="do-chart" id="do-macro-donut"></div></div>';
+    html += '<div class="do-two-col" style="align-items:start">';
+    html += '<div><div class="do-chart" id="do-macro-chart"></div>';
+    html += '<div class="do-legend"><span><span class="do-legend-dot" style="background:var(--blue)"></span>Kh</span><span><span class="do-legend-dot" style="background:var(--danger)"></span>Vet</span><span><span class="do-legend-dot" style="background:var(--green)"></span>Eiwit</span></div></div>';
+    html += '<div class="do-chart" id="do-macro-donut"></div>';
+    html += '</div></div>';
 
-    // Meal analysis
+    // Meal analysis + Micronutrients
     const mealEntries = Object.entries(mealAnalysis.meals).filter(([_, m]) => m.daysWithMeal > 0);
-    if (mealEntries.length > 0) {
-      html += '<div class="do-section"><h3>🍽️ Maaltijdanalyse</h3>';
-      html += '<div class="do-section-sub">Bijdrage per maaltijdtype in ' + periodLabel + '</div>';
-      html += '<div class="do-meal-grid">';
-      for (const [key, m] of mealEntries.sort((a, b) => b[1].contributionPct - a[1].contributionPct)) {
-        html += '<div class="do-meal-card"><div class="do-meal-title">' + esc(m.label) + '</div><div class="do-meal-pct">' + m.contributionPct + '%</div><div class="do-meal-detail">' + m.avgKcal + ' kcal/dag</div>';
-        if (m.excessDays > 0) html += '<div class="do-meal-warn">⚠️ ' + m.excessDays + '× >50% dagintake</div>';
-        html += '</div>';
-      }
-      html += '</div></div>';
-    }
-
-    // Micronutrient estimate (heuristic) — right after meal analysis, half-width
     const allPeriodItemsForMicro = entries.flatMap(({ day }) => {
       if (!day) return [];
       return MEAL_NAMES.flatMap(m => (day[m] || []));
     });
-    if (allPeriodItemsForMicro.length > 0) {
-      html += '<div class="do-section" style="max-width:520px"><h3>💊 Micronutriënten <span style="font-weight:400;font-size:0.78rem;color:var(--muted)">(schatting)</span></h3>';
-      html += '<div class="do-section-sub">Gem. per dag · ' + a.activeDays + ' dagen · o.b.v. productcategorie · 💡 = goede bronnen</div>';
-      html += '<div id="do-micro-chart"></div></div>';
+    const hasMeals = mealEntries.length > 0;
+    const hasMicro = allPeriodItemsForMicro.length > 0;
+
+    if (hasMeals || hasMicro) {
+      html += '<div class="' + (hasMeals && hasMicro ? 'do-two-col' : '') + '">';
+
+      if (hasMeals) {
+        html += '<div class="do-section"><h3>🍽️ Maaltijdanalyse</h3>';
+        html += '<div class="do-meal-grid">';
+        for (const [key, m] of mealEntries.sort((a, b) => b[1].contributionPct - a[1].contributionPct)) {
+          html += '<div class="do-meal-card"><div class="do-meal-title">' + esc(m.label) + ' <span class="do-meal-pct">' + m.contributionPct + '%</span></div><div class="do-meal-detail">' + m.avgKcal + ' kcal/dag</div>';
+          if (m.excessDays > 0) html += '<div class="do-meal-warn">⚠️ ' + m.excessDays + '× >50%</div>';
+          html += '</div>';
+        }
+        html += '</div></div>';
+      }
+
+      if (hasMicro) {
+        html += '<div class="do-section"><h3>💊 Micronutriënten <span class="do-section-sub">(schatting)</span></h3>';
+        html += '<div class="do-section-sub">Gem./dag · ' + a.activeDays + 'd · 💡 = bronnen bij tekort</div>';
+        html += '<div id="do-micro-chart"></div></div>';
+      }
+
+      html += '</div>';
     }
 
     // Energy balance
     if (a.daysWithEnergy > 0) {
       const cumColor = balanceColor(a.cumulativeBalance, true);
       html += '<div class="do-section"><h3>⚡ Energiebalans</h3>';
-      html += '<div class="do-section-sub">Op basis van ' + a.daysWithEnergy + ' dagen met verbruiksdata in ' + periodLabel + '</div>';
-      html += '<div class="do-insight-grid">';
-      html += doInsight('Gem. intake', a.avgIntake + ' kcal/dag');
-      html += doInsight('Gem. TDEE', a.avgTDEE + ' kcal/dag');
-      html += doInsight('Gem. actief', a.avgActive + ' kcal/dag');
-      html += doInsight('Gem. rust', a.avgResting + ' kcal/dag');
-      html += doInsight('Netto ' + periodLabel, '<span style="color:' + cumColor + '">' + (a.cumulativeBalance > 0 ? '+' : '') + a.cumulativeBalance + ' kcal</span>');
+      html += '<div class="do-stat-grid">';
+      html += '<div class="do-stat"><span class="do-stat-label">Gem. intake</span><span class="do-stat-val">' + a.avgIntake + ' kcal</span></div>';
+      html += '<div class="do-stat"><span class="do-stat-label">Gem. TDEE</span><span class="do-stat-val">' + a.avgTDEE + ' kcal</span></div>';
+      html += '<div class="do-stat"><span class="do-stat-label">Gem. actief</span><span class="do-stat-val">' + a.avgActive + ' kcal</span></div>';
+      html += '<div class="do-stat"><span class="do-stat-label">Netto</span><span class="do-stat-val" style="color:' + cumColor + '">' + (a.cumulativeBalance > 0 ? '+' : '') + a.cumulativeBalance + ' kcal</span></div>';
       html += '</div></div>';
     }
 
@@ -209,57 +215,59 @@ export async function renderDataOverzicht(numDays) {
     const weightData = loadWeight();
     const weightEntries = Object.keys(weightData).filter(d => d >= dateKeys[0] && d <= dateKeys[dateKeys.length - 1]);
     if (weightEntries.length >= 2) {
-      html += '<div class="do-section"><h3>Gewicht</h3>';
+      html += '<div class="do-section"><h3>⚖️ Gewicht</h3>';
       html += '<div class="do-chart" id="do-weight-chart"></div></div>';
     }
 
-    // Weekday vs weekend + Consistentie + Extremen — compact in één sectie
+    // Statistieken + Producten
     const ww = weekdayWeekend;
     const cs = consistency;
     const ex = extremes;
-    html += '<div class="do-section"><h3>📊 Statistieken</h3><div class="do-insight-grid">';
-    html += doInsight('Consistentie', '<span style="font-weight:700;color:' + (cs.score >= 70 ? 'var(--green)' : cs.score >= 40 ? '#e67e22' : 'var(--danger)') + '">' + cs.score + '%</span>');
-    html += doInsight('Spreiding intake', cs.intakeStdDev + ' kcal σ');
-    html += doInsight('Datacompleetheid', cs.completeness + '%');
+    const hasTopData = topFoods.topCalories.length > 0 || topFoods.mostUsed.length > 0 || topFoods.topProtein.length > 0;
+
+    html += '<div class="do-two-col">';
+
+    // Statistieken
+    html += '<div class="do-section"><h3>📊 Statistieken</h3><div class="do-stat-grid">';
+    html += '<div class="do-stat"><span class="do-stat-label">Consistentie</span><span class="do-stat-val" style="color:' + (cs.score >= 70 ? 'var(--green)' : cs.score >= 40 ? '#e67e22' : 'var(--danger)') + '">' + cs.score + '%</span></div>';
+    html += '<div class="do-stat"><span class="do-stat-label">Spreiding</span><span class="do-stat-val">' + cs.intakeStdDev + ' kcal σ</span></div>';
     if (ww.weekday.days > 0 && ww.weekend.days > 0) {
       const diff = ww.differences.intakeDiff;
-      html += doInsight('Weekdag', ww.weekday.avgIntake + ' kcal/dag');
-      html += doInsight('Weekend', ww.weekend.avgIntake + ' kcal/dag <small style="color:' + (Math.abs(diff) > 200 ? 'var(--danger)' : 'var(--muted)') + '">(' + (diff > 0 ? '+' : '') + diff + ')</small>');
+      html += '<div class="do-stat"><span class="do-stat-label">Weekdag</span><span class="do-stat-val">' + ww.weekday.avgIntake + ' kcal</span></div>';
+      html += '<div class="do-stat"><span class="do-stat-label">Weekend</span><span class="do-stat-val">' + ww.weekend.avgIntake + ' kcal <small style="color:' + (Math.abs(diff) > 200 ? 'var(--danger)' : 'var(--muted)') + '">(' + (diff > 0 ? '+' : '') + diff + ')</small></span></div>';
     }
-    if (ex.highestIntake) html += doInsight('Hoogste dag', ex.highestIntake.value + ' kcal <small style="color:var(--muted)">' + formatDate(ex.highestIntake.date) + '</small>');
-    if (ex.lowestIntake) html += doInsight('Laagste dag', ex.lowestIntake.value + ' kcal <small style="color:var(--muted)">' + formatDate(ex.lowestIntake.date) + '</small>');
-    if (ex.biggestSurplus) html += doInsight('Grootste surplus', '<span style="color:var(--danger)">+' + ex.biggestSurplus.value + ' kcal</span> <small style="color:var(--muted)">' + formatDate(ex.biggestSurplus.date) + '</small>');
-    if (ex.biggestDeficit) html += doInsight('Grootste tekort', '<span style="color:var(--green)">' + ex.biggestDeficit.value + ' kcal</span> <small style="color:var(--muted)">' + formatDate(ex.biggestDeficit.date) + '</small>');
+    if (ex.highestIntake) html += '<div class="do-stat"><span class="do-stat-label">Hoogste</span><span class="do-stat-val">' + ex.highestIntake.value + ' kcal <small>' + formatDate(ex.highestIntake.date) + '</small></span></div>';
+    if (ex.lowestIntake) html += '<div class="do-stat"><span class="do-stat-label">Laagste</span><span class="do-stat-val">' + ex.lowestIntake.value + ' kcal <small>' + formatDate(ex.lowestIntake.date) + '</small></span></div>';
     html += '</div></div>';
 
-    // Top foods — drie kolommen naast elkaar
-    const hasTopData = topFoods.topCalories.length > 0 || topFoods.mostUsed.length > 0 || topFoods.topProtein.length > 0;
+    // Producten
     if (hasTopData) {
       html += '<div class="do-section"><h3>🍽️ Producten</h3>';
-      html += '<div class="do-section-sub">' + topFoods.uniqueProducts + ' unieke producten in ' + periodLabel + (topFoods.dominanceRatio > 30 ? ' · top 3 = ' + topFoods.dominanceRatio + '% van intake' : '') + '</div>';
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-top:0.5rem">';
+      html += '<div class="do-products-3col">';
       if (topFoods.topCalories.length > 0) {
-        html += '<div><div style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.3rem">🔥 Kcal</div>';
-        topFoods.topCalories.forEach(s => { html += '<div style="display:flex;justify-content:space-between;font-size:0.73rem;padding:0.1rem 0;border-bottom:1px solid var(--border)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%">' + esc(s.naam) + '</span><span style="color:var(--muted);flex-shrink:0">' + s.totalKcal + '</span></div>'; });
+        html += '<div><h4>🔥 Kcal</h4>';
+        topFoods.topCalories.forEach(s => { html += '<div class="do-product-row"><span>' + esc(s.naam) + '</span><span>' + s.totalKcal + '</span></div>'; });
         html += '</div>';
       }
       if (topFoods.mostUsed.length > 0) {
-        html += '<div><div style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.3rem">📋 Gebruik</div>';
-        topFoods.mostUsed.forEach(s => { html += '<div style="display:flex;justify-content:space-between;font-size:0.73rem;padding:0.1rem 0;border-bottom:1px solid var(--border)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%">' + esc(s.naam) + '</span><span style="color:var(--muted);flex-shrink:0">' + s.count + '×</span></div>'; });
+        html += '<div><h4>📋 Gebruik</h4>';
+        topFoods.mostUsed.forEach(s => { html += '<div class="do-product-row"><span>' + esc(s.naam) + '</span><span>' + s.count + '×</span></div>'; });
         html += '</div>';
       }
       if (topFoods.topProtein.length > 0) {
-        html += '<div><div style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.3rem">💪 Eiwit</div>';
-        topFoods.topProtein.forEach(s => { html += '<div style="display:flex;justify-content:space-between;font-size:0.73rem;padding:0.1rem 0;border-bottom:1px solid var(--border)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%">' + esc(s.naam) + '</span><span style="color:var(--muted);flex-shrink:0">' + s.totalProt + 'g</span></div>'; });
+        html += '<div><h4>💪 Eiwit</h4>';
+        topFoods.topProtein.forEach(s => { html += '<div class="do-product-row"><span>' + esc(s.naam) + '</span><span>' + s.totalProt + 'g</span></div>'; });
         html += '</div>';
       }
       html += '</div></div>';
     }
 
-    // Export buttons (bottom, subtle)
-    html += '<div style="display:flex;gap:0.5rem;justify-content:center;padding:1.5rem 0 0.5rem;border-top:1px solid var(--border);margin-top:1rem">';
-    html += '<button class="btn-secondary" id="do-export-csv" style="font-size:0.72rem;padding:0.3rem 0.7rem;opacity:0.7">📄 CSV export</button>';
-    html += '<button class="btn-secondary" id="do-export-print" style="font-size:0.72rem;padding:0.3rem 0.7rem;opacity:0.7">🖨️ Weekrapport printen</button>';
+    html += '</div>'; // close stats+products grid
+
+    // Export
+    html += '<div class="do-export-bar">';
+    html += '<button class="btn-secondary" id="do-export-csv">CSV</button>';
+    html += '<button class="btn-secondary" id="do-export-print">Print weekrapport</button>';
     html += '</div>';
 
     contentEl.innerHTML = html;

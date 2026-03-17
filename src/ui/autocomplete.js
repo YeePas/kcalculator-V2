@@ -104,7 +104,7 @@ export function selectAcItem(idx) {
     <div class="ac-portie-quicks">${portieButtons}</div>
     ${importBtn ? `<div class="ac-portie-quicks" style="padding-top:0">${importBtn}</div>` : ''}
     <div class="ac-portie-manual">
-      <input type="number" class="ac-portie-input" id="ac-portie-gram" value="${defaultGram}" min="1" step="10" onkeydown="if(event.key==='Enter'){event.preventDefault();addNevoItem();}">
+      <input type="number" inputmode="numeric" pattern="[0-9]*" class="ac-portie-input" id="ac-portie-gram" value="${defaultGram}" min="1" step="10" onkeydown="if(event.key==='Enter'){event.preventDefault();addNevoItem();}">
       <span class="ac-portie-unit">${useMl ? 'ml' : 'gram'}</span>
       <button class="ac-portie-add" onclick="addNevoItem()">+</button>
     </div>
@@ -115,7 +115,14 @@ export function selectAcItem(idx) {
   dd.classList.add('open');
   setTimeout(() => {
     const inp = document.getElementById('ac-portie-gram');
-    if (inp) { inp.focus(); inp.select(); }
+    if (!inp) return;
+    // On desktop: focus + select for quick editing
+    // On mobile (touch): don't auto-focus to avoid keyboard jumping up unexpectedly;
+    // the user can tap the field to open the numeric keyboard
+    if (window.matchMedia('(hover: hover)').matches) {
+      inp.focus();
+      inp.select();
+    }
   }, 50);
 }
 

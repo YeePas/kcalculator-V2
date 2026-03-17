@@ -176,9 +176,9 @@ export function renderMealItems(items, meal) {
 export function renderItem(item, meal, idx) {
   const isDrink = meal === 'drinken';
   const macros = isDrink
-    ? `<span class="macro"><span class="macro-dot dot-w"></span>${item.ml || 0} ml</span>${item.kcal > 0 ? `<span class="macro">${item.kcal} kcal</span>` : ''}`
+    ? `<span class="macro"><span class="macro-dot dot-w"></span>${item.ml || 0} ml</span><span class="macro"><span class="macro-dot dot-c"></span>${r1(item.koolhydraten_g || 0)}g kh</span><span class="macro"><span class="macro-dot dot-v"></span>${r1(item.vetten_g || 0)}g vet</span><span class="macro"><span class="macro-dot dot-e"></span>${r1(item.eiwitten_g || 0)}g eiwit</span>`
     : `<span class="macro"><span class="macro-dot dot-c"></span>${r1(item.koolhydraten_g || 0)}g kh</span><span class="macro"><span class="macro-dot dot-v"></span>${r1(item.vetten_g || 0)}g vet</span><span class="macro"><span class="macro-dot dot-e"></span>${r1(item.eiwitten_g || 0)}g eiwit</span>${item.vezels_g > 0 ? `<span class="macro" style="opacity:0.6">${r1(item.vezels_g)}g vezel</span>` : ''}`;
-  const right = isDrink ? `${item.ml || 0} ml` : `${item.kcal} kcal`;
+  const right = `${item.kcal || 0} kcal`;
   return `<div class="meal-item">
     <div style="flex:1;min-width:0">
       <div class="item-name">${esc(item.naam)}${item.portie ? ` <span style="font-weight:300;color:var(--muted);font-size:0.8rem">(${esc(item.portie)})</span>` : ''}</div>
