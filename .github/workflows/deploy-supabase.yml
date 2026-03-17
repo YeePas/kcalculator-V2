@@ -28,11 +28,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
       - name: Validate secrets
         run: |
           test -n "$SUPABASE_ACCESS_TOKEN"
@@ -40,19 +35,19 @@ jobs:
           test -n "$SUPABASE_PROJECT_REF"
 
       - name: Show Supabase CLI version
-        run: supabase --version
+        run: npx supabase@latest --version
 
       - name: Link project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        run: npx supabase@latest link --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Push database migrations
-        run: supabase db push --password "$SUPABASE_DB_PASSWORD"
+        run: npx supabase@latest db push --password "$SUPABASE_DB_PASSWORD"
 
       - name: Deploy ai-proxy
-        run: supabase functions deploy ai-proxy --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
+        run: npx supabase@latest functions deploy ai-proxy --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Deploy save-user-ai-key
-        run: supabase functions deploy save-user-ai-key --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
+        run: npx supabase@latest functions deploy save-user-ai-key --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Deploy url-import-proxy
-        run: supabase functions deploy url-import-proxy --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
+        run: npx supabase@latest functions deploy url-import-proxy --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"

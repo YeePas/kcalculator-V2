@@ -1098,7 +1098,12 @@ function initEventListeners() {
     if (!cfg.sbUrl || !cfg.sbKey) { statusEl.textContent = 'Supabase niet geconfigureerd.'; statusEl.style.color = 'var(--danger)'; return; }
     statusEl.textContent = 'Magic link verzenden…'; statusEl.style.color = '';
     try {
-      const r = await fetch(`${cfg.sbUrl}/auth/v1/magiclink`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': cfg.sbKey }, body: JSON.stringify({ email }) });
+      const siteUrl = window.location.origin + window.location.pathname;
+      const r = await fetch(`${cfg.sbUrl}/auth/v1/magiclink`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': cfg.sbKey },
+        body: JSON.stringify({ email, redirect_to: siteUrl }),
+      });
       if (!r.ok) { const d = await r.json(); throw new Error(d.error_description || d.msg || 'Fout bij verzenden'); }
       statusEl.textContent = '✓ Magic link verzonden — check je inbox!'; statusEl.style.color = 'var(--green)';
     } catch (e) { statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--danger)'; }
