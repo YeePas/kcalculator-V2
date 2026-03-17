@@ -350,6 +350,68 @@
   }
 }
 
+@media (max-width: 430px) {
+  .modal-overlay {
+    padding: 0.7rem;
+    align-items: flex-end;
+  }
+
+  .modal {
+    padding: 1.1rem 1rem 1rem;
+    border-radius: 24px;
+    max-height: min(88dvh, 720px);
+  }
+
+  .modal h3 {
+    font-size: 1.12rem;
+    margin-bottom: 0.95rem;
+  }
+
+  .modal-btns {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    padding: 0.74rem 0.9rem;
+    font-size: 0.84rem;
+  }
+
+  #match-modal .modal {
+    max-width: none;
+    padding: 1rem 0.95rem;
+  }
+
+  #match-modal .modal-btns {
+    grid-template-columns: 1fr;
+  }
+
+  #match-modal .modal-btns .btn-primary,
+  #match-modal .modal-btns .btn-secondary {
+    min-height: 44px;
+    font-size: 0.8rem;
+  }
+
+  .match-item {
+    padding: 0.72rem;
+  }
+
+  .match-portie-row {
+    gap: 0.35rem;
+  }
+
+  .match-portie-input {
+    width: 66px;
+  }
+
+  .match-item-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Import Modal ─────────────────────────────────────────── */
 
 #import-modal .modal { max-width: 440px; }

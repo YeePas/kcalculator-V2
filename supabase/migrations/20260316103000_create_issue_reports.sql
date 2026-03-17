@@ -17,13 +17,35 @@ create table if not exists public.issue_reports (
   resolved_by uuid null references auth.users(id) on delete set null
 );
 
-alter table public.issue_reports
-  add constraint issue_reports_severity_check
-  check (severity in ('low', 'medium', 'high', 'critical'));
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'issue_reports_severity_check'
+      and conrelid = 'public.issue_reports'::regclass
+  ) then
+    alter table public.issue_reports
+      add constraint issue_reports_severity_check
+      check (severity in ('low', 'medium', 'high', 'critical'));
+  end if;
+end
+$$;
 
-alter table public.issue_reports
-  add constraint issue_reports_status_check
-  check (status in ('open', 'triaged', 'resolved'));
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'issue_reports_status_check'
+      and conrelid = 'public.issue_reports'::regclass
+  ) then
+    alter table public.issue_reports
+      add constraint issue_reports_status_check
+      check (status in ('open', 'triaged', 'resolved'));
+  end if;
+end
+$$;
 
 create index if not exists idx_issue_reports_created_at on public.issue_reports (created_at desc);
 create index if not exists idx_issue_reports_severity on public.issue_reports (severity);

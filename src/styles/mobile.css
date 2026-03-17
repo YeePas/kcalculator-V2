@@ -99,6 +99,89 @@
   .item-delete { width: 32px; height: 32px; font-size: 0.9rem; }
 }
 
+/* ── iPhone 13 / compact phones ───────────────────────────── */
+
+@media (max-width: 430px) {
+  .layout { padding-left: 0.78rem; padding-right: 0.78rem; }
+  header {
+    padding-left: 0.78rem;
+    padding-right: 0.78rem;
+    gap: 0.38rem;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.18rem;
+  }
+  .icon-btn,
+  .sync-indicator,
+  #account-btn {
+    min-height: 34px;
+  }
+  .icon-btn,
+  .sync-indicator,
+  #account-btn[data-account-state="guest"] {
+    min-width: 34px;
+    width: 34px;
+  }
+  #account-btn {
+    padding: 0 0.64rem;
+    font-size: 0.71rem;
+  }
+  .day-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  #day-label {
+    font-size: 1.08rem;
+  }
+  #today-btn {
+    min-width: 74px;
+  }
+  .summary-card-header {
+    align-items: flex-start;
+    gap: 0.45rem;
+  }
+  .summary-card-header h3 {
+    font-size: 1.02rem;
+  }
+  .cal-ring-wrap {
+    gap: 0.7rem;
+  }
+  .do-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .do-kpi {
+    min-height: 78px;
+  }
+  .do-kpi-val {
+    font-size: 1.34rem;
+  }
+  .settings-nav-item {
+    padding: 0.48rem 0.62rem;
+  }
+  .settings-tab-title {
+    font-size: 1rem;
+  }
+  .smart-actions {
+    gap: 0.42rem;
+  }
+  .smart-actions .btn-primary,
+  .smart-actions .btn-secondary,
+  .smart-inline-select {
+    font-size: 0.78rem;
+    padding-left: 0.72rem;
+    padding-right: 0.72rem;
+  }
+  .mobile-tab {
+    font-size: 0.58rem;
+  }
+  .mobile-tab-icon svg {
+    width: 1.08rem;
+    height: 1.08rem;
+  }
+}
+
 /* ── Extra Small Screens (iPhone SE, etc) ─────────────────── */
 
 @media (max-width: 375px) {
