@@ -35,7 +35,7 @@ function formatBalance(balance, hasData) {
 export function openWeekModal() {
   const layout = document.querySelector('.layout');
   if (!layout) return;
-  layout.classList.remove('show-import', 'show-admin');
+  layout.classList.remove('show-import', 'show-admin', 'show-advies');
   if (window.innerWidth >= 781) {
     layout.classList.toggle('show-data');
     if (layout.classList.contains('show-data')) renderDataOverzicht(_doCurrentDays);
@@ -128,14 +128,14 @@ export async function renderDataOverzicht(numDays) {
 
     let html = '';
 
-    // Smart insights
+    // Smart insights (compact 2-col)
     if (insights.length > 0) {
-      html += '<div class="do-section do-insights-section"><h3>🧠 Smart Insights</h3>';
-      html += '<div class="do-section-sub">Automatische analyse van ' + periodLabel + '</div>';
-      html += '<div class="do-insights-list">';
+      html += '<div class="do-section do-insights-section" style="padding:0.75rem">';
+      html += '<h3 style="margin:0 0 0.3rem;font-size:0.88rem">🧠 Smart Insights <span style="font-weight:400;font-size:0.75rem;color:var(--muted)">— ' + periodLabel + '</span></h3>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.3rem">';
       for (const ins of insights) {
         const border = ins.priority === 'high' ? 'var(--accent)' : ins.priority === 'medium' ? 'var(--blue)' : 'var(--border)';
-        html += '<div class="do-insight-item" style="border-left:3px solid ' + border + '"><span class="do-insight-emoji">' + ins.emoji + '</span><span>' + esc(ins.message) + '</span></div>';
+        html += '<div style="display:flex;gap:0.3rem;align-items:flex-start;border-left:2px solid ' + border + ';padding:0.2rem 0.4rem;font-size:0.73rem;line-height:1.3"><span style="flex-shrink:0">' + ins.emoji + '</span><span style="color:var(--text)">' + esc(ins.message) + '</span></div>';
       }
       html += '</div></div>';
     }
@@ -180,6 +180,17 @@ export async function renderDataOverzicht(numDays) {
       html += '</div></div>';
     }
 
+    // Micronutrient estimate (heuristic) — right after meal analysis, half-width
+    const allPeriodItemsForMicro = entries.flatMap(({ day }) => {
+      if (!day) return [];
+      return MEAL_NAMES.flatMap(m => (day[m] || []));
+    });
+    if (allPeriodItemsForMicro.length > 0) {
+      html += '<div class="do-section" style="max-width:520px"><h3>💊 Micronutriënten <span style="font-weight:400;font-size:0.78rem;color:var(--muted)">(schatting)</span></h3>';
+      html += '<div class="do-section-sub">Gem. per dag · ' + a.activeDays + ' dagen · o.b.v. productcategorie · 💡 = goede bronnen</div>';
+      html += '<div id="do-micro-chart"></div></div>';
+    }
+
     // Energy balance
     if (a.daysWithEnergy > 0) {
       const cumColor = balanceColor(a.cumulativeBalance, true);
@@ -202,77 +213,47 @@ export async function renderDataOverzicht(numDays) {
       html += '<div class="do-chart" id="do-weight-chart"></div></div>';
     }
 
-    // Weekday vs weekend
+    // Weekday vs weekend + Consistentie + Extremen — compact in één sectie
     const ww = weekdayWeekend;
-    if (ww.weekday.days > 0 && ww.weekend.days > 0) {
-      html += '<div class="do-section"><h3>📅 Weekdag vs Weekend</h3><div class="do-insight-grid">';
-      html += doInsight('Weekdag (' + ww.weekday.days + ' dagen)', ww.weekday.avgIntake + ' kcal/dag');
-      html += doInsight('Weekend (' + ww.weekend.days + ' dagen)', ww.weekend.avgIntake + ' kcal/dag');
-      const diff = ww.differences.intakeDiff;
-      html += doInsight('Verschil', '<span style="color:' + (Math.abs(diff) > 200 ? 'var(--danger)' : 'var(--green)') + '">' + (diff > 0 ? '+' : '') + diff + ' kcal/dag</span>');
-      html += '</div></div>';
-    }
-
-    // Consistency
-    html += '<div class="do-section"><h3>🎯 Consistentie</h3><div class="do-insight-grid">';
     const cs = consistency;
-    html += doInsight('Score', '<span style="font-size:1.3rem;font-weight:700;color:' + (cs.score >= 70 ? 'var(--green)' : cs.score >= 40 ? '#e67e22' : 'var(--danger)') + '">' + cs.score + '%</span>');
-    html += doInsight('Standaarddeviatie', cs.intakeStdDev + ' kcal');
-    html += doInsight('Afwijkdagen (>300 kcal)', cs.deviationDays + ' van ' + a.activeDays + ' dagen');
+    const ex = extremes;
+    html += '<div class="do-section"><h3>📊 Statistieken</h3><div class="do-insight-grid">';
+    html += doInsight('Consistentie', '<span style="font-weight:700;color:' + (cs.score >= 70 ? 'var(--green)' : cs.score >= 40 ? '#e67e22' : 'var(--danger)') + '">' + cs.score + '%</span>');
+    html += doInsight('Spreiding intake', cs.intakeStdDev + ' kcal σ');
     html += doInsight('Datacompleetheid', cs.completeness + '%');
+    if (ww.weekday.days > 0 && ww.weekend.days > 0) {
+      const diff = ww.differences.intakeDiff;
+      html += doInsight('Weekdag', ww.weekday.avgIntake + ' kcal/dag');
+      html += doInsight('Weekend', ww.weekend.avgIntake + ' kcal/dag <small style="color:' + (Math.abs(diff) > 200 ? 'var(--danger)' : 'var(--muted)') + '">(' + (diff > 0 ? '+' : '') + diff + ')</small>');
+    }
+    if (ex.highestIntake) html += doInsight('Hoogste dag', ex.highestIntake.value + ' kcal <small style="color:var(--muted)">' + formatDate(ex.highestIntake.date) + '</small>');
+    if (ex.lowestIntake) html += doInsight('Laagste dag', ex.lowestIntake.value + ' kcal <small style="color:var(--muted)">' + formatDate(ex.lowestIntake.date) + '</small>');
+    if (ex.biggestSurplus) html += doInsight('Grootste surplus', '<span style="color:var(--danger)">+' + ex.biggestSurplus.value + ' kcal</span> <small style="color:var(--muted)">' + formatDate(ex.biggestSurplus.date) + '</small>');
+    if (ex.biggestDeficit) html += doInsight('Grootste tekort', '<span style="color:var(--green)">' + ex.biggestDeficit.value + ' kcal</span> <small style="color:var(--muted)">' + formatDate(ex.biggestDeficit.date) + '</small>');
     html += '</div></div>';
 
-    // Extremes
-    const ex = extremes;
-    if (ex.highestIntake || ex.lowestIntake || ex.biggestSurplus || ex.biggestDeficit || ex.highestActivity) {
-      html += '<div class="do-section"><h3>📊 Schommelingen & extremen</h3><div class="do-insight-grid">';
-      if (ex.highestIntake) html += doInsight('Hoogste intake', ex.highestIntake.value + ' kcal<br><small style="color:var(--muted)">' + formatDate(ex.highestIntake.date) + '</small>');
-      if (ex.lowestIntake) html += doInsight('Laagste intake', ex.lowestIntake.value + ' kcal<br><small style="color:var(--muted)">' + formatDate(ex.lowestIntake.date) + '</small>');
-      if (ex.biggestSurplus) html += doInsight('Grootste overschot', '<span style="color:var(--danger)">+' + ex.biggestSurplus.value + ' kcal</span><br><small style="color:var(--muted)">' + formatDate(ex.biggestSurplus.date) + '</small>');
-      if (ex.biggestDeficit) html += doInsight('Grootste tekort', '<span style="color:var(--green)">' + ex.biggestDeficit.value + ' kcal</span><br><small style="color:var(--muted)">' + formatDate(ex.biggestDeficit.date) + '</small>');
-      if (ex.highestActivity) html += doInsight('Actiefste dag', ex.highestActivity.value + ' kcal actief<br><small style="color:var(--muted)">' + formatDate(ex.highestActivity.date) + '</small>');
-      html += '</div></div>';
-    }
-
-    // Top calorie sources
-    if (topFoods.topCalories.length > 0) {
-      html += '<div class="do-section"><h3>🔥 Top caloriebronnen</h3>';
-      if (topFoods.dominanceRatio > 30) html += '<div class="do-section-sub">' + topFoods.dominanceRatio + '% van je intake komt uit de top 3 producten</div>';
-      html += '<ul class="do-top-list">';
-      topFoods.topCalories.forEach(s => { html += '<li><span>' + esc(s.naam) + ' <small style="color:var(--muted)">×' + s.count + '</small></span><span>' + s.totalKcal + ' kcal</span></li>'; });
-      html += '</ul></div>';
-    }
-
-    if (topFoods.mostUsed.length > 0) {
-      html += '<div class="do-section"><h3>📋 Meest gebruikt</h3>';
-      html += '<div class="do-section-sub">' + topFoods.uniqueProducts + ' unieke producten in ' + periodLabel + '</div>';
-      html += '<ul class="do-top-list">';
-      topFoods.mostUsed.forEach(s => { html += '<li><span>' + esc(s.naam) + '</span><span>' + s.count + '×</span></li>'; });
-      html += '</ul></div>';
-    }
-
-    if (topFoods.topProtein.length > 0) {
-      html += '<div class="do-section"><h3>💪 Top eiwitbronnen</h3>';
-      html += '<ul class="do-top-list">';
-      topFoods.topProtein.forEach(s => { html += '<li><span>' + esc(s.naam) + '</span><span>' + s.totalProt + 'g</span></li>'; });
-      html += '</ul></div>';
-    }
-
-    // Micronutrient estimate (heuristic, no AI needed)
-    const allPeriodItems = entries.flatMap(({ day }) => {
-      if (!day) return [];
-      return MEAL_NAMES.flatMap(m => (day[m] || []).map(i => i));
-    });
-    if (allPeriodItems.length > 0) {
-      const microTotals = estimateMicroHeuristic(allPeriodItems);
-      // Average per active day
-      const microAvg = {};
-      for (const key of Object.keys(RDA)) {
-        microAvg[key] = Math.round((microTotals[key] / Math.max(a.activeDays, 1)) * 10) / 10;
+    // Top foods — drie kolommen naast elkaar
+    const hasTopData = topFoods.topCalories.length > 0 || topFoods.mostUsed.length > 0 || topFoods.topProtein.length > 0;
+    if (hasTopData) {
+      html += '<div class="do-section"><h3>🍽️ Producten</h3>';
+      html += '<div class="do-section-sub">' + topFoods.uniqueProducts + ' unieke producten in ' + periodLabel + (topFoods.dominanceRatio > 30 ? ' · top 3 = ' + topFoods.dominanceRatio + '% van intake' : '') + '</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-top:0.5rem">';
+      if (topFoods.topCalories.length > 0) {
+        html += '<div><div style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.3rem">🔥 Kcal</div>';
+        topFoods.topCalories.forEach(s => { html += '<div style="display:flex;justify-content:space-between;font-size:0.73rem;padding:0.1rem 0;border-bottom:1px solid var(--border)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%">' + esc(s.naam) + '</span><span style="color:var(--muted);flex-shrink:0">' + s.totalKcal + '</span></div>'; });
+        html += '</div>';
       }
-      html += '<div class="do-section"><h3>💊 Micronutriënten (schatting)</h3>';
-      html += '<div class="do-section-sub">Gemiddeld per dag op basis van ' + a.activeDays + ' dagen — inschatting o.b.v. productcategorie</div>';
-      html += '<div id="do-micro-chart"></div></div>';
+      if (topFoods.mostUsed.length > 0) {
+        html += '<div><div style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.3rem">📋 Gebruik</div>';
+        topFoods.mostUsed.forEach(s => { html += '<div style="display:flex;justify-content:space-between;font-size:0.73rem;padding:0.1rem 0;border-bottom:1px solid var(--border)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%">' + esc(s.naam) + '</span><span style="color:var(--muted);flex-shrink:0">' + s.count + '×</span></div>'; });
+        html += '</div>';
+      }
+      if (topFoods.topProtein.length > 0) {
+        html += '<div><div style="font-size:0.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.3rem">💪 Eiwit</div>';
+        topFoods.topProtein.forEach(s => { html += '<div style="display:flex;justify-content:space-between;font-size:0.73rem;padding:0.1rem 0;border-bottom:1px solid var(--border)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%">' + esc(s.naam) + '</span><span style="color:var(--muted);flex-shrink:0">' + s.totalProt + 'g</span></div>'; });
+        html += '</div>';
+      }
+      html += '</div></div>';
     }
 
     // Export buttons (bottom, subtle)
@@ -290,15 +271,15 @@ export async function renderDataOverzicht(numDays) {
     document.getElementById('do-export-print')?.addEventListener('click', () => exportWeekrapportPrint());
     renderWeightChart(document.getElementById('do-weight-chart'), numDays);
 
-    // Render micronutrient heuristic chart
+    // Render micronutrient heuristic chart (with food sources for low items)
     const microEl = document.getElementById('do-micro-chart');
-    if (microEl && allPeriodItems.length > 0) {
-      const microTotals = estimateMicroHeuristic(allPeriodItems);
+    if (microEl && allPeriodItemsForMicro.length > 0) {
+      const microTotals = estimateMicroHeuristic(allPeriodItemsForMicro);
       const microAvg = {};
       for (const key of Object.keys(RDA)) {
         microAvg[key] = Math.round((microTotals[key] / Math.max(a.activeDays, 1)) * 10) / 10;
       }
-      renderMicroDashboard(microEl, microAvg, 'Heuristische schatting');
+      renderMicroDashboard(microEl, microAvg, 'Schatting gem./dag', true);
     }
   } catch (err) {
     console.error('[renderDataOverzicht]', err);

@@ -74,7 +74,7 @@ export function _renderDayUI(day) {
       <div class="meal-header" onclick="toggleMealSection(this)">
         <div class="meal-header-left">
           <span class="meal-title">${MEAL_LABELS[meal]}</span>
-          ${isDrink && mMl > 0 ? `<span class="meal-cals">${mMl} ml${mCals > 0 ? ` · ${mCals} kcal` : ''}</span>` : ''}
+          ${isDrink && (mMl > 0 || mCals > 0) ? `<span class="meal-cals">${mCals > 0 ? `${mCals} kcal · ` : ''}${mMl} ml</span>` : ''}
           ${!isDrink && mCals > 0 ? `<span class="meal-cals">${mCals} kcal</span>` : ''}
         </div>
         <span class="meal-collapse-icon">▾</span>
@@ -177,9 +177,7 @@ export function renderItem(item, meal, idx) {
   const isDrink = meal === 'drinken';
   const macros = isDrink
     ? `<span class="macro"><span class="macro-dot dot-w"></span>${item.ml || 0} ml</span>${item.kcal > 0 ? `<span class="macro">${item.kcal} kcal</span>` : ''}`
-    : `<span class="macro"><span class="macro-dot dot-c"></span>${r1(item.koolhydraten_g || 0)}g koolh.<span class="macro-sub"> w.v. ${r1(item.vezels_g || 0)}g vezel</span></span>
-       <span class="macro"><span class="macro-dot dot-v"></span>${r1(item.vetten_g || 0)}g vet</span>
-       <span class="macro"><span class="macro-dot dot-e"></span>${r1(item.eiwitten_g || 0)}g eiwit</span>`;
+    : `<span class="macro"><span class="macro-dot dot-c"></span>${r1(item.koolhydraten_g || 0)}g kh</span><span class="macro"><span class="macro-dot dot-v"></span>${r1(item.vetten_g || 0)}g vet</span><span class="macro"><span class="macro-dot dot-e"></span>${r1(item.eiwitten_g || 0)}g eiwit</span>${item.vezels_g > 0 ? `<span class="macro" style="opacity:0.6">${r1(item.vezels_g)}g vezel</span>` : ''}`;
   const right = isDrink ? `${item.ml || 0} ml` : `${item.kcal} kcal`;
   return `<div class="meal-item">
     <div style="flex:1;min-width:0">

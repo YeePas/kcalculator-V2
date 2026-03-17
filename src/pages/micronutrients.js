@@ -6,14 +6,14 @@ import { emptyDay, dayTotals } from '../utils.js';
 import { aiCall, hasAiAvailable } from '../ai/providers.js';
 
 export const RDA = {
-  vitamine_d_ug: { naam: 'Vitamine D', doel: 10, unit: '\u00b5g' },
-  ijzer_mg: { naam: 'IJzer', doel: 13, unit: 'mg' },
-  calcium_mg: { naam: 'Calcium', doel: 950, unit: 'mg' },
-  vitamine_b12_ug: { naam: 'Vitamine B12', doel: 2.8, unit: '\u00b5g' },
-  vitamine_c_mg: { naam: 'Vitamine C', doel: 75, unit: 'mg' },
-  zink_mg: { naam: 'Zink', doel: 9, unit: 'mg' },
-  magnesium_mg: { naam: 'Magnesium', doel: 350, unit: 'mg' },
-  foliumzuur_ug: { naam: 'Foliumzuur', doel: 300, unit: '\u00b5g' },
+  vitamine_d_ug: { naam: 'Vitamine D', doel: 10, unit: '\u00b5g', bronnen: 'Vette vis (zalm, makreel), eieren, verrijkte zuivel' },
+  ijzer_mg: { naam: 'IJzer', doel: 13, unit: 'mg', bronnen: 'Rood vlees, spinazie, peulvruchten, noten' },
+  calcium_mg: { naam: 'Calcium', doel: 950, unit: 'mg', bronnen: 'Zuivel (kaas, yoghurt, melk), noten, groene groenten' },
+  vitamine_b12_ug: { naam: 'Vitamine B12', doel: 2.8, unit: '\u00b5g', bronnen: 'Vlees, vis, eieren, zuivel' },
+  vitamine_c_mg: { naam: 'Vitamine C', doel: 75, unit: 'mg', bronnen: 'Paprika, citrusfruit, aardbeien, broccoli, kiwi' },
+  zink_mg: { naam: 'Zink', doel: 9, unit: 'mg', bronnen: 'Rood vlees, kaas, noten, peulvruchten, volkoren brood' },
+  magnesium_mg: { naam: 'Magnesium', doel: 350, unit: 'mg', bronnen: 'Noten, zaden, peulvruchten, havermout, donkere groenten' },
+  foliumzuur_ug: { naam: 'Foliumzuur', doel: 300, unit: '\u00b5g', bronnen: 'Bladgroenten, peulvruchten, broccoli, ei, volkoren' },
 };
 
 /* ── Heuristic micro estimation per 100g of food category ── */
@@ -239,26 +239,29 @@ function parseAiMicroResponse(text) {
   }
 }
 
-export function renderMicroDashboard(container, data, label = 'AI-schatting') {
-  let html = '<div style="display:grid;gap:0.5rem">';
+export function renderMicroDashboard(container, data, label = 'AI-schatting', showSources = false) {
+  let html = '<div style="display:grid;gap:0.45rem">';
 
   for (const [key, meta] of Object.entries(RDA)) {
     const val = data[key] || 0;
     const pct = Math.min(Math.round((val / meta.doel) * 100), 200);
     const barPct = Math.min(pct, 100);
     const color = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--warning, #e6b94f)' : 'var(--danger)';
+    const lowSource = showSources && pct < 60 ? `<div style="font-size:0.65rem;color:var(--muted);margin-top:1px;padding-left:88px">💡 ${meta.bronnen}</div>` : '';
 
-    html += `<div style="display:flex;align-items:center;gap:0.5rem">
-      <div style="width:80px;font-size:0.75rem;font-weight:500;flex-shrink:0">${meta.naam}</div>
-      <div style="flex:1;height:12px;background:var(--border);border-radius:6px;overflow:hidden">
-        <div style="height:100%;width:${barPct}%;background:${color};border-radius:6px;transition:width 0.3s"></div>
-      </div>
-      <div style="width:75px;text-align:right;font-size:0.7rem;color:var(--muted);flex-shrink:0">${val}${meta.unit} / ${meta.doel}${meta.unit}</div>
-      <div style="width:32px;text-align:right;font-size:0.7rem;font-weight:600;color:${color};flex-shrink:0">${pct}%</div>
+    html += `<div>
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <div style="width:82px;font-size:0.73rem;font-weight:500;flex-shrink:0">${meta.naam}</div>
+        <div style="flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden">
+          <div style="height:100%;width:${barPct}%;background:${color};border-radius:5px;transition:width 0.3s"></div>
+        </div>
+        <div style="width:72px;text-align:right;font-size:0.68rem;color:var(--muted);flex-shrink:0">${val}${meta.unit} / ${meta.doel}${meta.unit}</div>
+        <div style="width:30px;text-align:right;font-size:0.68rem;font-weight:600;color:${color};flex-shrink:0">${pct}%</div>
+      </div>${lowSource}
     </div>`;
   }
 
   html += '</div>';
-  html += `<div style="margin-top:0.7rem;padding:0.5rem;background:var(--bg);border-radius:6px;border:1px solid var(--border);font-size:0.68rem;color:var(--muted)">${label} op basis van voedingsmiddelen \u2014 geen medisch advies. Werkelijke waarden kunnen afwijken.</div>`;
+  html += `<div style="margin-top:0.6rem;font-size:0.65rem;color:var(--muted)">${label} op basis van productcategorie \u2014 geen medisch advies.</div>`;
   container.innerHTML = html;
 }
