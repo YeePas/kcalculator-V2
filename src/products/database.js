@@ -37,7 +37,7 @@ function offKcalPer100(nutriments = {}) {
   return 0;
 }
 
-function mapOffApiProduct(product) {
+export function mapOffApiProduct(product) {
   const n = String(product.product_name_nl || product.product_name || '').trim();
   if (!n) return null;
   const nutriments = product.nutriments || {};
