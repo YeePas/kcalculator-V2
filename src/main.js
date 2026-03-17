@@ -6,7 +6,7 @@ import {
   cfg, goals, localData, currentDate, selMeal, vis, authUser,
   activeAdviesTab, setActiveAdviesTab, showDrinks,
   nevoData, nevoReady, setNevoReady,
-  acSelectedIdx, acSelectedItem,
+  acSelectedIdx, acSelectedItem, setAcResults,
   setLocalData, setGoals, setSelMeal, setCfg,
   setCurrentDate, setAuthUser as setAuthUserState,
   setNevoData, setOffReady,
@@ -71,7 +71,7 @@ import {
   goToDay, switchMobileView,
 } from './ui/misc.js';
 import {
-  initAutocomplete, closeAcDropdown,
+  initAutocomplete, closeAcDropdown, renderAcDropdown,
   selectAcItem, setPortie, addNevoItem, importAcItemToCustom,
 } from './ui/autocomplete.js';
 import {
@@ -95,6 +95,8 @@ import {
 } from './modals/edit.js';
 import { initDataManagement } from './modals/data-management.js';
 import { initManualDayEntry } from './modals/manual-day.js';
+import { initWeightListeners } from './pages/weight.js';
+import { initBarcodeScanner } from './products/barcode-scanner.js';
 
 // ── Pages ────────────────────────────────────────────────────
 import {
@@ -1109,6 +1111,12 @@ function initEventListeners() {
   initEditFavModalListeners();
   initDataManagement();
   initManualDayEntry();
+  initWeightListeners();
+  initBarcodeScanner((product) => {
+    setAcResults([product]);
+    renderAcDropdown([product], product.n);
+    selectAcItem(0);
+  });
 
   // Autocomplete
   initAutocomplete();

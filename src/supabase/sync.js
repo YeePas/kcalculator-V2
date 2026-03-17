@@ -18,6 +18,8 @@ import {
   saveCustomProducts,
   saveCfg,
   safeSetJson,
+  loadWeight,
+  saveWeight,
 } from '../storage.js';
 import { sbHeaders } from './config.js';
 import {
@@ -104,6 +106,7 @@ export async function syncUserPrefs(immediate = false) {
           supermarketExclusions: cfg.supermarketExclusions || [],
           vis,
           showDrinks,
+          weight: loadWeight(),
         },
       };
       await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
@@ -179,6 +182,12 @@ export async function loadUserPrefs() {
     if (prefs.vis) {
       setVis(prefs.vis);
       safeSetJson(getLocalStorage(), VIS_KEY, prefs.vis);
+    }
+
+    if (prefs.weight && typeof prefs.weight === 'object') {
+      const localWeight = loadWeight();
+      const merged = { ...prefs.weight, ...localWeight };
+      saveWeight(merged);
     }
 
     const nextCfg = {
