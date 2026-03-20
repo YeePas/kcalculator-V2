@@ -105,6 +105,17 @@ export function saveSessionAiKey(provider, value) {
 }
 
 // ── Config ────────────────────────────────────────────────
+export function normalizeStoredAiModel(model) {
+  const value = cleanString(model);
+  if (!value) return '';
+  const legacyMap = {
+    'claude-haiku-4-5-20250514': 'claude-haiku-4-5-20251001',
+    'claude-sonnet-4-5-20250514': 'claude-sonnet-4-5-20250929',
+    'claude-sonnet-4-5': 'claude-sonnet-4-5-20250929',
+  };
+  return legacyMap[value] || value;
+}
+
 export function loadCfg() {
   const raw = safeParse(CFG_KEY, {});
   const sessionKeys = loadSessionAiKeys();
@@ -123,11 +134,11 @@ export function loadCfg() {
     openFoodFactsLiveSearch: raw.openFoodFactsLiveSearch !== false,
     supermarketExclusions: normalizeSupermarketFilters(raw.supermarketExclusions),
     provider: raw.provider || 'claude',
-    model: raw.model || '',
+    model: normalizeStoredAiModel(raw.model),
     adviesProvider: raw.adviesProvider || '',
-    adviesModel: raw.adviesModel || '',
+    adviesModel: normalizeStoredAiModel(raw.adviesModel),
     importProvider: raw.importProvider || '',
-    importModel: raw.importModel || '',
+    importModel: normalizeStoredAiModel(raw.importModel),
   };
 }
 

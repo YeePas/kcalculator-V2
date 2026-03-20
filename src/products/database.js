@@ -13,9 +13,65 @@ const PRODUCTS_CACHE_KEY = 'kcalculator_products_v5';
 const LEGACY_PRODUCTS_CACHE_KEYS = ['kcalculator_products_v4', 'kcalculator_products_v3', 'kcalculator_products_v2', 'kcalculator_products_v1'];
 const OFF_SEARCH_CACHE_KEY = 'kcalculator_off_search_v1';
 const OFF_SEARCH_TTL_MS = 1000 * 60 * 60 * 12;
+const SEARCH_SYNONYMS = {
+  boterham: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
+  boterhammen: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
+  brood: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
+};
 
 function round1(v) {
   return Math.round((Number(v) || 0) * 10) / 10;
+}
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function toSingularSearchTerm(term) {
+  const value = normalizeSearchText(term);
+  if (value.length < 4) return value;
+  if (value.endsWith('ies') && value.length > 4) return value.slice(0, -3) + 'ie';
+  if (value.endsWith('eren') && value.length > 5) return value.slice(0, -2);
+  if (value.endsWith('en') && value.length > 4) return value.slice(0, -2);
+  if (value.endsWith('s') && value.length > 3) return value.slice(0, -1);
+  return value;
+}
+
+function buildSearchVariants(query) {
+  const normalized = normalizeSearchText(query);
+  if (!normalized) return [];
+  const seen = new Set([normalized]);
+  const variants = [normalized];
+  const words = normalized.split(/\s+/).filter(Boolean);
+  const singularWords = words.map(toSingularSearchTerm);
+  const singularPhrase = singularWords.join(' ').trim();
+  if (singularPhrase && !seen.has(singularPhrase)) {
+    seen.add(singularPhrase);
+    variants.push(singularPhrase);
+  }
+  for (const word of singularWords) {
+    if (word && !seen.has(word)) {
+      seen.add(word);
+      variants.push(word);
+    }
+  }
+
+  for (const variant of [...variants]) {
+    const synonyms = SEARCH_SYNONYMS[variant] || [];
+    for (const synonym of synonyms) {
+      const normalizedSynonym = normalizeSearchText(synonym);
+      if (!normalizedSynonym || seen.has(normalizedSynonym)) continue;
+      seen.add(normalizedSynonym);
+      variants.push(normalizedSynonym);
+    }
+  }
+  return variants;
 }
 
 function offKcalPer100(nutriments = {}) {
@@ -167,50 +223,78 @@ export function searchNevo(query) {
   // Also strip leftover quantity words
   searchQ = searchQ.replace(/\b\d+\s*(gram|gr|g|ml|liter|l|cl|dl|kg|stuks?|st)\b/gi, '').trim();
   if (!searchQ) searchQ = query;
-  const normalizedQuery = searchQ.toLowerCase().trim();
-  const terms = normalizedQuery.split(/\s+/).filter(t => t.length >= 2);
-  if (!terms.length) return [];
+  const searchVariants = buildSearchVariants(searchQ);
+  const primaryQuery = searchVariants[0] || '';
+  const primaryTerms = primaryQuery.split(/\s+/).filter(t => t.length >= 2);
+  if (!primaryTerms.length) return [];
 
   const results = [];
+  const seen = new Set();
+
+  const pushResult = (item, score, extra = {}) => {
+    const key = `${String(item.n || '').toLowerCase()}|${String(item.b || '').toLowerCase()}`;
+    const next = { ...item, ...extra, _score: score };
+    const existingIdx = results.findIndex(result => `${String(result.n || '').toLowerCase()}|${String(result.b || '').toLowerCase()}` === key);
+    if (existingIdx >= 0) {
+      if ((results[existingIdx]._score || 0) < score) results[existingIdx] = next;
+      return;
+    }
+    if (seen.has(key)) return;
+    seen.add(key);
+    results.push(next);
+  };
 
   // 1) Search custom products first (higher priority)
   const customs = loadCustomProducts();
   for (const item of customs) {
-    const searchText = item.n.toLowerCase();
-    if (!terms.every(t => searchText.includes(t))) continue;
-    results.push({
-      ...item,
-      _score: 50 + (searchText.startsWith(terms[0]) ? 10 : 0),
-      _group: 'Eigen producten',
-      _custom: true,
-    });
+    const searchText = normalizeSearchText(item.n);
+    let bestScore = -Infinity;
+    for (const variant of searchVariants) {
+      const terms = variant.split(/\s+/).filter(t => t.length >= 2);
+      if (!terms.length || !terms.every(t => searchText.includes(t))) continue;
+      let score = 50 + (searchText.startsWith(terms[0]) ? 10 : 0);
+      if (searchText === variant) score += 24;
+      if (searchText.startsWith(variant)) score += 10;
+      if (variant !== primaryQuery) score -= 6;
+      bestScore = Math.max(bestScore, score);
+    }
+    if (bestScore > -Infinity) {
+      pushResult(item, bestScore, { _group: 'Eigen producten', _custom: true });
+    }
   }
 
   // 2) Search product database (RIVM + OFF merged)
   if (nevoReady && nevoData) {
     for (const item of nevoData.items) {
       if (!shouldIncludeProductForSupermarketFilters(item, cfg.supermarketExclusions)) continue;
-      const searchText = (item.n + ' ' + (item.s || '') + ' ' + (item.b || '')).toLowerCase();
-      if (!terms.every(t => searchText.includes(t))) continue;
+      const searchText = normalizeSearchText(item.n + ' ' + (item.s || '') + ' ' + (item.b || ''));
+      const nameLower = normalizeSearchText(item.n);
+      const brandLower = normalizeSearchText(item.b || '');
+      let bestScore = -Infinity;
 
-      let score = item.src === 'rivm' ? 5 : 0; // RIVM gets priority
-      const nameLower = item.n.toLowerCase();
-      const brandLower = String(item.b || '').toLowerCase();
-      // Word-boundary matching: "appel" should NOT match "aardappel"
-      const firstTermRegex = new RegExp('\\b' + terms[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      if (firstTermRegex.test(nameLower)) score += 10;
-      else score -= 5; // substring-only match penalized
-      if (nameLower.startsWith(terms[0])) score += 5;
-      if (terms.length === 1 && nameLower === terms[0]) score += 20;
-      if (nameLower === normalizedQuery) score += 40;
-      if (nameLower.startsWith(normalizedQuery)) score += 18;
-      if (nameLower.includes(normalizedQuery)) score += 10;
-      if (brandLower && normalizedQuery.includes(brandLower)) score += 8;
-      if (item.b) score += 2;
-      score -= item.n.length * 0.04;
+      for (const variant of searchVariants) {
+        const terms = variant.split(/\s+/).filter(t => t.length >= 2);
+        if (!terms.length || !terms.every(t => searchText.includes(t))) continue;
 
+        let score = item.src === 'rivm' ? 5 : 0;
+        const firstTermRegex = new RegExp('\\b' + terms[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        if (firstTermRegex.test(nameLower)) score += 10;
+        else score -= 5;
+        if (nameLower.startsWith(terms[0])) score += 5;
+        if (terms.length === 1 && nameLower === terms[0]) score += 20;
+        if (nameLower === variant) score += 40;
+        if (nameLower.startsWith(variant)) score += 18;
+        if (nameLower.includes(variant)) score += 10;
+        if (brandLower && primaryQuery.includes(brandLower)) score += 8;
+        if (item.b) score += 2;
+        if (variant !== primaryQuery) score -= 6;
+        score -= item.n.length * 0.04;
+        bestScore = Math.max(bestScore, score);
+      }
+
+      if (bestScore === -Infinity) continue;
       const group = item.g !== undefined ? nevoData.groups[item.g] : (item.b || 'Open Food Facts');
-      results.push({ ...item, _score: score, _group: group });
+      pushResult(item, bestScore, { _group: group });
     }
   }
 

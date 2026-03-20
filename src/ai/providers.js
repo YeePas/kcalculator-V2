@@ -5,13 +5,13 @@ import { cfg, authUser } from '../state.js';
 import { isLocalDevHost } from '../storage.js';
 
 const DEFAULT_MODELS = {
-  claude: 'claude-haiku-4-5-20250514',
+  claude: 'claude-haiku-4-5-20251001',
   gemini: 'gemini-2.5-flash',
   openai: 'gpt-4o-mini',
 };
 
 const PROVIDER_MODELS = {
-  claude: ['claude-haiku-4-5-20250514', 'claude-sonnet-4-5-20250514'],
+  claude: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-5-20250929'],
   gemini: ['gemini-2.5-flash', 'gemini-2.5-pro'],
   openai: ['gpt-4o-mini', 'gpt-4o'],
 };
@@ -130,7 +130,7 @@ export async function claudeCall(prompt, maxTokens = 1400) {
  */
 export function updateInlineModelSelect(provider) {
   const providerOptions = {
-    claude: [{ value: 'claude-haiku-4-5-20250514', label: 'Haiku 4.5 — snel & goedkoop' }, { value: 'claude-sonnet-4-5-20250514', label: 'Sonnet 4.5 — slimmer, ~8× duurder' }],
+    claude: [{ value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5 — snel & goedkoop' }, { value: 'claude-sonnet-4-5-20250929', label: 'Sonnet 4.5 — slimmer, ~8× duurder' }],
     gemini: [{ value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash — gratis' }, { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro — betaald, slimmer' }],
     openai: [{ value: 'gpt-4o-mini', label: 'GPT-4o mini — goedkoop' }, { value: 'gpt-4o', label: 'GPT-4o — slimmer, ~6× duurder' }],
   };

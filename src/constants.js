@@ -35,8 +35,8 @@ export const MEAL_LABELS = {
 // AI provider models
 export const PROVIDER_MODELS = {
   claude: [
-    { id: 'claude-haiku-4-5-20250514', label: 'Haiku 4.5 (snel)' },
-    { id: 'claude-sonnet-4-5-20250514', label: 'Sonnet 4.5 (slim)' },
+    { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5 (snel)' },
+    { id: 'claude-sonnet-4-5-20250929', label: 'Sonnet 4.5 (slim)' },
   ],
   gemini: [
     { id: 'gemini-2.5-flash', label: '2.5 Flash (snel)' },

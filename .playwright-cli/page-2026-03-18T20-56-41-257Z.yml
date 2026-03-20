@@ -1,0 +1,194 @@
+- generic [active] [ref=e1]:
+  - dialog "Instellingen en inloggen" [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e8]:
+            - generic [ref=e9]: Slim voedingsdashboard
+            - heading "Kcalculator" [level=2] [ref=e10]
+            - paragraph [ref=e11]: Log in om te syncen, inzichten te bewaren en slimmer verder te bouwen vanuit je eigen data.
+          - generic [ref=e12]:
+            - strong [ref=e13]: Persoonlijke toegang
+            - generic [ref=e14]: Nieuwe accounts staan nu standaard uit. Toegang geef je voorlopig handmatig.
+        - generic [ref=e15]:
+          - generic [ref=e16]: Email
+          - textbox "je@email.nl" [ref=e17]
+        - generic [ref=e18]:
+          - generic [ref=e19]: Wachtwoord
+          - textbox "minimaal 6 tekens" [ref=e20]
+        - button "Inloggen" [ref=e22] [cursor=pointer]
+        - generic [ref=e23]: Registreren staat nu uit. Vraag een account aan bij de beheerder.
+        - generic [ref=e24]:
+          - button "🔗 Stuur magic link" [ref=e25] [cursor=pointer]
+          - button "Wachtwoord vergeten?" [ref=e26] [cursor=pointer]
+        - button "↳ Zonder account verder (alleen lokaal, geen sync)" [ref=e29] [cursor=pointer]
+      - text: ✓
+  - banner [ref=e30]:
+    - button "Ga naar home" [ref=e31] [cursor=pointer]:
+      - img "Kcalculator" [ref=e33]
+      - generic [ref=e34]:
+        - heading "Kcalculator" [level=1] [ref=e35]
+        - generic [ref=e36]: VOEDINGSTRACKER
+    - generic [ref=e37]:
+      - button "lokaal" [ref=e38] [cursor=pointer]:
+        - generic [ref=e40]: lokaal
+      - button "Schakel donkere modus" [ref=e41] [cursor=pointer]: 🌙
+      - button "Weekoverzicht openen" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+      - button "Product of gerecht toevoegen (BETA)" [ref=e47] [cursor=pointer]:
+        - img [ref=e48]
+        - text: BETA
+      - button "Analyse openen" [ref=e50] [cursor=pointer]:
+        - img [ref=e51]
+      - button "Instellingen openen" [ref=e54] [cursor=pointer]:
+        - img [ref=e55]
+      - button "👤 Login" [ref=e58] [cursor=pointer]
+  - link "Ga naar invoer" [ref=e59] [cursor=pointer]:
+    - /url: "#food-input"
+  - generic [ref=e60]:
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - button "Vorige dag" [ref=e63] [cursor=pointer]: ‹
+        - button "Spring naar vandaag" [ref=e64] [cursor=pointer]: Vandaag
+        - button "Kopieer maaltijden van een andere dag" [ref=e65] [cursor=pointer]:
+          - img [ref=e66]
+        - generic [ref=e69]: Vandaag
+        - button "Volgende dag" [ref=e70] [cursor=pointer]: ›
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - button "🌅 Ontbijt" [ref=e73] [cursor=pointer]
+          - button "🍎 Ochtendsnack" [ref=e74] [cursor=pointer]
+          - button "☀️ Lunch" [ref=e75] [cursor=pointer]
+          - button "🍪 Middagsnack" [ref=e76] [cursor=pointer]
+          - button "🌙 Avondeten" [ref=e77] [cursor=pointer]
+          - button "🌜 Avondsnack" [ref=e78] [cursor=pointer]
+          - button "💧 Drinken" [ref=e79] [cursor=pointer]
+        - generic [ref=e82]:
+          - textbox "Voedsel invoeren" [ref=e83]:
+            - /placeholder: Wat heb je gegeten?
+          - button "Scan barcode" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+          - button "Voeg toe" [ref=e91] [cursor=pointer]:
+            - img [ref=e92]
+      - button "↕️ Alles inklappen" [ref=e96] [cursor=pointer]
+      - generic [ref=e97]:
+        - generic [ref=e98]:
+          - generic [ref=e99] [cursor=pointer]:
+            - generic [ref=e101]: 🌅 Ontbijt
+            - generic [ref=e102]: ▾
+          - generic [ref=e104]: Nog niets toegevoegd
+        - generic [ref=e105]:
+          - generic [ref=e106] [cursor=pointer]:
+            - generic [ref=e108]: 🍎 Ochtendsnack
+            - generic [ref=e109]: ▾
+          - generic [ref=e111]: Nog niets toegevoegd
+        - generic [ref=e112]:
+          - generic [ref=e113] [cursor=pointer]:
+            - generic [ref=e115]: ☀️ Lunch
+            - generic [ref=e116]: ▾
+          - generic [ref=e118]: Nog niets toegevoegd
+        - generic [ref=e119]:
+          - generic [ref=e120] [cursor=pointer]:
+            - generic [ref=e122]: 🍪 Middagsnack
+            - generic [ref=e123]: ▾
+          - generic [ref=e125]: Nog niets toegevoegd
+        - generic [ref=e126]:
+          - generic [ref=e127] [cursor=pointer]:
+            - generic [ref=e129]: 🌙 Avondeten
+            - generic [ref=e130]: ▾
+          - generic [ref=e132]: Nog niets toegevoegd
+        - generic [ref=e133]:
+          - generic [ref=e134] [cursor=pointer]:
+            - generic [ref=e136]: 🌜 Avondsnack
+            - generic [ref=e137]: ▾
+          - generic [ref=e139]: Nog niets toegevoegd
+        - generic [ref=e140]:
+          - generic [ref=e141] [cursor=pointer]:
+            - generic [ref=e143]: 💧 Drinken
+            - generic [ref=e144]: ▾
+          - generic [ref=e146]: Nog niets toegevoegd
+    - generic [ref=e147]:
+      - generic [ref=e148]:
+        - generic [ref=e149]:
+          - heading "Dagoverzicht" [level=3] [ref=e150]
+          - button "Doelen aanpassen" [ref=e151] [cursor=pointer]:
+            - img [ref=e152]
+        - generic [ref=e155]:
+          - generic [ref=e156]:
+            - img [ref=e157]
+            - generic [ref=e160]:
+              - generic [ref=e161]: "0"
+              - generic [ref=e162]: van 2000
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - strong [ref=e165]: "2000"
+              - text: kcal over
+            - generic [ref=e166]:
+              - strong [ref=e167]: 0g
+              - text: eiwit
+            - generic [ref=e168]:
+              - strong [ref=e169]: 0g
+              - text: vet
+        - generic [ref=e170]:
+          - generic [ref=e171]:
+            - img [ref=e172]
+            - generic [ref=e174]:
+              - generic [ref=e175]: 0g
+              - generic [ref=e176]: macros
+          - generic [ref=e177]:
+            - generic [ref=e178]:
+              - generic [ref=e180]: Koolhydraten
+              - generic [ref=e181]: 0g
+              - generic [ref=e182]: —
+            - generic [ref=e183]:
+              - generic [ref=e185]: Vetten
+              - generic [ref=e186]: 0g
+              - generic [ref=e187]: —
+            - generic [ref=e188]:
+              - generic [ref=e190]: Eiwitten
+              - generic [ref=e191]: 0g
+              - generic [ref=e192]: —
+        - generic [ref=e193]:
+          - generic [ref=e194]:
+            - generic [ref=e195]:
+              - generic [ref=e196]: Koolhydraten
+              - generic [ref=e197]:
+                - strong [ref=e198]: "0"
+                - text: /250g
+            - generic [ref=e201]:
+              - generic [ref=e202]: ↳ w.v. vezels
+              - generic [ref=e203]:
+                - strong [ref=e204]: "0"
+                - text: /30g
+          - generic [ref=e207]:
+            - generic [ref=e208]: Vetten
+            - generic [ref=e209]:
+              - strong [ref=e210]: "0"
+              - text: /70g
+          - generic [ref=e213]:
+            - generic [ref=e214]: Eiwitten
+            - generic [ref=e215]:
+              - strong [ref=e216]: "0"
+              - text: /80g
+          - generic [ref=e219]:
+            - generic [ref=e220]: 💧 Drinken
+            - generic [ref=e221]:
+              - strong [ref=e222]: "0"
+              - text: /2000ml
+      - generic [ref=e224]:
+        - heading "Afgelopen 7 dagen" [level=3] [ref=e225]
+        - generic [ref=e226]:
+          - img [ref=e227]:
+            - generic [ref=e228]: doel 2000
+          - generic [ref=e229]:
+            - generic [ref=e230]: do
+            - generic [ref=e231]: vr
+            - generic [ref=e232]: za
+            - generic [ref=e233]: zo
+            - generic [ref=e234]: ma
+            - generic [ref=e235]: di
+            - generic [ref=e236]: Vandaag
+          - generic [ref=e237]: Nog geen data deze week
+      - generic [ref=e238]:
+        - generic [ref=e240]: Gewicht
+        - button "Wegen" [ref=e241] [cursor=pointer]

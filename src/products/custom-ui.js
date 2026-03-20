@@ -73,7 +73,7 @@ export function updatePhotoModelSelect() {
 
   const opts = [
     { value: 'claude|claude-haiku-4-5-20251001', label: 'Claude Haiku' },
-    { value: 'claude|claude-sonnet-4-5', label: 'Claude Sonnet' },
+    { value: 'claude|claude-sonnet-4-5-20250929', label: 'Claude Sonnet' },
     { value: 'gemini|gemini-2.5-flash', label: 'Gemini Flash' },
     { value: 'gemini|gemini-2.5-pro', label: 'Gemini Pro' },
     { value: 'openai|gpt-4o-mini', label: 'GPT-4o mini' },

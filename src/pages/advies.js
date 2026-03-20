@@ -70,8 +70,8 @@ export function updateAdviesModelSelect() {
   const sel = document.getElementById('advies-model-select');
   if (!sel) return;
   const opts = [
-    {value:'claude|claude-haiku-4-5-20250514', label:'Claude Haiku'},
-    {value:'claude|claude-sonnet-4-5-20250514', label:'Claude Sonnet'},
+    {value:'claude|claude-haiku-4-5-20251001', label:'Claude Haiku'},
+    {value:'claude|claude-sonnet-4-5-20250929', label:'Claude Sonnet'},
     {value:'gemini|gemini-2.5-flash',           label:'Gemini Flash (gratis)'},
     {value:'gemini|gemini-2.5-pro',             label:'Gemini Pro'},
     {value:'openai|gpt-4o-mini',                label:'GPT-4o mini'},
@@ -85,7 +85,7 @@ export function updateAdviesModelSelect() {
   const saved = cfg.adviesProvider && cfg.adviesModel ? cfg.adviesProvider + '|' + cfg.adviesModel : null;
   if (saved && available.some(o => o.value === saved)) sel.value = saved;
   else {
-    const def = (cfg.provider || 'claude') + '|' + (cfg.model || 'claude-haiku-4-5-20250514');
+    const def = (cfg.provider || 'claude') + '|' + (cfg.model || 'claude-haiku-4-5-20251001');
     if (available.some(o => o.value === def)) sel.value = def;
     else if (available[0]) sel.value = available[0].value;
   }

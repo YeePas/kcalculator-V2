@@ -40,7 +40,7 @@ export async function handlePhotoUpload(file, renderCard, feedbackNear) {
       },
       body: JSON.stringify({
         provider,
-        model: model || (provider === 'openai' ? 'gpt-4o-mini' : provider === 'gemini' ? 'gemini-2.5-flash' : 'claude-haiku-4-5-20250514'),
+        model: model || (provider === 'openai' ? 'gpt-4o-mini' : provider === 'gemini' ? 'gemini-2.5-flash' : 'claude-haiku-4-5-20251001'),
         user: prompt,
         maxTokens: 600,
         imageData: base64,

@@ -20,6 +20,7 @@ import {
   safeSetJson,
   loadWeight,
   saveWeight,
+  normalizeStoredAiModel,
 } from '../storage.js';
 import { sbHeaders } from './config.js';
 import {
@@ -193,10 +194,11 @@ export async function loadUserPrefs() {
     const nextCfg = {
       ...cfg,
       provider: prefs.provider || cfg.provider || '',
+      model: normalizeStoredAiModel(prefs.model || cfg.model || ''),
       adviesProvider: prefs.adviesProvider || cfg.adviesProvider || '',
-      adviesModel: prefs.adviesModel || cfg.adviesModel || '',
+      adviesModel: normalizeStoredAiModel(prefs.adviesModel || cfg.adviesModel || ''),
       importProvider: prefs.importProvider || cfg.importProvider || '',
-      importModel: prefs.importModel || cfg.importModel || '',
+      importModel: normalizeStoredAiModel(prefs.importModel || cfg.importModel || ''),
       openFoodFactsLiveSearch: prefs.openFoodFactsLiveSearch !== false,
       supermarketExclusions: Array.isArray(prefs.supermarketExclusions) ? prefs.supermarketExclusions : (cfg.supermarketExclusions || []),
     };

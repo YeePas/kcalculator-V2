@@ -6,6 +6,9 @@ import { loadCustomProducts, saveCustomProducts } from '../storage.js';
 import { syncCustomProductsToSupabase } from '../supabase/sync.js';
 import { createDishProposal, mapProposalToFoodItem } from './dish-import-models.js';
 import { parsePastedNutrition, fetchUrlContentForImport } from './dish-import-parsing.js';
+import { parsePortionTextPart } from '../products/quantity-parser.js';
+import { findPortie } from '../products/portions.js';
+import { matchItemToNevo, resolveGram } from '../products/matcher.js';
 
 const TYPO_MAP = {
   ertesoep: 'erwtensoep',
@@ -25,6 +28,11 @@ const GENERIC_DISH_TITLES = new Set([
   'macro-overzicht',
 ]);
 
+function toNum(v, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function extractJsonObject(text) {
   const raw = String(text || '').trim();
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -32,7 +40,19 @@ function extractJsonObject(text) {
   const start = candidate.indexOf('{');
   const end = candidate.lastIndexOf('}');
   if (start < 0 || end < 0 || end <= start) throw new Error('Geen JSON gevonden in AI output');
-  return JSON.parse(candidate.slice(start, end + 1));
+  const objectText = candidate.slice(start, end + 1);
+  try {
+    return JSON.parse(objectText);
+  } catch {
+    const repaired = objectText
+      .replace(/[\u2018\u2019]/g, '\'')
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/,\s*([}\]])/g, '$1')
+      .replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3')
+      .replace(/:\s*'([^']*)'/g, ': "$1"')
+      .replace(/([\[{,]\s*)'([^']+?)'(\s*[:,}\]])/g, '$1"$2"$3');
+    return JSON.parse(repaired);
+  }
 }
 
 function parseAiMacroText(text) {
@@ -281,6 +301,196 @@ export function estimateDishFromAIResponse(aiJson, input, provider) {
   });
 }
 
+function createUnparsedAiFallbackProposal(input, provider) {
+  const extractedDish = extractDishNameFromFreeText(input);
+  const title = extractedDish || String(input || '').trim() || 'AI schatting';
+  return createDishProposal({
+    sourceType: 'dish_name',
+    title: title.charAt(0).toUpperCase() + title.slice(1),
+    recognizedAs: 'AI-output niet volledig parsebaar',
+    confidence: 'low',
+    portionLabel: '1 portie',
+    portionGrams: 100,
+    calories: 0,
+    protein_g: 0,
+    carbs_g: 0,
+    fat_g: 0,
+    fiber_g: 0,
+    assumptions: ['AI gaf geen bruikbare JSON of macrotekst terug. Controleer dit gerecht handmatig en vul de waarden aan.'],
+    alternatives: [],
+    rawSourceInput: input,
+    providerUsed: provider,
+    editable: true,
+  });
+}
+
+function isRecipeLikeInput(input) {
+  const raw = String(input || '').trim();
+  if (!raw) return false;
+  const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length >= 3) return true;
+  const quantityHits = (raw.match(/\b\d+(?:[.,]\d+)?\s*(?:g|gr|gram|kg|ml|l|el|tl|theelepel|eetlepel|stuks?|blik(?:ken)?|aubergines?|eieren?)\b/gi) || []).length;
+  return quantityHits >= 2;
+}
+
+function sanitizeRecipeIngredient(raw, idx) {
+  const grams = Math.max(0, estimateRecipeIngredientGrams(raw));
+  const calories = Math.max(0, toNum(raw?.calories, 0));
+  const protein_g = Math.max(0, toNum(raw?.protein_g, 0));
+  const carbs_g = Math.max(0, toNum(raw?.carbs_g, 0));
+  const fat_g = Math.max(0, toNum(raw?.fat_g, 0));
+  const fiber_g = Math.max(0, toNum(raw?.fiber_g, 0));
+  const amount = cleanNumber(raw?.amount);
+  const unit = squeezeSpaces(raw?.unit || '');
+  const displayAmount = amount && unit ? `${amount} ${unit}` : amount || unit || (grams > 0 ? `${Math.round(grams)} g` : '');
+
+  return {
+    id: `ri-${idx}-${Date.now()}`,
+    name: squeezeSpaces(raw?.name || raw?.ingredient || `Ingrediënt ${idx + 1}`),
+    amount,
+    unit,
+    displayAmount,
+    grams,
+    calories,
+    protein_g,
+    carbs_g,
+    fat_g,
+    fiber_g,
+    assumptions: Array.isArray(raw?.assumptions)
+      ? raw.assumptions.map(a => squeezeSpaces(a)).filter(Boolean)
+      : [],
+  };
+}
+
+function normalizePortionType(unit) {
+  const normalized = squeezeSpaces(String(unit || '').toLowerCase())
+    .replace(/[.'’]/g, '')
+    .replace(/en$/, '');
+  const map = {
+    stuks: 'stuk',
+    st: 'stuk',
+    blikken: 'blik',
+    blikjes: 'blik',
+    theelepels: 'theelepel',
+    tl: 'theelepel',
+    eetlepels: 'eetlepel',
+    el: 'eetlepel',
+    handen: 'hand',
+    handje: 'handje',
+    handjes: 'handje',
+    handvol: 'handje',
+    tenen: 'teen',
+    teentje: 'teen',
+    snufje: 'snuf',
+    scheutje: 'scheut',
+  };
+  return map[normalized] || normalized;
+}
+
+function estimateRecipeIngredientGrams(raw) {
+  const explicit = Math.max(0, toNum(raw?.grams ?? raw?.estimatedGrams, 0));
+  if (explicit > 0) return explicit;
+
+  const amount = cleanNumber(raw?.amount);
+  const unit = squeezeSpaces(raw?.unit || '');
+  const name = squeezeSpaces(raw?.name || raw?.ingredient || '');
+  const portionText = [amount, unit, name].filter(Boolean).join(' ').trim() || name;
+  const parsed = parsePortionTextPart(portionText);
+
+  if (parsed?.gram) return Math.max(0, parsed.gram);
+  if (parsed?.ml) return Math.max(0, parsed.ml);
+
+  const match = matchItemToNevo({ foodName: name, gram: null, count: parsed?.count || 1, unit: parsed?.unit || null });
+  const portionType = normalizePortionType(parsed?.unit || unit);
+  const count = Math.max(0, Number(parsed?.count || toNum(amount, 1) || 1));
+
+  if (portionType) {
+    const options = findPortie(match?.n || name, match?.g, 0);
+    const option = options.find(item => normalizePortionType(item.t) === portionType);
+    if (option?.g) return Math.max(0, option.g * count);
+  }
+
+  const resolved = resolveGram(parsed, match);
+  return Math.max(0, resolved || 0);
+}
+
+function cleanNumber(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const n = Number(raw.replace(',', '.'));
+  if (!Number.isFinite(n)) return raw;
+  return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)));
+}
+
+function sumRecipeIngredients(ingredients) {
+  return ingredients.reduce((acc, ingredient) => {
+    acc.totalWeightGrams += ingredient.grams || 0;
+    acc.calories += ingredient.calories || 0;
+    acc.protein_g += ingredient.protein_g || 0;
+    acc.carbs_g += ingredient.carbs_g || 0;
+    acc.fat_g += ingredient.fat_g || 0;
+    acc.fiber_g += ingredient.fiber_g || 0;
+    return acc;
+  }, {
+    totalWeightGrams: 0,
+    calories: 0,
+    protein_g: 0,
+    carbs_g: 0,
+    fat_g: 0,
+    fiber_g: 0,
+  });
+}
+
+function buildRecipeProposalFromAi(aiJson, input, provider) {
+  const ingredientsRaw = Array.isArray(aiJson?.ingredients) ? aiJson.ingredients : [];
+  const ingredients = ingredientsRaw.map(sanitizeRecipeIngredient).filter(ingredient => ingredient.name);
+  if (ingredients.length === 0) return null;
+
+  const totals = sumRecipeIngredients(ingredients);
+  const servings = Math.max(1, Math.round(toNum(aiJson?.servings, 1)));
+  const totalWeightGrams = Math.max(
+    Math.round(toNum(aiJson?.totalWeightGrams, 0)),
+    Math.round(totals.totalWeightGrams || 0),
+    1
+  );
+  const portionGrams = Math.max(1, Math.round(totalWeightGrams / servings));
+
+  const proposal = createDishProposal({
+    sourceType: 'dish_name',
+    title: aiJson?.recipeName || aiJson?.recognizedDishName || extractDishNameFromFreeText(input) || 'Recept',
+    recognizedAs: aiJson?.recognizedAs || 'Ingrediëntenlijst / recept',
+    confidence: aiJson?.confidence || 'medium',
+    portionLabel: servings === 1 ? '1 portie' : `1 van ${servings} porties`,
+    portionGrams,
+    calories: Math.round(totals.calories / servings),
+    protein_g: Number((totals.protein_g / servings).toFixed(1)),
+    carbs_g: Number((totals.carbs_g / servings).toFixed(1)),
+    fat_g: Number((totals.fat_g / servings).toFixed(1)),
+    fiber_g: Number((totals.fiber_g / servings).toFixed(1)),
+    assumptions: Array.isArray(aiJson?.assumptions)
+      ? aiJson.assumptions
+      : ['Ingrediënten en hoeveelheden door AI gestructureerd; controleer aannames zoals olie, snufjes en stuksgewichten.'],
+    alternatives: aiJson?.alternatives || [],
+    rawSourceInput: input,
+    providerUsed: provider,
+    editable: true,
+  });
+
+  proposal.recipe = {
+    servings,
+    totalWeightGrams,
+    ingredients,
+    totals: {
+      calories: Math.round(totals.calories),
+      protein_g: Number(totals.protein_g.toFixed(1)),
+      carbs_g: Number(totals.carbs_g.toFixed(1)),
+      fat_g: Number(totals.fat_g.toFixed(1)),
+      fiber_g: Number(totals.fiber_g.toFixed(1)),
+    },
+  };
+  return proposal;
+}
+
 export async function analyzeDishNameWithAI(input) {
   const directProposal = createProposalFromNutritionText(input);
   if (directProposal) return directProposal;
@@ -288,16 +498,29 @@ export async function analyzeDishNameWithAI(input) {
   const extractedDish = extractDishNameFromFreeText(input);
   const normalized = normalizeDishName(extractedDish || input);
   if (!normalized) throw new Error('Vul een gerechtnaam in');
-  const systemPrompt = `Je bent een Nederlandse voedingsanalist voor een eetdagboek.\nDoel: verwerk vrije gebruikersinvoer robuust, ook als dat een losse gerechtnaam, een vraag in gewone taal, een halve omschrijving of een combinatie daarvan is.\nGeef ALLEEN geldige JSON terug met exact deze velden:\ninput, recognizedDishName, recognizedAs, confidence(high|medium|low), portionSuggestion{label,grams}, nutrition{calories,protein_g,carbs_g,fat_g,fiber_g}, assumptions[], alternatives[].\nBelangrijke regels:\n- Kies altijd een concreet gerecht of product als recognizedDishName.\n- Geef altijd een bruikbare schatting per portie, ook als de invoer vaag is.\n- Voor simpele invoer zoals \"pasta pesto\" of \"havermout met banaan\" moet je alsnog een volledige voedingsinschatting geven.\n- Als details ontbreken, maak redelijke aannames en noem die expliciet.\n- Antwoord zonder markdown, zonder tabel, zonder extra tekst buiten JSON.`;
-  const userPrompt = `Originele invoer: "${String(input || '').trim()}".\nHerkende kern: "${normalized}".\n\nVoorbeelden van gewenst gedrag:\n- "ertesoep" -> erwtensoep\n- "mag ik de calorieen voor pasta alla norma met alle macro's" -> pasta alla norma\n- "pasta pesto" -> herken als pasta pesto en geef een normale portie met macro's\n- "caesar" -> caesar salad\nGeef een plausibele Nederlandse portie en voedingsinschatting voor direct gebruik in een eetdagboek.`;
+  const recipeLike = isRecipeLikeInput(input);
+  const systemPrompt = recipeLike
+    ? `Je bent een Nederlandse voedingsanalist voor een eetdagboek.\nDe gebruiker geeft waarschijnlijk een ingrediëntenlijst of recept.\nGeef ALLEEN geldige JSON terug.\nGebruik exact deze structuur:\n{ "mode":"recipe", "recipeName":"...", "recognizedAs":"...", "confidence":"high|medium|low", "servings":1, "totalWeightGrams":0, "ingredients":[{"name":"...", "amount":"2", "unit":"stuks", "grams":0, "calories":0, "protein_g":0, "carbs_g":0, "fat_g":0, "fiber_g":0, "assumptions":["..."]}], "assumptions":["..."], "alternatives":[] }\nRegels:\n- Neem ALLE ingrediënten over.\n- Behoud expliciete hoeveelheden exact.\n- Schat grams waar nodig voor stuks, snuf, scheut, tl/el.\n- Geef voedingswaarden PER ingrediënt voor de gebruikte hoeveelheid, niet per 100g.\n- totalWeightGrams is het totale receptgewicht.\n- Gebruik altijd dubbele quotes voor alle JSON keys en stringwaarden.\n- Geen markdown, geen uitleg, geen code fences, geen tekst buiten het JSON object.`
+    : `Je bent een Nederlandse voedingsanalist voor een eetdagboek.\nDoel: verwerk vrije gebruikersinvoer robuust, ook als dat een losse gerechtnaam, een vraag in gewone taal, een halve omschrijving of een combinatie daarvan is.\nGeef ALLEEN geldige JSON terug met exact deze velden:\ninput, recognizedDishName, recognizedAs, confidence(high|medium|low), portionSuggestion{label,grams}, nutrition{calories,protein_g,carbs_g,fat_g,fiber_g}, assumptions[], alternatives[].\nBelangrijke regels:\n- Kies altijd een concreet gerecht of product als recognizedDishName.\n- Geef altijd een bruikbare schatting per portie, ook als de invoer vaag is.\n- Voor simpele invoer zoals "pasta pesto" of "havermout met banaan" moet je alsnog een volledige voedingsinschatting geven.\n- Als details ontbreken, maak redelijke aannames en noem die expliciet.\n- Antwoord zonder markdown, zonder tabel, zonder extra tekst buiten JSON.`;
+  const userPrompt = recipeLike
+    ? `Originele invoer:\n${String(input || '').trim()}\n\nInterpreteer dit als recept of ingrediëntenlijst en geef gestructureerde ingrediënten met hoeveelheden, gebruikte gram/ml-schatting per ingrediënt, voedingswaarden per gebruikte hoeveelheid en totaalgewicht van het recept.`
+    : `Originele invoer: "${String(input || '').trim()}".\nHerkende kern: "${normalized}".\n\nVoorbeelden van gewenst gedrag:\n- "ertesoep" -> erwtensoep\n- "mag ik de calorieen voor pasta alla norma met alle macro's" -> pasta alla norma\n- "pasta pesto" -> herken als pasta pesto en geef een normale portie met macro's\n- "caesar" -> caesar salad\nGeef een plausibele Nederlandse portie en voedingsinschatting voor direct gebruik in een eetdagboek.`;
 
   try {
     const { provider, text } = await callImportAI(systemPrompt, userPrompt);
     try {
       const aiJson = extractJsonObject(text);
+      if (recipeLike || aiJson?.mode === 'recipe' || Array.isArray(aiJson?.ingredients)) {
+        const recipeProposal = buildRecipeProposalFromAi(aiJson, input, provider);
+        if (recipeProposal) return recipeProposal;
+      }
       return estimateDishFromAIResponse(aiJson, input, provider);
     } catch {
-      return buildAiTextFallbackProposal(text, input, provider);
+      try {
+        return buildAiTextFallbackProposal(text, input, provider);
+      } catch {
+        return createUnparsedAiFallbackProposal(input, provider);
+      }
     }
   } catch (e) {
     throw new Error(e?.message || 'AI-analyse mislukt. Controleer je provider, model en API-key.');

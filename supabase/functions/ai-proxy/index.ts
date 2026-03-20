@@ -260,8 +260,8 @@ Deno.serve(async (req) => {
     const key = await getUserStoredKey('claude', authHeader) || getSecret('ANTHROPIC_API_KEY');
     if (!key) return json({ error: 'Supabase secret ANTHROPIC_API_KEY ontbreekt' }, 500);
     const text = imageData
-      ? await callClaudeVision(String(body.model || 'claude-haiku-4-5-20250514'), key, user, maxTokens, imageData, imageMimeType)
-      : await callClaude(String(body.model || 'claude-haiku-4-5-20250514'), key, system, user, maxTokens, useWebSearch);
+      ? await callClaudeVision(String(body.model || 'claude-haiku-4-5-20251001'), key, user, maxTokens, imageData, imageMimeType)
+      : await callClaude(String(body.model || 'claude-haiku-4-5-20251001'), key, system, user, maxTokens, useWebSearch);
     return json({ text });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);

@@ -138,49 +138,62 @@
           <!-- TAB: AI -->
           <div class="settings-tab" id="settings-tab-ai">
             <h3 class="settings-tab-title">AI &amp; Advies</h3>
-            <p class="settings-tab-sub">Kies je model. Je eigen AI-sleutels worden versleuteld in Supabase opgeslagen; op localhost kan Gemini ook alleen lokaal in je huidige sessie blijven.</p>
-            <div class="setup-field">
-              <label>AI Provider <span style="font-weight:300;text-transform:none">(optioneel)</span></label>
-              <div class="provider-picker" id="provider-picker">
-                <button class="provider-btn active" data-provider="claude">
-                  <span class="provider-check"></span>
-                  <span class="provider-text">
-                    <span class="provider-name">Claude</span>
-                    <span class="provider-sub">Anthropic · betaald</span>
-                  </span>
-                </button>
-                <button class="provider-btn" data-provider="gemini">
-                  <span class="provider-check"></span>
-                  <span class="provider-text">
-                    <span class="provider-name">Gemini 2.5 Flash</span>
-                    <span class="provider-sub">Google · <strong>gratis</strong></span>
-                  </span>
-                </button>
-                <button class="provider-btn" data-provider="openai">
-                  <span class="provider-check"></span>
-                  <span class="provider-text">
-                    <span class="provider-name">GPT-4o mini</span>
-                    <span class="provider-sub">OpenAI · betaald</span>
-                  </span>
-                </button>
-              </div>
+            <p class="settings-tab-sub">Per provider vul je hier je key in en kies je met de vakjes welke provider `Invullen`, `Analyse` en `Gerechten` standaard gebruiken. De modelkeuze blijft in de betreffende pagina zelf staan.</p>
+            <div class="ai-provider-matrix-wrap">
+              <table class="ai-provider-matrix">
+                <thead>
+                  <tr>
+                    <th>Provider</th>
+                    <th>API key</th>
+                    <th>Test</th>
+                    <th>Invullen</th>
+                    <th>Analyse</th>
+                    <th>Gerechten</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="ai-provider-row" data-provider="claude">
+                    <td>
+                      <div class="ai-provider-name">Claude</div>
+                      <div class="ai-provider-sub">Anthropic · betaald</div>
+                    </td>
+                    <td><input class="ai-provider-key-input" type="password" id="setup-key-claude" placeholder="sk-ant-…"></td>
+                    <td><button class="btn-secondary ai-provider-test-btn" id="setup-test-key-claude" type="button">Test</button></td>
+                    <td class="ai-provider-choice-cell"><input aria-label="Claude voor Invullen" type="radio" name="default-ai-provider" value="claude"></td>
+                    <td class="ai-provider-choice-cell"><input aria-label="Claude voor Analyse" type="radio" name="advies-ai-provider" value="claude"></td>
+                    <td class="ai-provider-choice-cell"><input aria-label="Claude voor Gerechten" type="radio" name="smart-import-provider" value="claude"></td>
+                    <td><div class="setup-hint ai-provider-status" id="setup-key-status-claude">Log in om veilig op te slaan</div></td>
+                  </tr>
+                  <tr class="ai-provider-row" data-provider="gemini">
+                    <td>
+                      <div class="ai-provider-name">Gemini 2.5 Flash</div>
+                      <div class="ai-provider-sub">Google · <strong>gratis</strong></div>
+                    </td>
+                    <td><input class="ai-provider-key-input" type="password" id="setup-key-gemini" placeholder="AIza…"></td>
+                    <td><button class="btn-secondary ai-provider-test-btn" id="setup-test-key-gemini" type="button">Test</button></td>
+                    <td class="ai-provider-choice-cell"><input aria-label="Gemini voor Invullen" type="radio" name="default-ai-provider" value="gemini"></td>
+                    <td class="ai-provider-choice-cell"><input aria-label="Gemini voor Analyse" type="radio" name="advies-ai-provider" value="gemini"></td>
+                    <td class="ai-provider-choice-cell"><input aria-label="Gemini voor Gerechten" type="radio" name="smart-import-provider" value="gemini"></td>
+                    <td><div class="setup-hint ai-provider-status" id="setup-key-status-gemini">Log in om veilig op te slaan</div></td>
+                  </tr>
+                  <tr class="ai-provider-row" data-provider="openai">
+                    <td>
+                      <div class="ai-provider-name">GPT-4o mini</div>
+                      <div class="ai-provider-sub">OpenAI · betaald</div>
+                    </td>
+                    <td><input class="ai-provider-key-input" type="password" id="setup-key-openai" placeholder="sk-…"></td>
+                    <td><button class="btn-secondary ai-provider-test-btn" id="setup-test-key-openai" type="button">Test</button></td>
+                    <td class="ai-provider-choice-cell"><input aria-label="OpenAI voor Invullen" type="radio" name="default-ai-provider" value="openai"></td>
+                    <td class="ai-provider-choice-cell"><input aria-label="OpenAI voor Analyse" type="radio" name="advies-ai-provider" value="openai"></td>
+                    <td class="ai-provider-choice-cell"><input aria-label="OpenAI voor Gerechten" type="radio" name="smart-import-provider" value="openai"></td>
+                    <td><div class="setup-hint ai-provider-status" id="setup-key-status-openai">Log in om veilig op te slaan</div></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="setup-field" id="key-field-claude">
-              <label>Claude API Key</label>
-              <input type="password" id="setup-key-claude" placeholder="sk-ant-…">
-              <div class="setup-hint" id="setup-key-status-claude">Log in om veilig op te slaan</div>
-            </div>
-            <div class="setup-field" id="key-field-gemini">
-              <label>Gemini API Key</label>
-              <input type="password" id="setup-key-gemini" placeholder="AIza…">
-              <div class="setup-hint" id="setup-key-status-gemini">Log in om veilig op te slaan</div>
-            </div>
-            <div class="setup-field" id="key-field-openai">
-              <label>OpenAI API Key</label>
-              <input type="password" id="setup-key-openai" placeholder="sk-…">
-              <div class="setup-hint" id="setup-key-status-openai">Log in om veilig op te slaan</div>
-            </div>
-            <div class="setup-hint">Op productie blijft de sleutel niet in de browser staan. Alleen de server kan hem ontsleutelen en gebruiken.</div>
+            <div class="setup-hint">`Invullen` is de hoofdprovider voor algemene AI-invulacties in de app. `Analyse` geldt voor advies en analyses. `Gerechten` geldt voor Smart Import herkennen, recepten en URL-import.</div>
+            <div class="setup-hint">Testen gebruikt de huidige veldwaarde. Als je bent ingelogd slaan we die eerst veilig op en testen we daarna via de proxy. Op localhost kan Gemini ook lokaal per sessie getest worden.</div>
           </div>
 
           <!-- TAB: Data -->
@@ -862,25 +875,25 @@ Vet: 3.3g"></textarea>
     <div class="smart-import-header">
       <h2><span>➕</span> <span>Product of gerecht</span></h2>
       <div class="smart-import-header-right">
-        <button class="do-back" id="smart-import-back-btn">← Terug</button>
+        <button class="do-back" id="smart-import-back-btn" type="button">← Terug</button>
       </div>
     </div>
 
     <div class="smart-import-tabs" id="smart-import-tabs">
-      <button class="smart-import-tab active" data-tab="dish_name">🍽️ Herkennen</button>
-      <button class="smart-import-tab" data-tab="manual_nutrition">📋 Invullen</button>
-      <button class="smart-import-tab" data-tab="url_import">🔗 URL</button>
-      <button class="smart-import-tab" data-tab="manage">📦 Beheer</button>
+      <button class="smart-import-tab active" data-tab="dish_name" type="button" onclick="switchSmartImportTab('dish_name')">🍽️ Herkennen</button>
+      <button class="smart-import-tab" data-tab="manual_nutrition" type="button" onclick="switchSmartImportTab('manual_nutrition')">📋 Invullen</button>
+      <button class="smart-import-tab" data-tab="url_import" type="button" onclick="switchSmartImportTab('url_import')">🔗 URL</button>
+      <button class="smart-import-tab" data-tab="manage" type="button" onclick="switchSmartImportTab('manage')">📦 Beheer</button>
     </div>
 
     <div class="meal-selector smart-import-meal-selector" id="smart-import-meal-selector" aria-label="Kies maaltijd voor Smart Import">
-      <button class="meal-btn smart-import-meal-btn active" data-meal="ontbijt">🌅 Ontbijt</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="ochtendsnack">🍎 Ochtendsnack</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="lunch">☀️ Lunch</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="middagsnack">🍪 Middagsnack</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="avondeten">🌙 Avondeten</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="avondsnack">🌜 Avondsnack</button>
-      <button class="meal-btn smart-import-meal-btn drink-btn" data-meal="drinken">💧 Drinken</button>
+      <button class="meal-btn smart-import-meal-btn active" data-meal="ontbijt" type="button" onclick="selectSmartImportMeal('ontbijt')">🌅 Ontbijt</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="ochtendsnack" type="button" onclick="selectSmartImportMeal('ochtendsnack')">🍎 Ochtendsnack</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="lunch" type="button" onclick="selectSmartImportMeal('lunch')">☀️ Lunch</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="middagsnack" type="button" onclick="selectSmartImportMeal('middagsnack')">🍪 Middagsnack</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="avondeten" type="button" onclick="selectSmartImportMeal('avondeten')">🌙 Avondeten</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="avondsnack" type="button" onclick="selectSmartImportMeal('avondsnack')">🌜 Avondsnack</button>
+      <button class="meal-btn smart-import-meal-btn drink-btn" data-meal="drinken" type="button" onclick="selectSmartImportMeal('drinken')">💧 Drinken</button>
     </div>
 
     <div class="smart-import-body" id="smart-import-body">
@@ -891,10 +904,11 @@ Vet: 3.3g"></textarea>
           <textarea id="smart-dish-input" rows="4" placeholder="Bijv. erwtensoep, 'mag ik de calorieen voor pasta alla norma?', of geplakte macro's"></textarea>
         </div>
         <div class="smart-actions">
-          <button class="btn-primary" id="smart-dish-analyze-btn">🔎 Analyseer</button>
+          <button class="btn-primary" id="smart-dish-analyze-btn" type="button" onclick="runSmartImportDishAnalysis()">🔎 Analyseer</button>
           <select id="smart-import-provider-select" title="AI-provider" class="smart-inline-select"></select>
           <select id="smart-import-model-select" title="Model" class="smart-inline-select"></select>
         </div>
+        <div class="setup-hint" style="margin-top:-0.2rem;margin-bottom:0.9rem">Deze AI-keuze geldt voor Smart Import (herkennen en URL-import) en wordt apart onthouden van je app-brede standaard in Instellingen.</div>
         <div class="smart-result" id="smart-dish-result"></div>
       </section>
 
@@ -902,19 +916,19 @@ Vet: 3.3g"></textarea>
       <section class="smart-section" data-section="manual_nutrition" style="display:none">
         <div class="smart-form-row">
           <label for="smart-manual-paste">Plak voedingswaarden (liefst per 100g)</label>
-          <textarea id="smart-manual-paste" rows="5" placeholder="Per 100g&#10;Calorieën 214 kcal&#10;Koolhydraten 46 g&#10;Eiwit 8,7 g&#10;Vet 1,2 g&#10;Vezels 7-8 g"></textarea>
+          <textarea id="smart-manual-paste" rows="5" placeholder="Per 100g&#10;Calorieën 214 kcal&#10;Koolhydraten 46 g&#10;Eiwit 8,7 g&#10;Vet 1,2 g&#10;Vezels 7-8 g" oninput="refreshSmartImportManualProposal()"></textarea>
         </div>
         <div class="smart-actions">
-          <button class="btn-primary" id="smart-manual-parse-btn">📋 Herken en vul in</button>
+          <button class="btn-primary" id="smart-manual-parse-btn" type="button" onclick="parseSmartImportManual()">📋 Herken en vul in</button>
         </div>
         <div class="smart-form-grid">
-          <div class="smart-form-row"><label for="smart-manual-title">Titel</label><input id="smart-manual-title" type="text" placeholder="Bijv. Linzensoep" /></div>
-          <div class="smart-form-row"><label for="smart-manual-kcal">kcal per 100g</label><input id="smart-manual-kcal" type="number" min="0" step="1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-protein">eiwit g per 100g</label><input id="smart-manual-protein" type="number" min="0" step="0.1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-carbs">koolh. g per 100g</label><input id="smart-manual-carbs" type="number" min="0" step="0.1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-fat">vet g per 100g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-fiber">vezels g per 100g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" /></div>
-          <div class="smart-form-row"><label for="smart-manual-portion">Portiegrootte (g)</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" /></div>
+          <div class="smart-form-row"><label for="smart-manual-title">Titel</label><input id="smart-manual-title" type="text" placeholder="Bijv. Linzensoep" oninput="refreshSmartImportManualProposal()" /></div>
+          <div class="smart-form-row"><label for="smart-manual-kcal">kcal per 100g</label><input id="smart-manual-kcal" type="number" min="0" step="1" oninput="refreshSmartImportManualProposal()" /></div>
+          <div class="smart-form-row"><label for="smart-manual-protein">eiwit g per 100g</label><input id="smart-manual-protein" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
+          <div class="smart-form-row"><label for="smart-manual-carbs">koolh. g per 100g</label><input id="smart-manual-carbs" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fat">vet g per 100g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fiber">vezels g per 100g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
+          <div class="smart-form-row"><label for="smart-manual-portion">Portiegrootte (g)</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" oninput="refreshSmartImportManualProposal()" /></div>
         </div>
         <div class="setup-hint" style="margin-top:0.35rem">Waarden hierboven zijn per 100g. De app rekent automatisch om naar jouw portiegrootte.</div>
         <div class="smart-result" id="smart-manual-result"></div>
@@ -927,7 +941,7 @@ Vet: 3.3g"></textarea>
           <input id="smart-url-input" type="url" placeholder="https://world.openfoodfacts.org/product/..." />
         </div>
         <div class="smart-actions">
-          <button class="btn-primary" id="smart-url-import-btn">🔗 Importeer</button>
+          <button class="btn-primary" id="smart-url-import-btn" type="button" onclick="runSmartImportUrlImport()">🔗 Importeer</button>
         </div>
         <div class="smart-result" id="smart-url-result"></div>
       </section>

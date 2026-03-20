@@ -79,6 +79,11 @@ import {
 } from './ui/bug-report.js';
 
 const ALLOW_REGISTRATION = ['true', '1', 'yes', 'on'].includes(String(import.meta.env.VITE_ALLOW_REGISTRATION || '').toLowerCase());
+const AI_PROVIDER_DEFAULT_MODELS = {
+  claude: 'claude-haiku-4-5-20251001',
+  gemini: 'gemini-2.5-flash',
+  openai: 'gpt-4o-mini',
+};
 
 // ── Modals ───────────────────────────────────────────────────
 import {
@@ -111,6 +116,9 @@ import {
 } from './pages/advies.js';
 import {
   openSmartImportPage, closeSmartImportPage, initSmartImportListeners,
+  switchSmartImportTab, selectSmartImportMeal,
+  runSmartImportDishAnalysis, parseSmartImportManual, runSmartImportUrlImport,
+  refreshSmartImportManualProposal, syncSmartImportProviderSelects,
 } from './pages/smart-import.js';
 import {
   openAdminPage, initAdminListeners,
@@ -134,6 +142,9 @@ Object.assign(window, {
   analyzeCustomDishInput, applyCustomDishSuggestion,
   quickSaveCustomDishSuggestion, setCustomDishPortionSize,
   applyCustomDishAlternative,
+  switchSmartImportTab, selectSmartImportMeal,
+  runSmartImportDishAnalysis, parseSmartImportManual, runSmartImportUrlImport,
+  refreshSmartImportManualProposal, syncSmartImportProviderSelects,
 });
 
 // switchDashPeriod for week modal dash-tab buttons
@@ -589,6 +600,118 @@ function handleAuthRedirect() {
   } catch (e) { console.error('Auth redirect parse error:', e); return false; }
 }
 
+function getSelectedAiProvider(groupName, fallback = 'claude') {
+  return document.querySelector(`input[name="${groupName}"]:checked`)?.value || fallback;
+}
+
+function setAiProviderStatus(provider, text, tone = '') {
+  const statusEl = document.getElementById(`setup-key-status-${provider}`);
+  if (!statusEl) return;
+  statusEl.textContent = text;
+  statusEl.className = `setup-hint${tone ? ` ${tone}` : ''}`;
+}
+
+function syncAiProviderCardSelection() {
+  const defaultProvider = getSelectedAiProvider('default-ai-provider', cfg.provider || 'claude');
+  const adviesProvider = getSelectedAiProvider('advies-ai-provider', cfg.adviesProvider || defaultProvider);
+  const importProvider = getSelectedAiProvider('smart-import-provider', cfg.importProvider || defaultProvider);
+  document.querySelectorAll('.ai-provider-row').forEach(row => {
+    const provider = row.dataset.provider;
+    row.classList.toggle('is-default-provider', provider === defaultProvider);
+    row.classList.toggle('is-advies-provider', provider === adviesProvider);
+    row.classList.toggle('is-import-provider', provider === importProvider);
+  });
+}
+
+async function runAiProxyKeyTest(provider) {
+  const response = await fetch(`${cfg.sbUrl}/functions/v1/ai-proxy`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': cfg.sbKey,
+      'Authorization': 'Bearer ' + (authUser?.access_token || cfg.sbKey),
+    },
+    body: JSON.stringify({
+      provider,
+      model: AI_PROVIDER_DEFAULT_MODELS[provider] || AI_PROVIDER_DEFAULT_MODELS.claude,
+      user: 'Antwoord alleen met OK.',
+      maxTokens: 12,
+      useWebSearch: false,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload?.error || `Test mislukt (${response.status})`);
+  return payload?.text || '';
+}
+
+async function runDirectGeminiKeyTest(apiKey) {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(AI_PROVIDER_DEFAULT_MODELS.gemini)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: 'Antwoord alleen met OK.' }] }],
+      generationConfig: {
+        maxOutputTokens: 12,
+      },
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload?.error?.message || `Gemini test mislukt (${response.status})`);
+  const text = (payload?.candidates || [])
+    .flatMap(candidate => candidate?.content?.parts || [])
+    .map(part => part?.text || '')
+    .join('')
+    .trim();
+  if (!text) throw new Error('Gemini gaf geen bruikbare tekst terug.');
+  return text;
+}
+
+async function testSetupAiProvider(provider) {
+  const input = document.getElementById(`setup-key-${provider}`);
+  const button = document.getElementById(`setup-test-key-${provider}`);
+  const rawValue = input?.value?.trim() || '';
+  const canUseProxy = Boolean(cfg.sbUrl && cfg.sbKey && authUser?.access_token);
+  const canUseLocalGemini = provider === 'gemini' && isLocalDevHost();
+
+  if (button) button.disabled = true;
+  setAiProviderStatus(provider, 'Bezig met testen…');
+
+  try {
+    if (rawValue) {
+      if (canUseProxy) {
+        await saveUserAiKey(provider, rawValue);
+        if (input) input.value = '';
+      } else if (canUseLocalGemini) {
+        saveSessionAiKey('gemini', rawValue);
+        const nextCfg = { ...cfg, keys: loadSessionAiKeys() };
+        setCfg(nextCfg);
+        saveCfg(nextCfg);
+      } else {
+        throw new Error('Log in om deze sleutel veilig te testen en op te slaan.');
+      }
+    }
+
+    if (provider === 'gemini' && canUseLocalGemini && (!canUseProxy || rawValue || cfg.keys?.gemini)) {
+      await runDirectGeminiKeyTest(rawValue || cfg.keys?.gemini || '');
+      setAiProviderStatus(provider, canUseProxy ? 'Key getest en veilig opgeslagen' : 'Key getest en lokaal opgeslagen', 'ok');
+      return;
+    }
+
+    if (!canUseProxy) {
+      throw new Error('Log in om deze provider via de beveiligde serverproxy te testen.');
+    }
+
+    await runAiProxyKeyTest(provider);
+    setAiProviderStatus(provider, 'Key getest en veilig opgeslagen', 'ok');
+  } catch (error) {
+    setAiProviderStatus(provider, error instanceof Error ? error.message : 'Test mislukt.', 'err');
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
 // ══════════════════════════════════════════════════════════════
 // Setup Screen
 // ══════════════════════════════════════════════════════════════
@@ -608,21 +731,23 @@ function showSetup(panel) {
     document.getElementById('setup-display-name').value = authUser?.display_name || '';
     ['claude', 'gemini', 'openai'].forEach(provider => {
       const input = document.getElementById(`setup-key-${provider}`);
-      const status = document.getElementById(`setup-key-status-${provider}`);
       if (input) {
         input.value = '';
         input.placeholder = provider === 'gemini' && hasLocalGeminiKey
           ? 'Lokaal in deze sessie opgeslagen'
           : (provider === 'gemini' ? 'AIza…' : 'sk-…');
       }
-      if (status) {
-        status.textContent = provider === 'gemini' && hasLocalGeminiKey
+      setAiProviderStatus(
+        provider,
+        provider === 'gemini' && hasLocalGeminiKey
           ? 'Alleen lokaal in deze browsersessie'
-          : (authUser ? 'Laden…' : 'Log in om veilig op te slaan');
-      }
+          : (authUser ? 'Laden…' : 'Log in om veilig op te slaan'),
+      );
     });
     document.getElementById('setup-status').textContent = '';
     setProviderUI(cfg.provider || 'claude');
+    setAdviesProviderUI(cfg.adviesProvider || cfg.provider || 'claude');
+    setSmartImportProviderUI(cfg.importProvider || cfg.provider || 'claude');
     syncSupermarketFilterUI(cfg.supermarketExclusions || []);
     const offToggle = document.getElementById('settings-off-live-toggle');
     if (offToggle) offToggle.checked = cfg.openFoodFactsLiveSearch !== false;
@@ -642,27 +767,29 @@ function showSetup(panel) {
       fetchUserAiKeyStatuses().then(statuses => {
         ['claude', 'gemini', 'openai'].forEach(provider => {
           const input = document.getElementById(`setup-key-${provider}`);
-          const status = document.getElementById(`setup-key-status-${provider}`);
           const isLocalGemini = provider === 'gemini' && hasLocalGeminiKey;
           if (input) {
             input.placeholder = isLocalGemini
               ? 'Lokaal in deze sessie opgeslagen'
               : (statuses[provider] ? 'Veilig opgeslagen in Supabase' : (provider === 'gemini' ? 'AIza…' : 'sk-…'));
           }
-          if (status) {
-            status.textContent = isLocalGemini
+          setAiProviderStatus(
+            provider,
+            isLocalGemini
               ? 'Alleen lokaal in deze browsersessie'
-              : (statuses[provider] ? 'Veilig opgeslagen' : 'Nog geen sleutel opgeslagen');
-          }
+              : (statuses[provider] ? 'Veilig opgeslagen' : 'Nog geen sleutel opgeslagen'),
+            statuses[provider] ? 'ok' : '',
+          );
         });
       }).catch(() => {
         ['claude', 'gemini', 'openai'].forEach(provider => {
-          const status = document.getElementById(`setup-key-status-${provider}`);
-          if (status) {
-            status.textContent = provider === 'gemini' && hasLocalGeminiKey
+          setAiProviderStatus(
+            provider,
+            provider === 'gemini' && hasLocalGeminiKey
               ? 'Alleen lokaal in deze browsersessie'
-              : 'Kon status niet laden';
-          }
+              : 'Kon status niet laden',
+            provider === 'gemini' && hasLocalGeminiKey ? 'ok' : 'err',
+          );
         });
       });
     }
@@ -686,12 +813,22 @@ function showSetup(panel) {
 }
 
 function setProviderUI(provider) {
-  document.querySelectorAll('.provider-btn').forEach(b => b.classList.toggle('active', b.dataset.provider === provider));
-  ['claude', 'gemini', 'openai'].forEach(p => {
-    const el = document.getElementById('key-field-' + p);
-    if (el) el.style.display = '';
-  });
+  const radio = document.querySelector(`input[name="default-ai-provider"][value="${provider}"]`);
+  if (radio) radio.checked = true;
+  syncAiProviderCardSelection();
   updateInlineModelSelect(provider);
+}
+
+function setSmartImportProviderUI(provider) {
+  const radio = document.querySelector(`input[name="smart-import-provider"][value="${provider}"]`);
+  if (radio) radio.checked = true;
+  syncAiProviderCardSelection();
+}
+
+function setAdviesProviderUI(provider) {
+  const radio = document.querySelector(`input[name="advies-ai-provider"][value="${provider}"]`);
+  if (radio) radio.checked = true;
+  syncAiProviderCardSelection();
 }
 
 function syncSupermarketFilterUI(excludedFilters = []) {
@@ -827,6 +964,61 @@ export async function submit() {
 // Event Listeners
 // ══════════════════════════════════════════════════════════════
 function initEventListeners() {
+  document.addEventListener('click', e => {
+    const smartTab = e.target.closest('.smart-import-tab[data-tab]');
+    if (smartTab) {
+      switchSmartImportTab(smartTab.dataset.tab);
+      return;
+    }
+
+    const smartMeal = e.target.closest('.smart-import-meal-btn[data-meal]');
+    if (smartMeal) {
+      selectSmartImportMeal(smartMeal.dataset.meal);
+      return;
+    }
+
+    if (e.target.closest('#smart-dish-analyze-btn')) {
+      runSmartImportDishAnalysis();
+      return;
+    }
+
+    if (e.target.closest('#smart-manual-parse-btn')) {
+      parseSmartImportManual();
+      return;
+    }
+
+    if (e.target.closest('#smart-url-import-btn')) {
+      runSmartImportUrlImport();
+    }
+  });
+
+  document.addEventListener('input', e => {
+    const manualField = e.target.closest('#smart-manual-title, #smart-manual-kcal, #smart-manual-protein, #smart-manual-carbs, #smart-manual-fat, #smart-manual-fiber, #smart-manual-portion');
+    if (manualField) {
+      refreshSmartImportManualProposal();
+      return;
+    }
+
+    const manageSearch = e.target.closest('#smart-manage-search');
+    if (manageSearch) {
+      const term = manageSearch.value || '';
+      import('./pages/smart-import-manage.js').then(m => m.renderManageList(term));
+    }
+  });
+
+  document.addEventListener('change', e => {
+    if (e.target.closest('#smart-import-provider-select')) {
+      syncSmartImportProviderSelects();
+      return;
+    }
+
+    if (e.target.closest('#smart-import-model-select')) {
+      cfg.importProvider = document.getElementById('smart-import-provider-select')?.value;
+      cfg.importModel = document.getElementById('smart-import-model-select')?.value;
+      saveCfg(cfg);
+    }
+  });
+
   // Setup close
   document.getElementById('setup-close-btn')?.addEventListener('click', hideSetup);
 
@@ -945,9 +1137,21 @@ function initEventListeners() {
   // Dark mode
   document.getElementById('dark-toggle')?.addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));
 
-  // Provider buttons
-  document.querySelectorAll('.provider-btn').forEach(btn => {
-    btn.addEventListener('click', () => setProviderUI(btn.dataset.provider));
+  // AI settings provider radios
+  document.querySelectorAll('input[name="default-ai-provider"]').forEach(input => {
+    input.addEventListener('change', () => setProviderUI(input.value));
+  });
+  document.querySelectorAll('input[name="smart-import-provider"]').forEach(input => {
+    input.addEventListener('change', () => setSmartImportProviderUI(input.value));
+  });
+  document.querySelectorAll('input[name="advies-ai-provider"]').forEach(input => {
+    input.addEventListener('change', () => setAdviesProviderUI(input.value));
+  });
+  document.querySelectorAll('.ai-provider-test-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const provider = btn.id.replace('setup-test-key-', '');
+      if (provider) testSetupAiProvider(provider);
+    });
   });
 
   // Settings sidebar tab switching
@@ -965,7 +1169,9 @@ function initEventListeners() {
   // Setup save
   document.getElementById('setup-save-btn')?.addEventListener('click', async () => {
     const saveBtn = document.getElementById('setup-save-btn');
-    const provider = document.querySelector('.provider-btn.active')?.dataset.provider || 'claude';
+    const provider = getSelectedAiProvider('default-ai-provider', cfg.provider || 'claude');
+    const adviesProvider = getSelectedAiProvider('advies-ai-provider', cfg.adviesProvider || provider);
+    const importProvider = getSelectedAiProvider('smart-import-provider', cfg.importProvider || provider);
     const displayName = document.getElementById('setup-display-name').value.trim();
     const statusEl = document.getElementById('setup-status');
     if (statusEl) {
@@ -983,8 +1189,7 @@ function initEventListeners() {
           saveSessionAiKey('gemini', geminiValue);
           savedLocalGemini = true;
           if (geminiInput) geminiInput.value = '';
-          const geminiStatus = document.getElementById('setup-key-status-gemini');
-          if (geminiStatus) geminiStatus.textContent = 'Alleen lokaal in deze browsersessie';
+          setAiProviderStatus('gemini', 'Alleen lokaal in deze browsersessie', 'ok');
         }
       }
 
@@ -999,7 +1204,11 @@ function initEventListeners() {
         claudeKey: '',
         keys: loadSessionAiKeys(),
         provider,
+        adviesProvider,
+        importProvider,
         model: cfg.model,
+        adviesModel: cfg.adviesModel,
+        importModel: cfg.importModel,
         openFoodFactsLiveSearch,
         supermarketExclusions,
       };
@@ -1013,8 +1222,7 @@ function initEventListeners() {
           if (input && rawValue) {
             await saveUserAiKey(providerName, rawValue);
             input.value = '';
-            const keyStatusEl = document.getElementById(`setup-key-status-${providerName}`);
-            if (keyStatusEl) keyStatusEl.textContent = 'Veilig opgeslagen in Supabase';
+            setAiProviderStatus(providerName, 'Veilig opgeslagen in Supabase', 'ok');
           }
         }
       }
@@ -1023,6 +1231,7 @@ function initEventListeners() {
       if (cfg.sbUrl && cfg.sbKey && authUser?.id) await syncUserPrefs(true);
       if (cfg.sbUrl && cfg.sbKey && authUser) setSyncStatus('synced', 'verbonden');
       else if (!cfg.sbUrl) setSyncStatus('offline', 'lokaal');
+      syncSmartImportProviderSelects();
 
       statusEl.textContent = savedLocalGemini
         ? '✓ Opgeslagen. Gemini draait lokaal in deze browsersessie.'
