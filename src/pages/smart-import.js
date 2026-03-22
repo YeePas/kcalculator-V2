@@ -19,6 +19,7 @@ import {
 } from '../ai/dish-import-service.js';
 import { hasAiProxyConfig, hasLocalSessionAi } from '../ai/providers.js';
 import { handleUrlImport } from './smart-import-url.js';
+import { handleRecipePhotoUpload } from './smart-import-photo.js';
 import { renderManageList, openEditProduct, deleteProduct, deleteFavoriteFromManage } from './smart-import-manage.js';
 import { openEditFavModal } from '../modals/favourites.js';
 
@@ -288,7 +289,7 @@ function renderRecipeProposalCard(targetId, proposal) {
     + '<div><span>Vezel</span><strong>' + recipeProposal.fiber_g + 'g</strong></div></div>'
     + '<div class="smart-recipe-ingredients"><div class="smart-recipe-ingredients-title"><div class="smart-recipe-ingredients-title-main">Ingrediënten <span>' + matchedCount + ' gekoppeld · ' + openCount + ' open</span></div></div>'
     + ingredients.map(({ ingredient, scaledGrams, matchedName, status, matchedItem }, idx) =>
-      '<div class="smart-recipe-ingredient' + (ingredient.editingMatch ? ' is-editing' : '') + '"><div><div class="smart-recipe-ingredient-top"><strong>' + esc(ingredient.name) + '</strong><span class="smart-recipe-match-badge smart-recipe-match-' + status + '">' + (status === 'matched' ? 'Gekoppeld' : 'Open') + '</span></div>'
+      '<div class="smart-recipe-ingredient' + (ingredient.editingMatch ? ' is-editing' : '') + '"><div><div class="smart-recipe-ingredient-top"><strong>' + esc(ingredient.name) + '</strong><span class="smart-recipe-match-dot smart-recipe-match-' + status + '" aria-label="' + (status === 'matched' ? 'Gekoppeld' : 'Open') + '" title="' + (status === 'matched' ? 'Gekoppeld' : 'Open') + '"></span><button class="smart-recipe-match-edit" data-action="toggle-match-edit" data-target="' + targetId + '" data-ingredient-idx="' + idx + '" aria-label="Wijzig match" title="Wijzig match">✏️</button></div>'
       + '<div class="smart-recipe-match-line"><span class="smart-recipe-match-text">' + esc(matchedName || 'Nog geen match in products.json / eigen producten') + '</span></div>'
       + (ingredient.editingMatch
         ? '<div class="smart-recipe-match-editor"><label class="smart-recipe-match-label">Zoek product in database of eigen producten</label><div class="smart-recipe-match-searchbar"><input type="text" class="smart-recipe-match-input" data-target="' + targetId + '" data-match-query="' + idx + '" value="' + esc(ingredient.matchQuery || ingredient.name) + '" placeholder="Zoek op productnaam, zoals aubergine of pecorino"><button type="button" class="smart-recipe-match-search-icon" data-action="search-match" data-target="' + targetId + '" data-ingredient-idx="' + idx + '" aria-label="Kies beste match">→</button></div>'
@@ -296,7 +297,7 @@ function renderRecipeProposalCard(targetId, proposal) {
           + buildIngredientMatchResults(targetId, proposal, idx)
           + '</div></div>'
         : '')
-      + '</div><button class="smart-recipe-match-edit" data-action="toggle-match-edit" data-target="' + targetId + '" data-ingredient-idx="' + idx + '">Wijzig</button><span>' + esc(ingredient.displayAmount || (ingredient.grams ? `${ingredient.grams} g` : '')) + '</span><small>'
+      + '</div><span>' + esc(ingredient.displayAmount || (ingredient.grams ? `${ingredient.grams} g` : '')) + '</span><small>'
       + Math.round(matchedItem?.kcal || ingredient.calories || 0) + ' kcal · ' + esc(String(scaledGrams ? Math.round(scaledGrams) + 'g per portie' : '')) + '</small><button type="button" class="smart-recipe-inline-remove" data-action="remove-recipe-ingredient" data-target="' + targetId + '" data-ingredient-idx="' + idx + '" aria-label="Verwijder ingrediënt">✕</button></div>'
     ).join('')
     + '<button type="button" class="btn-secondary smart-recipe-inline-add smart-recipe-inline-add-bottom" data-action="add-recipe-ingredient" data-target="' + targetId + '">+ Ingrediënt</button>'
@@ -856,6 +857,13 @@ export function initSmartImportListeners() {
     if (e.key !== 'Enter' || (!e.metaKey && !e.ctrlKey)) return;
     e.preventDefault();
     runSmartImportDishAnalysis();
+  });
+
+  document.getElementById('smart-photo-input')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await handleRecipePhotoUpload(file, feedbackNear);
+    e.target.value = '';
   });
 
   [

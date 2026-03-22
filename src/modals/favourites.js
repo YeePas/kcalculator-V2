@@ -12,6 +12,7 @@ import { _renderDayUI } from '../ui/render.js';
 import { renderQuickFavs } from '../ui/misc.js';
 import { searchNevo } from '../products/database.js';
 import { buildMealItem } from '../products/matcher.js';
+import { submit } from '../input/submit.js';
 
 export function openFavModal() {
   document.getElementById('fav-modal').classList.add('open');
@@ -62,7 +63,7 @@ export function saveFavorite() {
   const naam = prompt('Naam voor dit favoriet:', tekst.slice(0, 50));
   if (!naam) return;
   const favs = loadFavs();
-  favs.push({ naam, tekst, maaltijd: selMeal });
+  favs.push({ naam, tekst, maaltijd: selMeal, uses: 0, createdAt: Date.now() });
   saveFavs(favs);
   syncFavoritesToSupabase();
   renderQuickFavs();
@@ -76,7 +77,7 @@ export function saveItemAsFavorite(meal, idx) {
   if (!naam) return;
   const tekst = item.naam + (item.portie ? ' (' + item.portie + ')' : '');
   const favs = loadFavs();
-  favs.push({ naam, tekst, maaltijd: meal, item: { ...item } });
+  favs.push({ naam, tekst, maaltijd: meal, item: { ...item }, uses: 0, createdAt: Date.now() });
   saveFavs(favs);
   syncFavoritesToSupabase();
   renderQuickFavs();
@@ -112,6 +113,8 @@ export function saveMealAsRecipe(meal) {
     naam, tekst: items.map(it => it.naam).join(', '), maaltijd: meal, isRecipe: true,
     items: items.map(it => ({ ...it })),
     item: { naam, portie: `${items.length} ingrediënten`, ...totals },
+    uses: 0,
+    createdAt: Date.now(),
   };
 
   const favs = loadFavs();
@@ -132,8 +135,13 @@ export function toggleFavExpand(idx) {
 
 export async function addFavToMeal(idx) {
   document.getElementById('fav-modal').classList.remove('open');
-  const fav = loadFavs()[idx];
+  const favs = loadFavs();
+  const fav = favs[idx];
   if (!fav) return;
+  fav.uses = Number(fav.uses || 0) + 1;
+  if (!fav.createdAt) fav.createdAt = Date.now();
+  saveFavs(favs);
+  syncFavoritesToSupabase();
   const targetMeal = selMeal;
   const day = localData[currentDate] || emptyDay();
   MEAL_NAMES.forEach(m => { if (!day[m]) day[m] = []; });
@@ -160,8 +168,6 @@ export async function addFavToMeal(idx) {
   } else {
     document.getElementById('food-input').value = fav.tekst;
     renderQuickFavs();
-    // Dynamic import to avoid circular dependency
-    const { submit } = await import('../main.js');
     await submit();
   }
 }

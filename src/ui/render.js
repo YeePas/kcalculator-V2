@@ -13,6 +13,8 @@ import {
 } from '../utils.js';
 import { loadDay } from '../supabase/data.js';
 import { renderSummary } from './summary.js';
+import { renderWeekSpark } from './charts.js';
+import { renderHistory } from './misc.js';
 
 /* ── renderMeals: load day data + render ────────────────────── */
 export async function renderMeals() {
@@ -90,8 +92,8 @@ export function _renderDayUI(day) {
   renderSummary(day);
   refreshMealFoldControls();
   // These are called from main.js or other modules, fire them via events
-  import('../ui/charts.js').then(m => { m.renderWeekSpark(); });
-  import('../ui/misc.js').then(m => { m.renderHistory(); });
+  renderWeekSpark();
+  renderHistory();
 }
 
 export function toggleMealSection(header) {

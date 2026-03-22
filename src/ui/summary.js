@@ -3,6 +3,7 @@
 import { goals } from '../state.js';
 import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
 import { r1, pct, fmtVal, dayTotals } from '../utils.js';
+import { renderMacroDonut } from './charts.js';
 
 function getCalorieOverageTone(goal, calories) {
   if (!goal || calories <= goal) return null;
@@ -10,6 +11,22 @@ function getCalorieOverageTone(goal, calories) {
   if (overBy < 250) return { className: 'warning', colorVar: 'var(--warning)' };
   if (overBy < 500) return { className: 'warning-strong', colorVar: 'var(--warning-strong)' };
   return { className: 'red', colorVar: 'var(--danger)' };
+}
+
+function renderGoalDelta(current, goal, unit, label, decimals = 1) {
+  if (!goal) {
+    const value = decimals === 0 ? Math.round(current) : r1(current);
+    return `<strong>${value}${unit}</strong> ${label}`;
+  }
+
+  const diff = goal - current;
+  if (diff >= 0) {
+    const value = decimals === 0 ? Math.round(diff) : r1(diff);
+    return `<strong>${value}${unit}</strong> ${label} over`;
+  }
+
+  const value = decimals === 0 ? Math.round(Math.abs(diff)) : r1(Math.abs(diff));
+  return `<span style="color:var(--danger)"><strong>${value}${unit}</strong> ${label} te veel</span>`;
 }
 
 function setBar(id, val, goal, cls) {
@@ -41,10 +58,11 @@ export function renderSummary(day) {
   infoRest.innerHTML = goals.kcal
     ? (restKcal >= 0 ? `<strong>${restKcal}</strong> kcal over` : `<span style="color:${overageTone?.colorVar || 'var(--danger)'}"><strong>${Math.abs(restKcal)}</strong> kcal te veel</span>`)
     : '';
-  document.getElementById('ring-info-prot').innerHTML = `<strong>${r1(prot)}g</strong> eiwit`;
-  document.getElementById('ring-info-fat').innerHTML = `<strong>${r1(fat)}g</strong> vet`;
+  document.getElementById('ring-info-carbs').innerHTML = renderGoalDelta(carbs, goals.carbs, 'g', 'kh');
+  document.getElementById('ring-info-prot').innerHTML = renderGoalDelta(prot, goals.prot, 'g', 'eiwit');
+  document.getElementById('ring-info-fat').innerHTML = renderGoalDelta(fat, goals.fat, 'g', 'vet');
 
-  import('../ui/charts.js').then(m => m.renderMacroDonut(carbs, fat, prot));
+  renderMacroDonut(carbs, fat, prot);
   renderMealShare(day, cals);
 
   document.getElementById('total-carbs').innerHTML = fmtVal(carbs, goals.carbs, 'g');

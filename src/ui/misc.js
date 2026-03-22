@@ -2,7 +2,7 @@
 
 import {
   localData, currentDate, goals, authUser, cfg,
-  vis, showDrinks, setCurrentDate,
+  vis, showDrinks, setCurrentDate, _doCurrentDays,
 } from '../state.js';
 import {
   MEAL_NAMES, MEAL_LABELS, LOCAL_KEY, DARK_KEY, VIS_KEY,
@@ -13,6 +13,10 @@ import {
 import { safeParse, loadFavs, loadGoals, loadCustomProducts } from '../storage.js';
 import { loadDay, saveDay, loadAllDates } from '../supabase/data.js';
 import { renderMeals, _renderDayUI } from './render.js';
+import { renderDataOverzicht } from '../pages/data-overview.js';
+import { updateAdviesModelSelect, showAdviesContent } from '../pages/advies.js';
+import { openSmartImportPage } from '../pages/smart-import.js';
+import { renderAdminPage } from '../pages/admin.js';
 
 /* ── History list ─────────────────────────────────────────── */
 export async function renderHistory() {
@@ -39,7 +43,15 @@ export function renderQuickFavs() {
   const favs = loadFavs();
   const el = document.getElementById('quick-favs');
   if (!favs.length) { el.innerHTML = ''; return; }
-  el.innerHTML = favs.map((f, i) => {
+
+  const ranked = favs
+    .map((f, i) => ({ f, i }))
+    .sort((a, b) =>
+      (Number(b.f.uses) || 0) - (Number(a.f.uses) || 0) ||
+      (Number(b.f.createdAt) || 0) - (Number(a.f.createdAt) || 0)
+    );
+
+  const renderChip = ({ f, i }) => {
     const it = f.item;
     const isRecipe = f.isRecipe && f.items;
     const icon = isRecipe ? '🍽️ ' : '';
@@ -48,7 +60,24 @@ export function renderQuickFavs() {
       ? `${naam} — ${it.kcal || 0}kcal · ${it.koolhydraten_g || 0}g kh · ${it.vetten_g || 0}g vet · ${it.eiwitten_g || 0}g eiwit${isRecipe ? ' (' + f.items.length + ' items)' : (it.portie ? ' (' + it.portie + ')' : '')}`
       : (f.tekst || naam);
     return `<button class="quick-fav-chip" onclick="addFavToMeal(${i})" title="${esc(tip)}">${icon}${esc(naam)}</button>`;
-  }).join('');
+  };
+
+  const topFavs = ranked.slice(0, 10);
+  const moreFavs = ranked.slice(10);
+
+  el.innerHTML = `
+    <div class="quick-favs-top">
+      ${topFavs.map(renderChip).join('')}
+    </div>
+    ${moreFavs.length ? `
+      <details class="quick-favs-more">
+        <summary>Meer favorieten (${moreFavs.length})</summary>
+        <div class="quick-favs-more-list">
+          ${moreFavs.map(renderChip).join('')}
+        </div>
+      </details>
+    ` : ''}
+  `;
 }
 
 /* ── Dark mode ────────────────────────────────────────────── */
@@ -143,15 +172,16 @@ export function switchMobileView(view, btn) {
   if (btn) btn.classList.add('active');
   // Lazy-load page-specific renderers
   if (view === 'data') {
-    Promise.all([import('../pages/data-overview.js'), import('../state.js')]).then(([m, s]) => m.renderDataOverzicht(s._doCurrentDays || 7));
+    renderDataOverzicht(_doCurrentDays || 7);
   }
   if (view === 'advies') {
-    import('../pages/advies.js').then(m => { m.updateAdviesModelSelect(); m.showAdviesContent(); });
+    updateAdviesModelSelect();
+    showAdviesContent();
   }
   if (view === 'import') {
-    import('../pages/smart-import.js').then(m => m.openSmartImportPage());
+    openSmartImportPage();
   }
   if (view === 'admin') {
-    import('../pages/admin.js').then(m => m.renderAdminPage());
+    renderAdminPage();
   }
 }

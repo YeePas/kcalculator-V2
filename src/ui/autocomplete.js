@@ -9,10 +9,54 @@ import { buildMealItem } from '../products/matcher.js';
 import { isLiquidLike } from '../products/density.js';
 import { buildBugReportButton } from './bug-report.js';
 import { localData, currentDate, cfg } from '../state.js';
-import { loadCustomProducts, saveCustomProducts } from '../storage.js';
-import { syncCustomProductsToSupabase } from '../supabase/sync.js';
+import { loadCustomProducts, saveCustomProducts, loadFavs, saveFavs } from '../storage.js';
+import { syncCustomProductsToSupabase, syncFavoritesToSupabase } from '../supabase/sync.js';
 import { saveDay } from '../supabase/data.js';
 import { _renderDayUI } from './render.js';
+
+function getFavouriteSearchResults(query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return [];
+  const terms = q.split(/\s+/).filter(Boolean);
+
+  return loadFavs()
+    .map((fav, idx) => {
+      const item = fav.item || {};
+      const isRecipe = Boolean(fav.isRecipe && fav.items && fav.items.length);
+      const naam = String(fav.naam || item.naam || fav.tekst || '').trim();
+      const haystack = [naam, fav.tekst || '', item.naam || ''].join(' ').toLowerCase();
+      if (!naam || !terms.every(term => haystack.includes(term))) return null;
+      return {
+        n: naam,
+        k: Number(item.kcal || 0),
+        kh: Number(item.koolhydraten_g || 0),
+        vz: Number(item.vezels_g || 0),
+        v: Number(item.vetten_g || 0),
+        e: Number(item.eiwitten_g || 0),
+        b: '',
+        _group: isRecipe ? 'Favoriet gerecht' : 'Favoriet',
+        _favorite: true,
+        _favoriteRecipe: isRecipe,
+        _favIdx: idx,
+        _score: 80 + (Number(fav.uses) || 0),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (b._score || 0) - (a._score || 0));
+}
+
+function mergeAutocompleteResults(primary, extra, limit = 8) {
+  const merged = [];
+  const seen = new Set();
+  for (const item of [...primary, ...extra]) {
+    const key = String(item?.n || '').trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+    if (merged.length >= limit) break;
+  }
+  return merged;
+}
 
 export function renderAcDropdown(results, query, isLoading = false) {
   const dd = document.getElementById('ac-dropdown');
@@ -43,7 +87,7 @@ export function renderAcDropdown(results, query, isLoading = false) {
     ${results.map((r, i) => `
       <div class="ac-item" data-idx="${i}" onmousedown="selectAcItem(${i})">
         <div style="min-width:0;flex:1">
-          <div class="ac-item-name">${highlightMatches(r.n, terms)}${r._custom ? ' <span style="font-size:0.65rem;color:var(--accent)">eigen</span>' : ''}${r.src === 'off-api' ? ' <span style="font-size:0.65rem;color:var(--green)">live</span>' : ''}</div>
+          <div class="ac-item-name">${highlightMatches(r.n, terms)}${r._custom ? ' <span style="font-size:0.65rem;color:var(--accent)">eigen</span>' : ''}${r._favorite ? ` <span style="font-size:0.65rem;color:${r._favoriteRecipe ? 'var(--green)' : 'var(--accent)'}">${r._favoriteRecipe ? 'gerecht' : 'favoriet'}</span>` : ''}${r.src === 'off-api' ? ' <span style="font-size:0.65rem;color:var(--green)">live</span>' : ''}</div>
           <div class="ac-item-group">${esc(r._group || '')}</div>
         </div>
         <div class="ac-item-macros">
@@ -64,6 +108,20 @@ export function selectAcItem(idx) {
   const item = acResults[idx];
   if (!item) return;
   setAcSelectedItem(item);
+  if (item._favorite) {
+    const dd = document.getElementById('ac-dropdown');
+    dd.innerHTML = `
+      <div class="ac-hint"><span class="ac-hint-badge">${item._favoriteRecipe ? 'Favoriet gerecht' : 'Favoriet'}</span> ${esc(item.n)}</div>
+      <div style="padding:0.3rem 0.9rem;font-size:0.72rem;color:var(--muted)">
+        ${item.k} kcal · ${item.kh}g koolh · ${item.vz}g vezel · ${item.v}g vet · ${item.e}g eiwit
+      </div>
+      <div class="ac-portie-quicks">
+        <button class="ac-portie-quick" onclick="addNevoItem()">Toevoegen aan ${esc(selMeal)}</button>
+      </div>
+    `;
+    dd.classList.add('open');
+    return;
+  }
   const useMl = isLiquidLike(item.n, selMeal === 'drinken');
 
   const dd = document.getElementById('ac-dropdown');
@@ -133,6 +191,44 @@ export function setPortie(gram, label) {
 
 export function addNevoItem(portieLabel) {
   if (!acSelectedItem) return;
+
+  if (acSelectedItem._favorite) {
+    const favs = loadFavs();
+    const fav = favs[acSelectedItem._favIdx];
+    if (!fav) return;
+
+    fav.uses = Number(fav.uses || 0) + 1;
+    if (!fav.createdAt) fav.createdAt = Date.now();
+    saveFavs(favs);
+    syncFavoritesToSupabase();
+
+    const day = localData[currentDate] || emptyDay();
+    MEAL_NAMES.forEach(m => { if (!day[m]) day[m] = []; });
+
+    if (fav.isRecipe && fav.items && fav.items.length > 0) {
+      const groupId = fav.naam + '_' + Date.now();
+      for (const subItem of fav.items) {
+        day[selMeal].push({ ...subItem, _recipeGroup: groupId, _recipeName: fav.naam });
+      }
+      document.getElementById('status').textContent = `✓ ${fav.naam} (${fav.items.length} items) toegevoegd`;
+    } else if (fav.item) {
+      day[selMeal].push({ ...fav.item });
+      document.getElementById('status').textContent = `✓ ${fav.naam} toegevoegd`;
+    } else {
+      document.getElementById('food-input').value = fav.tekst || fav.naam || '';
+      closeAcDropdown();
+      return;
+    }
+
+    document.getElementById('status').className = 'status-msg';
+    localData[currentDate] = day;
+    saveDay(currentDate, day);
+    document.getElementById('food-input').value = '';
+    closeAcDropdown();
+    _renderDayUI(day);
+    return;
+  }
+
   const gramInput = document.getElementById('ac-portie-gram');
   const gram = parseFloat(gramInput?.value) || 100;
 
@@ -211,7 +307,7 @@ export function initAutocomplete() {
     const shouldSearchLive = val.length >= 3 && cfg.openFoodFactsLiveSearch !== false;
 
     // Show local results immediately to keep typing responsive.
-    const localResults = searchNevo(val);
+    const localResults = mergeAutocompleteResults(searchNevo(val), getFavouriteSearchResults(val));
     if (localResults.length > 0) {
       renderAcDropdown(localResults, val, shouldSearchLive);
     } else if (val.length >= 3) {
@@ -224,7 +320,10 @@ export function initAutocomplete() {
     if (!shouldSearchLive) return;
 
     acTimeout = setTimeout(async () => {
-      const results = await searchNevoHybrid(val, 8);
+      const results = mergeAutocompleteResults(
+        await searchNevoHybrid(val, 8),
+        getFavouriteSearchResults(val),
+      );
       if (seq !== searchSeq) return;
       if (input.value.trim() !== val) return;
       if (results.length > 0) {

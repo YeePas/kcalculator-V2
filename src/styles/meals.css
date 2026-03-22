@@ -44,10 +44,16 @@ textarea#food-input::placeholder { color: var(--tertiary); }
 /* ── Quick Favorieten Chips ───────────────────────────────── */
 
 .quick-favs {
-  display: flex; flex-wrap: wrap; gap: 0.45rem;
+  display: flex; flex-direction: column; gap: 0.65rem;
   margin-top: 1rem; padding-top: 1rem;
   border-top: 1px solid var(--border);
   min-height: 0;
+}
+.quick-favs-top,
+.quick-favs-more-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 .quick-fav-chip {
   padding: 0.42rem 0.82rem; border-radius: 999px;
@@ -59,6 +65,23 @@ textarea#food-input::placeholder { color: var(--tertiary); }
 }
 .quick-fav-chip:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); color: var(--accent); background: var(--surface-strong); transform: translateY(-1px); }
 .quick-favs-empty { font-size: 0.75rem; color: var(--muted); font-style: italic; }
+.quick-favs-more {
+  border-top: 1px dashed var(--border-subtle);
+  padding-top: 0.65rem;
+}
+.quick-favs-more summary {
+  list-style: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  user-select: none;
+}
+.quick-favs-more summary::-webkit-details-marker { display: none; }
+.quick-favs-more summary:hover { color: var(--text); }
+.quick-favs-more[open] summary {
+  margin-bottom: 0.55rem;
+}
 
 /* ── Main Column ──────────────────────────────────────────── */
 

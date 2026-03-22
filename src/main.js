@@ -43,7 +43,7 @@ import { fetchUserAiKeyStatuses, saveUserAiKey } from './supabase/user-ai-keys.j
 
 // ── Products ─────────────────────────────────────────────────
 import { clearProductCache, loadNevo, searchNevo } from './products/database.js';
-import { parseTextToItems, matchItemToNevo, buildMealItem } from './products/matcher.js';
+import { buildMealItem } from './products/matcher.js';
 import { isLiquidLike } from './products/density.js';
 import { SUPERMARKET_OPTIONS, normalizeSupermarketFilters } from './products/supermarket-filter.js';
 import {
@@ -59,6 +59,7 @@ import {
 import { updateInlineModelSelect } from './ai/providers.js';
 import { hasAiProxyConfig } from './ai/providers.js';
 import { parseFood } from './ai/parser.js';
+import { submit } from './input/submit.js';
 
 // ── UI ───────────────────────────────────────────────────────
 import { renderMeals, _renderDayUI, toggleMealSection, toggleAllMealSections, renderMealItems, renderItem } from './ui/render.js';
@@ -120,6 +121,7 @@ import {
   runSmartImportDishAnalysis, parseSmartImportManual, runSmartImportUrlImport,
   refreshSmartImportManualProposal, syncSmartImportProviderSelects,
 } from './pages/smart-import.js';
+import { renderManageList } from './pages/smart-import-manage.js';
 import {
   openAdminPage, initAdminListeners,
 } from './pages/admin.js';
@@ -942,24 +944,6 @@ function refreshProductDB() {
 // ══════════════════════════════════════════════════════════════
 // Submit (main input handler)
 // ══════════════════════════════════════════════════════════════
-export async function submit() {
-  const input = document.getElementById('food-input');
-  const status = document.getElementById('status');
-  const text = input.value.trim();
-  if (!text) return;
-  const parsed = parseTextToItems(text);
-  if (parsed.length > 0) {
-    const matches = parsed.map(p => ({ parsed: p, match: matchItemToNevo(p) }));
-    const matchCount = matches.filter(m => m.match).length;
-    status.textContent = '🔍 ' + matchCount + '/' + parsed.length + ' producten herkend in database';
-    status.className = 'status-msg';
-    openMatchModal(parsed);
-  } else {
-    status.textContent = 'Kon geen producten herkennen — probeer specifieker';
-    status.className = 'status-msg error';
-  }
-}
-
 // ══════════════════════════════════════════════════════════════
 // Event Listeners
 // ══════════════════════════════════════════════════════════════
@@ -1002,7 +986,7 @@ function initEventListeners() {
     const manageSearch = e.target.closest('#smart-manage-search');
     if (manageSearch) {
       const term = manageSearch.value || '';
-      import('./pages/smart-import-manage.js').then(m => m.renderManageList(term));
+      renderManageList(term);
     }
   });
 
