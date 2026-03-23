@@ -706,6 +706,10 @@ Vet: 3.3g"></textarea>
   </button>
   <div class="header-actions">
     <button class="sync-indicator" id="sync-btn" title="Klik om te synchroniseren" type="button"><div class="sync-dot offline" id="sync-dot"></div><span class="sync-label" id="sync-label">lokaal</span></button>
+    <button class="icon-btn" id="week-btn" title="Weekoverzicht" aria-label="Weekoverzicht openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="6" width="3" height="9" rx="1" fill="currentColor" opacity="0.4"/><rect x="6" y="3" width="3" height="12" rx="1" fill="currentColor" opacity="0.65"/><rect x="11" y="1" width="3" height="14" rx="1" fill="currentColor"/></svg></button>
+    <button class="icon-btn" id="smart-import-header-btn" title="Product of gerecht toevoegen" aria-label="Product of gerecht toevoegen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="4.2" stroke="currentColor" stroke-width="1.2"/><path d="M3 3.2v6.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2.2 3.2v2.4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M3.8 3.2v2.4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M13 3.2v9.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M11.8 3.2c0 1 .5 1.8 1.2 2.2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M7.2 8h1.6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg></button>
+    <button class="icon-btn icon-btn-beta" id="advies-header-btn" title="Analyse (BETA)" aria-label="Analyse openen (BETA)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.7 1 2 3.5 2 6.5c0 1.8 1 3.4 2.5 4.3V13a1 1 0 001 1h5a1 1 0 001-1v-2.2C13 9.9 14 8.3 14 6.5 14 3.5 11.3 1 8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M6 14.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="1" fill="currentColor"/><path d="M8 7v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+    <button class="icon-btn" id="open-config" title="Instellingen" aria-label="Instellingen openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.7 1.2h2.6l.35 1.9a5.5 5.5 0 011.2.7l1.8-.75 1.3 2.25-1.45 1.2c.06.4.06.82 0 1.2l1.45 1.2-1.3 2.25-1.8-.75a5.5 5.5 0 01-1.2.7l-.35 1.9H6.7l-.35-1.9a5.5 5.5 0 01-1.2-.7l-1.8.75L2.05 8.7l1.45-1.2a5.5 5.5 0 010-1.2L2.05 5.1l1.3-2.25 1.8.75c.37-.28.77-.52 1.2-.7l.35-1.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/></svg></button>
     <a class="icon-btn help-doc-btn" href="handleiding.html" target="_blank" rel="noopener noreferrer" title="Open handleiding" aria-label="Open handleiding">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.2"/>
@@ -713,10 +717,6 @@ Vet: 3.3g"></textarea>
         <circle cx="8" cy="11.6" r="0.8" fill="currentColor"/>
       </svg>
     </a>
-    <button class="icon-btn" id="week-btn" title="Weekoverzicht" aria-label="Weekoverzicht openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="6" width="3" height="9" rx="1" fill="currentColor" opacity="0.4"/><rect x="6" y="3" width="3" height="12" rx="1" fill="currentColor" opacity="0.65"/><rect x="11" y="1" width="3" height="14" rx="1" fill="currentColor"/></svg></button>
-    <button class="icon-btn" id="smart-import-header-btn" title="Product of gerecht toevoegen" aria-label="Product of gerecht toevoegen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="4.2" stroke="currentColor" stroke-width="1.2"/><path d="M3 3.2v6.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2.2 3.2v2.4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M3.8 3.2v2.4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M13 3.2v9.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M11.8 3.2c0 1 .5 1.8 1.2 2.2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M7.2 8h1.6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg></button>
-    <button class="icon-btn icon-btn-beta" id="advies-header-btn" title="Analyse (BETA)" aria-label="Analyse openen (BETA)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.7 1 2 3.5 2 6.5c0 1.8 1 3.4 2.5 4.3V13a1 1 0 001 1h5a1 1 0 001-1v-2.2C13 9.9 14 8.3 14 6.5 14 3.5 11.3 1 8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M6 14.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="1" fill="currentColor"/><path d="M8 7v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
-    <button class="icon-btn" id="open-config" title="Instellingen" aria-label="Instellingen openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.7 1.2h2.6l.35 1.9a5.5 5.5 0 011.2.7l1.8-.75 1.3 2.25-1.45 1.2c.06.4.06.82 0 1.2l1.45 1.2-1.3 2.25-1.8-.75a5.5 5.5 0 01-1.2.7l-.35 1.9H6.7l-.35-1.9a5.5 5.5 0 01-1.2-.7l-1.8.75L2.05 8.7l1.45-1.2a5.5 5.5 0 010-1.2L2.05 5.1l1.3-2.25 1.8.75c.37-.28.77-.52 1.2-.7l.35-1.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/></svg></button>
     <button class="icon-btn" id="account-btn" style="display:none"></button>
   </div>
 </header>
@@ -887,6 +887,9 @@ Vet: 3.3g"></textarea>
     <div class="advies-page-header">
       <h2>💡 Analyse</h2>
       <button class="do-back" id="advies-back-btn">← Terug</button>
+      <div class="setup-hint advies-page-note">
+        In ontwikkeling. De betaalde AI Providers werken het beste, vooral voor het avondeten. Overige functies zijn nog in ontwikkeling en dus nog niet betrouwbaar.
+      </div>
     </div>
     <div class="advies-page-tabs">
       <button class="advies-tab active" data-tab="schijf">🥗 <span>Schijf van 5</span></button>
