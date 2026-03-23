@@ -1034,12 +1034,6 @@ function initEventListeners() {
     hideSetup();
     exportAllData();
   });
-  document.getElementById('settings-feedback-btn')?.addEventListener('click', () => {
-    openGeneralFeedback('settings', {
-      section: 'settings',
-      current_path: window.location.pathname,
-    });
-  });
   document.getElementById('cancel-settings')?.addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
   document.getElementById('modal-overlay')?.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
   document.getElementById('save-settings')?.addEventListener('click', () => {

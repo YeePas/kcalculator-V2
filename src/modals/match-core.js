@@ -74,7 +74,6 @@ export function renderMatchList() {
       matchedGroup: nevo?._group || null,
       isManual: Boolean(ms.manualMode),
     });
-
     const actionBtns = [];
     if (!ms.manualMode) actionBtns.push(`<button class="match-manual-btn" onclick="toggleManualMode(${i})">✎ Handmatig</button>`);
     actionBtns.push(`<button class="match-manual-btn" onclick="aiLookupMatch(${i})" style="border-color:var(--blue);color:var(--blue)">🤖 AI zoeken</button>`);
