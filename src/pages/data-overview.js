@@ -94,7 +94,10 @@ export async function renderDataOverzicht(numDays) {
     let dbData = null;
     if (cfg.sbUrl && cfg.sbKey && authUser?.id) {
       try {
-        const r = await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?date=gte.' + dateFrom + '&date=lte.' + dateTo + '&select=date,data', { headers: sbHeaders() });
+        const r = await fetch(
+          cfg.sbUrl + '/rest/v1/eetdagboek?user_id=eq.' + authUser.id + '&date=gte.' + dateFrom + '&date=lte.' + dateTo + '&select=date,data',
+          { headers: sbHeaders(), cache: 'no-store' }
+        );
         if (r.ok) { const rows = await r.json(); dbData = {}; rows.forEach(row => { dbData[row.date] = { ...emptyDay(), ...row.data }; }); }
       } catch (e) { /* ignore */ }
     }
@@ -183,7 +186,12 @@ export async function renderDataOverzicht(numDays) {
     html += '<div class="do-legend"><span><span class="do-legend-dot" style="background:var(--accent)"></span>Intake</span>';
     if (a.daysWithEnergy > 0) html += '<span><span class="do-legend-dot" style="background:var(--tdee-line)"></span>TDEE</span>';
     if (goals.kcal) html += '<span><span class="do-legend-dot" style="background:var(--muted)"></span>Doel (' + goals.kcal + ')</span>';
-    html += '</div></section>';
+    html += '</div>';
+    html += '<div style="margin-top:0.8rem;display:flex;justify-content:flex-start;gap:0.55rem;flex-wrap:wrap">'
+      + '<button class="btn-secondary" type="button" onclick="document.getElementById(\'settings-import-btn\')?.click()" style="flex:0 0 auto">🍎 Import</button>'
+      + '<button class="btn-secondary" type="button" data-action="open-manual-tdee" style="flex:0 0 auto">✏️ TDEE</button>'
+      + '</div>';
+    html += '</section>';
 
     // Macro chart + donut
     html += '<section class="do-section">';
@@ -237,7 +245,8 @@ export async function renderDataOverzicht(numDays) {
       html += '<div class="do-stat"><span class="do-stat-label">Gem. TDEE</span><span class="do-stat-val">' + a.avgTDEE + ' kcal</span></div>';
       html += '<div class="do-stat"><span class="do-stat-label">Gem. actief</span><span class="do-stat-val">' + a.avgActive + ' kcal</span></div>';
       html += '<div class="do-stat"><span class="do-stat-label">Netto</span><span class="do-stat-val" style="color:' + cumColor + '">' + (a.cumulativeBalance > 0 ? '+' : '') + a.cumulativeBalance + ' kcal</span></div>';
-      html += '</div></section>';
+      html += '</div>';
+      html += '</section>';
     }
 
     // Weight chart

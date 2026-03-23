@@ -67,11 +67,15 @@ function feedbackNear(btn, message, tone = 'ok') {
 function renderManualProposalCard(targetId, proposal) {
   const el = document.getElementById(targetId);
   if (!el) return;
+  const feedback = proposal.feedbackMessage
+    ? '<div class="smart-proposal-feedback" role="status">' + esc(proposal.feedbackMessage) + '</div>'
+    : '';
   const assumptions = (proposal.assumptions || []).filter(a => !/AI-respons was onvolledig/i.test(a));
   const assumes = assumptions.length
     ? '<details class="smart-assumptions-details"><summary>Aannames</summary><ul class="smart-assumptions">' + assumptions.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></details>' : '';
   el.innerHTML = '<div class="smart-card smart-card-compact">'
     + '<div class="smart-card-inline-head"><strong>' + esc(proposal.title) + '</strong><span class="smart-card-inline-meta">Portie ' + proposal.portionGrams + 'g: ' + proposal.calories + ' kcal · ' + proposal.carbs_g + 'g kh · ' + proposal.protein_g + 'g eiwit</span></div>'
+    + feedback
     + assumes
     + '<div class="smart-actions">'
     + '<button class="btn-primary" data-action="favorite" data-target="' + targetId + '">⭐ Opslaan bij favoriete gerechten</button>'
@@ -265,6 +269,9 @@ function renderRecipeProposalCard(targetId, proposal) {
   const el = document.getElementById(targetId);
   if (!el || !proposal?.recipe) return;
   const recipeProposal = buildRecipePortionProposal(proposal, proposal.recipe.servings || 1);
+  const feedback = recipeProposal.feedbackMessage
+    ? '<div class="smart-proposal-feedback" role="status">' + esc(recipeProposal.feedbackMessage) + '</div>'
+    : '';
   const totals = recipeProposal.recipe.totals;
   const ingredients = getRecipeIngredientResolutions(recipeProposal);
   const matchedCount = ingredients.filter(item => item.status === 'matched').length;
@@ -275,6 +282,7 @@ function renderRecipeProposalCard(targetId, proposal) {
 
   el.innerHTML = '<div class="smart-card smart-recipe-card">'
     + '<div class="smart-card-head"><h4>' + esc(recipeProposal.title) + '</h4><span class="smart-confidence smart-conf-' + esc(recipeProposal.confidence) + '">' + esc(recipeProposal.confidence) + '</span></div>'
+    + feedback
     + '<div class="smart-recipe-meta">'
     + '<div class="smart-recipe-kpi"><span>Totaal recept</span><strong>' + Math.round(totals.calories || 0) + ' kcal</strong></div>'
     + '<div class="smart-recipe-kpi"><span>Totaal gewicht</span><strong>' + Math.round(recipeProposal.recipe.totalWeightGrams || 0) + ' g</strong></div>'
@@ -437,11 +445,15 @@ function renderProposalCard(targetId, proposal) {
   if (!el) return;
   const cls = proposal.confidence === 'high' ? 'smart-conf-high'
     : proposal.confidence === 'medium' ? 'smart-conf-medium' : 'smart-conf-low';
+  const feedback = proposal.feedbackMessage
+    ? '<div class="smart-proposal-feedback" role="status">' + esc(proposal.feedbackMessage) + '</div>'
+    : '';
   const assumptions = (proposal.assumptions || []).filter(a => !/AI-respons was onvolledig/i.test(a));
   const assumes = assumptions.length
     ? '<details class="smart-assumptions-details"><summary>Aannames</summary><ul class="smart-assumptions">' + assumptions.map(a => '<li>' + esc(a) + '</li>').join('') + '</ul></details>' : '';
   el.innerHTML = '<div class="smart-card">'
     + '<div class="smart-card-head"><h4>' + esc(proposal.title) + '</h4><span class="smart-confidence ' + cls + '">' + esc(proposal.confidence) + '</span></div>'
+    + feedback
     + '<div class="smart-macro-grid">'
     + '<div><span>Portie</span><strong>' + esc(proposal.portionLabel) + ' (' + proposal.portionGrams + 'g)</strong></div>'
     + '<div><span>kcal</span><strong>' + proposal.calories + '</strong></div>'

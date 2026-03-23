@@ -18,6 +18,13 @@ const SEARCH_SYNONYMS = {
   boterhammen: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
   brood: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
 };
+const BREAD_PRIORITY_TERMS = ['brood', 'boterham', 'boterhammen'];
+const BREAD_PRIORITY_RULES = [
+  { label: 'Volkoren', test: name => /tarwebrood volkoren/.test(name) },
+  { label: 'Bruin', test: name => /^tarwebrood bruin\b|^bruin tarwebrood\b/.test(name) },
+  { label: 'Wit', test: name => /^tarwebrood wit\b/.test(name) },
+  { label: 'Zuurdesem', test: name => /tarwedesembrood|desembrood/.test(name) && /brood/.test(name) && !/glutenvrij/.test(name) },
+];
 
 function round1(v) {
   return Math.round((Number(v) || 0) * 10) / 10;
@@ -72,6 +79,40 @@ function buildSearchVariants(query) {
     }
   }
   return variants;
+}
+
+function isBreadPriorityQuery(query) {
+  const normalized = normalizeSearchText(query);
+  if (!normalized) return false;
+  const words = normalized.split(/\s+/).filter(Boolean);
+  return words.some(word => BREAD_PRIORITY_TERMS.includes(word));
+}
+
+function applyBreadPriority(results, query) {
+  if (!isBreadPriorityQuery(query) || !Array.isArray(results) || !results.length) return results;
+
+  const promoted = [];
+  const used = new Set();
+  for (const rule of BREAD_PRIORITY_RULES) {
+    const match = results.find(item => {
+      if (!item?.n) return false;
+      const key = `${String(item.n).toLowerCase()}|${String(item.b || '').toLowerCase()}`;
+      if (used.has(key)) return false;
+      return rule.test(normalizeSearchText(item.n));
+    });
+    if (!match) continue;
+    const key = `${String(match.n).toLowerCase()}|${String(match.b || '').toLowerCase()}`;
+    used.add(key);
+    promoted.push(match);
+  }
+
+  if (!promoted.length) return results;
+
+  const remainder = results.filter(item => {
+    const key = `${String(item?.n || '').toLowerCase()}|${String(item?.b || '').toLowerCase()}`;
+    return !used.has(key);
+  });
+  return [...promoted, ...remainder];
 }
 
 function offKcalPer100(nutriments = {}) {
@@ -299,7 +340,7 @@ export function searchNevo(query) {
   }
 
   results.sort((a, b) => b._score - a._score);
-  return results.slice(0, 8);
+  return applyBreadPriority(results, query).slice(0, 8);
 }
 
 export async function searchNevoHybrid(query, limit = 8) {

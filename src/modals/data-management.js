@@ -27,14 +27,31 @@ async function deleteFoodSupabase(dateStr) {
 }
 
 async function deleteEnergySupabase(dateStr) {
-  if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) return;
+  if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) return { ok: true, deleted: 0, skipped: true };
   const filter = dateStr ? `&date=eq.${dateStr}` : '';
   try {
-    await fetch(
+    const response = await fetch(
       `${cfg.sbUrl}/rest/v1/daily_energy_stats?user_id=eq.${authUser.id}${filter}`,
-      { method: 'DELETE', headers: sbHeaders(true) }
+      {
+        method: 'DELETE',
+        headers: { ...sbHeaders(true), Prefer: 'return=representation' },
+      }
     );
-  } catch { /* silent */ }
+    if (!response.ok) {
+      const body = await response.text();
+      return { ok: false, deleted: 0, error: body || `HTTP ${response.status}` };
+    }
+    let deleted = 0;
+    try {
+      const rows = await response.json();
+      deleted = Array.isArray(rows) ? rows.length : 0;
+    } catch {
+      deleted = 0;
+    }
+    return { ok: true, deleted };
+  } catch (error) {
+    return { ok: false, deleted: 0, error: error?.message || 'Netwerkfout' };
+  }
 }
 
 /* ── Local delete helpers ───────────────────────────────────── */
@@ -121,8 +138,13 @@ export function initDataManagement() {
     if (!dateStr) { setStatus('Kies eerst een datum.', true); return; }
     if (!confirm(`Activiteitsdata van ${fmtDate(dateStr)} verwijderen?`)) return;
     deleteEnergyLocal(dateStr);
-    await deleteEnergySupabase(dateStr);
-    setStatus(`✓ Activiteitsdata van ${fmtDate(dateStr)} verwijderd.`);
+    const result = await deleteEnergySupabase(dateStr);
+    if (!result.ok) {
+      setStatus(`Activiteitsdata lokaal verwijderd, maar server verwijderen mislukte: ${result.error}`, true);
+      return;
+    }
+    const extra = result.skipped ? ' (alleen lokaal)' : ` (${result.deleted} serverrij${result.deleted === 1 ? '' : 'en'})`;
+    setStatus(`✓ Activiteitsdata van ${fmtDate(dateStr)} verwijderd${extra}.`);
   });
 
   // ── Per-date: delete both ──
@@ -133,8 +155,13 @@ export function initDataManagement() {
     deleteFoodLocal(dateStr);
     deleteEnergyLocal(dateStr);
     await deleteFoodSupabase(dateStr);
-    await deleteEnergySupabase(dateStr);
-    setStatus(`✓ Alle data van ${fmtDate(dateStr)} verwijderd.`);
+    const result = await deleteEnergySupabase(dateStr);
+    if (!result.ok) {
+      setStatus(`Voedingsdata verwijderd, maar activity op server verwijderen mislukte: ${result.error}`, true);
+      return;
+    }
+    const extra = result.skipped ? ' (activiteit alleen lokaal)' : ` (${result.deleted} activity-rij${result.deleted === 1 ? '' : 'en'} op server)`;
+    setStatus(`✓ Alle data van ${fmtDate(dateStr)} verwijderd${extra}.`);
     renderMeals();
   });
 

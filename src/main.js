@@ -76,7 +76,7 @@ import {
   selectAcItem, setPortie, addNevoItem, importAcItemToCustom,
 } from './ui/autocomplete.js';
 import {
-  openBugReportModal, closeBugReportModal, submitBugReport,
+  openBugReportModal, closeBugReportModal, submitBugReport, openGeneralFeedback,
 } from './ui/bug-report.js';
 
 const ALLOW_REGISTRATION = ['true', '1', 'yes', 'on'].includes(String(import.meta.env.VITE_ALLOW_REGISTRATION || '').toLowerCase());
@@ -103,6 +103,7 @@ import {
 } from './modals/edit.js';
 import { initDataManagement } from './modals/data-management.js';
 import { initManualDayEntry } from './modals/manual-day.js';
+import { initManualTdeeEntry } from './modals/manual-tdee.js';
 import { initWeightListeners } from './pages/weight.js';
 import { initBarcodeScanner } from './products/barcode-scanner.js';
 
@@ -137,7 +138,7 @@ Object.assign(window, {
   goToDay,
   updateMatchNevo, updateMatchGram, toggleManualMode,
   addMatchToFavs, aiLookupMatch,
-  openBugReportModal, closeBugReportModal, submitBugReport,
+  openBugReportModal, closeBugReportModal, submitBugReport, openGeneralFeedback,
   runAdvies, switchMobileView,
   closeEditModal, closeMatchModal, moveItemToMeal, openEditRecipeGroupModal,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
@@ -438,26 +439,35 @@ function importData() {
       }
       progressFill.style.width = '100%';
       statusText.textContent = `Opslaan naar database… (${allDates.size} dagen)`;
+      const datesSorted = [...allDates].sort();
+      const clearFrom = fromDate || datesSorted[0];
+      const clearTo = datesSorted[datesSorted.length - 1];
       const records = [];
       for (const date of allDates) {
         const active = Math.round(dailyActive[date] || 0), resting = Math.round(dailyBasal[date] || 0);
         // tdee_kcal is een generated column in Supabase, dus niet meesturen in writes.
         records.push({ user_id: authUser.id, date, active_kcal: active, resting_kcal: resting, source: 'apple_health' });
       }
-      // Strategie: delete bestaande rijen voor deze datums, dan vers invoegen.
-      // Dit werkt ook zonder unieke constraint op (user_id, date).
+      // Maak eerst het relevante bereik leeg, zodat handmatige fallback-data
+      // of oude imports nooit kunnen blijven hangen als Apple Health leidend is.
+      try {
+        await fetch(
+          `${cfg.sbUrl}/rest/v1/daily_energy_stats?user_id=eq.${authUser.id}&date=gte.${clearFrom}&date=lte.${clearTo}`,
+          { method: 'DELETE', headers: sbHeaders(true) }
+        );
+      } catch (e) { /* ignore; batch writes below surface failures */ }
+
+      const localEnergy = safeParse(ENERGY_LOCAL_KEY, safeParse('eetdagboek_energy_v1', {}));
+      for (const key of Object.keys(localEnergy)) {
+        if (key >= clearFrom && key <= clearTo) delete localEnergy[key];
+      }
+
       const BATCH = 100; let saved = 0, errors = 0;
       let firstErrorMsg = '';
       for (let i = 0; i < records.length; i += BATCH) {
         const batch = records.slice(i, i + BATCH);
-        const dateList = batch.map(r => r.date).join(',');
         try {
-          // 1) Verwijder eventueel bestaande rijen voor deze datums
-          await fetch(
-            `${cfg.sbUrl}/rest/v1/daily_energy_stats?user_id=eq.${authUser.id}&date=in.(${dateList})`,
-            { method: 'DELETE', headers: sbHeaders(true) }
-          );
-          // 2) Voeg nieuwe rijen in
+          // Voeg nieuwe rijen in nadat het bereik al is opgeschoond.
           const r = await fetch(`${cfg.sbUrl}/rest/v1/daily_energy_stats`, {
             method: 'POST',
             headers: { ...sbHeaders(true), 'Prefer': 'return=minimal' },
@@ -478,8 +488,8 @@ function importData() {
         }
         statusText.textContent = `Opslaan… ${saved}/${records.length} dagen`;
       }
-      // Update local energy cache
-      const localEnergy = safeParse(ENERGY_LOCAL_KEY, safeParse('eetdagboek_energy_v1', {}));
+
+      // Update local energy cache with the imported rows only after stale rows were removed.
       records.forEach(rec => {
         localEnergy[rec.date] = {
           active_kcal: rec.active_kcal,
@@ -493,13 +503,15 @@ function importData() {
         // Legacy key voor backward compatibility
         localStorage.setItem('eetdagboek_energy_v1', JSON.stringify(localEnergy));
       } catch (e) { /* ignore */ }
-      const datesSorted = [...allDates].sort();
       let msg = `✓ ${saved} dagen geïmporteerd (${datesSorted[0]} t/m ${datesSorted[datesSorted.length - 1]})`;
       if (skippedRecords > 0) msg += ` · ${skippedRecords} records overgeslagen`;
       if (errors > 0) msg += ` · ${errors} dagen mislukt`;
       if (firstErrorMsg) msg += ` · fout: ${String(firstErrorMsg).slice(0, 180)}`;
       statusText.textContent = msg; statusText.className = 'import-status-text done';
       cancelBtn.textContent = 'Sluiten'; startBtn.style.display = 'none';
+      if (document.getElementById('do-content')) {
+        renderDataOverzicht(_doCurrentDays);
+      }
     }
 
     if (isXml) processXmlChunk();
@@ -1013,9 +1025,20 @@ function initEventListeners() {
     hideSetup();
     importData();
   });
+  document.getElementById('data-overzicht')?.addEventListener('click', e => {
+    if (e.target.closest('[data-action="open-energy-import"]')) {
+      importData();
+    }
+  });
   document.getElementById('settings-export-btn')?.addEventListener('click', () => {
     hideSetup();
     exportAllData();
+  });
+  document.getElementById('settings-feedback-btn')?.addEventListener('click', () => {
+    openGeneralFeedback('settings', {
+      section: 'settings',
+      current_path: window.location.pathname,
+    });
   });
   document.getElementById('cancel-settings')?.addEventListener('click', () => document.getElementById('modal-overlay').classList.remove('open'));
   document.getElementById('modal-overlay')?.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
@@ -1451,6 +1474,7 @@ function initEventListeners() {
   initEditFavModalListeners();
   initDataManagement();
   initManualDayEntry();
+  initManualTdeeEntry();
   initWeightListeners();
   initBarcodeScanner((product) => {
     setAcResults([product]);

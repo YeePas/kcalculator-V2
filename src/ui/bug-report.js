@@ -31,14 +31,14 @@ function ensureBugModal() {
   modal.className = 'modal-overlay';
   modal.innerHTML = `
     <div class="modal bug-report-dialog" role="dialog" aria-modal="true" aria-labelledby="bug-report-title">
-      <h3 id="bug-report-title">🐞 Bug melden</h3>
+      <h3 id="bug-report-title">💬 Feedback sturen</h3>
       <div class="bug-report-context" id="bug-report-context"></div>
       <div class="goal-field">
-        <label for="bug-report-message">Wat klopt er niet?</label>
-        <textarea id="bug-report-message" class="bug-report-textarea" placeholder="Bijv: 250 ml yoghurt wordt te laag ingeschat qua kcal."></textarea>
+        <label for="bug-report-message">Wat wil je delen?</label>
+        <textarea id="bug-report-message" class="bug-report-textarea" placeholder="Bijv: de TDEE-import is onduidelijk, een knop staat niet logisch, of je mist een handige functie."></textarea>
       </div>
       <div class="goal-field">
-        <label for="bug-report-severity">Ernst</label>
+        <label for="bug-report-severity">Prioriteit</label>
         <select id="bug-report-severity" class="bug-report-select">
           <option value="low">Laag</option>
           <option value="medium" selected>Middel</option>
@@ -91,6 +91,19 @@ export function buildBugReportButton(context, details = {}) {
   return `<button class="beta-bug-btn" onclick="openBugReportModal('${encoded}')" title="Meld een bug voor dit onderdeel" aria-label="Meld bug">🐞</button>`;
 }
 
+export function openGeneralFeedback(context = 'general-feedback', details = {}) {
+  if (!ENABLE_BETA_BUG_REPORT) return;
+  const payload = encodePayload({
+    context,
+    details,
+    date: currentDate,
+    meal: selMeal,
+    path: window.location.pathname,
+  });
+  if (!payload) return;
+  openBugReportModal(payload);
+}
+
 export function openBugReportModal(encodedPayload) {
   if (!ENABLE_BETA_BUG_REPORT) return;
   const modal = ensureBugModal();
@@ -102,7 +115,7 @@ export function openBugReportModal(encodedPayload) {
   const severityEl = document.getElementById('bug-report-severity');
 
   if (contextEl) {
-    contextEl.textContent = `Context: ${activePayload.context || 'onbekend'}`;
+    contextEl.textContent = `Onderdeel: ${activePayload.context || 'onbekend'}`;
   }
   if (messageEl) messageEl.value = '';
   if (severityEl) severityEl.value = 'medium';
@@ -126,7 +139,7 @@ export async function submitBugReport() {
   const message = String(messageEl?.value || '').trim();
   const severity = String(severityEl?.value || 'medium');
   if (!message) {
-    setStatus('Beschrijf kort het probleem.', 'err');
+    setStatus('Beschrijf kort je feedback.', 'err');
     return;
   }
 
@@ -167,9 +180,9 @@ export async function submitBugReport() {
     });
 
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload?.error || 'Kon bug niet versturen');
+    if (!response.ok) throw new Error(payload?.error || 'Kon feedback niet versturen');
 
-    setStatus('Dankjewel, bug is gelogd.', 'ok');
+    setStatus('Dankjewel, feedback is opgeslagen.', 'ok');
     setTimeout(closeBugReportModal, 700);
   } catch (error) {
     const errorMessage = String(error?.message || error || 'onbekende fout');

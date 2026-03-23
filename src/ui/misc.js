@@ -83,7 +83,8 @@ export function renderQuickFavs() {
 /* ── Dark mode ────────────────────────────────────────────── */
 export function applyDark(on) {
   document.body.classList.toggle('dark', on);
-  document.getElementById('dark-toggle').textContent = on ? '☀️' : '🌙';
+  const toggle = document.getElementById('dark-toggle');
+  if (toggle) toggle.textContent = on ? '☀️' : '🌙';
   localStorage.setItem(DARK_KEY, on ? '1' : '0');
 }
 

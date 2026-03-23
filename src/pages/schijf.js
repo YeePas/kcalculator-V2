@@ -1,11 +1,10 @@
 /* ── Schijf van Vijf Analysis ─────────────────────────────── */
 
-import { localData, currentDate, goals } from '../state.js';
+import { localData, currentDate, goals, nevoData, nevoReady } from '../state.js';
 import { dateKey, dayTotals, r1 } from '../utils.js';
 import { loadDay } from '../supabase/data.js';
 import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
-import { PORTION_ALIASES } from '../products/matcher.js';
-import { searchNevo } from '../products/database.js';
+import { PORTION_ALIASES, matchItemToNevo } from '../products/matcher.js';
 
 export const SCHIJF_CATEGORY_META = {
   groente: { icon: '🥬', naam: 'Groente', doel: 250, unit: 'g', accent: 'var(--green)' },
@@ -19,7 +18,7 @@ export const SCHIJF_CATEGORY_META = {
 const POSITIVE_GROUP_MATCHERS = [
   { category: 'groente', groups: ['Groente'], names: /.*/ },
   { category: 'fruit', groups: ['Fruit'], names: /^(?!.*sap)(?!.*smoothie)(?!.*kokos)(?!.*kokosnoot).+/ },
-  { category: 'volkoren', groups: ['Brood', 'Graanproducten en meelsoorten'], names: /volkoren|bruinbrood|tarwebrood volkoren|rogge|haver|havermout|muesli|quinoa|zilvervlies|zilvervliesrijst|bruine rijst|brown rice|bulgur|boekweit|spelt/ },
+  { category: 'volkoren', groups: ['Brood', 'Graanproducten en meelsoorten'], names: /volkoren|wholegrain|whole grain|bruinbrood|tarwebrood volkoren|rogge|haver|havermout|muesli|quinoa|zilvervlies|zilvervliesrijst|bruine rijst|brown rice|brown basmati|wholegrain basmati|whole grain basmati|volkoren basmati|bulgur|boekweit|spelt/ },
   { category: 'volkoren', groups: ['Aardappelen en knolgewassen'], names: /^(?!.*chips)(?!.*frit)(?!.*kroket)(?!.*patat)(?!.*rosti)(?!.*gefrituur)(?!.*aardappelsalade).+/ },
   { category: 'zuivel', groups: ['Melk en melkproducten', 'Kaas'], names: /melk|karnemelk|kwark|skyr|yoghurt|yoghurt naturel|magere yoghurt|halfvolle melk|kaas|cottage cheese|huttenkase|mozzarella|ricotta/ },
   { category: 'zuivel', groups: ['Vleesvervangers en zuivelvervangers'], names: /sojadrink|sojamelk|sojayoghurt|soja drink|soja melk/ },
@@ -32,9 +31,9 @@ const POSITIVE_GROUP_MATCHERS = [
 
 const NAME_FALLBACK_MATCHERS = [
   { category: 'zuivel', names: /\b(skyr|kwark|yoghurt|melk|karnemelk|kaas|cottage cheese|huttenkase|mozzarella|ricotta|sojadrink|sojamelk|sojayoghurt)\b/ },
-  { category: 'groente', names: /\b(groente|broccoli|spinazie|sla|komkommer|paprika|tomaat|wortel|courgette|bloemkool|boerenkool|andijvie|prei|sperziebonen|snijbonen)\b/ },
-  { category: 'fruit', names: /\b(fruit|appel|peer|banaan|kiwi|blauwe bes|aardbei|druif|mandarijn|sinaasappel|mango|perzik|pruim|nectarine|ananas|meloen)\b/ },
-  { category: 'volkoren', names: /\b(volkoren|havermout|rogge|muesli|quinoa|zilvervlies|zilvervliesrijst|bruine rijst|brown rice|aardappel|aardappelen|pieper|krieltje|bulgur|boekweit|spelt)\b/ },
+  { category: 'groente', names: /\b(groente|broccoli|spinazie|sla|komkommer|paprika|tomaat|wortel|courgette|bloemkool|boerenkool|andijvie|prei|sperziebonen|snijbonen|aubergine)\b/ },
+  { category: 'fruit', names: /\b(fruit|appel|peer|banaan|kiwi|blauwe bes|aardbei|druif|druiven|mandarijn|sinaasappel|mango|perzik|pruim|nectarine|ananas|meloen)\b/ },
+  { category: 'volkoren', names: /\b(volkoren|wholegrain|whole grain|havermout|rogge|muesli|quinoa|zilvervlies|zilvervliesrijst|bruine rijst|brown rice|brown basmati|wholegrain basmati|whole grain basmati|volkoren basmati|aardappel|aardappelen|pieper|krieltje|bulgur|boekweit|spelt)\b/ },
   { category: 'eiwit', names: /\b(ei|eieren|kip|kipfilet|vis|zalm|tonijn|tofu|tempeh|tempe|linzen|bonen|kikkererwten|garnalen|mosselen|forel|sardine|makreel|kabeljauw|schol|tilapia)\b/ },
   { category: 'onverzadigd_vet', names: /\b(olijfolie|noten|amandel|walnoot|cashew|avocado|pinda|halvarine|margarine|zonnebloemolie)\b/ },
 ];
@@ -54,8 +53,19 @@ const EXCLUDE_NAME_PATTERN = /sap|smoothie|supplement|poeder|vitamine|capsule|pi
 const SWEET_DAIRY_PATTERN = /vla|pudding|dessert|choco|vanillevla|room|slagroom|ijs|drinkyoghurt|yoghurtdrink|vruchtenyoghurt|(?<!half)volle melk|volle yoghurt|volle kwark|chocomel|fristi|optimel/;
 const SALTED_NUTS_PATTERN = /gezouten|honing|karamel|choco|borrelnoten|gebrand gezouten|gesuikerd|kokos/;
 const HARD_FAT_PATTERN = /roomboter|kokosolie|kokosvet|kokosroom|ghee|reuzel|palmvet|palmolie|boter(?!ham)|frituurvet/;
+const DIRECT_CATEGORY_OVERRIDES = [
+  { category: 'groente', names: /\b(spruiten|spruitjes)\b/ },
+  { category: 'groente', names: /\b(aubergine)\b/ },
+  { category: 'fruit', names: /\b(druif|druiven)\b/ },
+  { category: 'volkoren', names: /\b(wholegrain|whole grain|brown rice|brown basmati|wholegrain basmati|whole grain basmati|volkoren basmati|zilvervliesrijst|zilvervlies rijst|bruine rijst)\b/ },
+  { category: 'eiwit', names: /\b(kipdijfilet|kipdij|kipfilet|kippenborst)\b/ },
+  { category: 'onverzadigd_vet', names: /\b(chia|chiazaad|chiazaadjes|lijnzaad)\b/ },
+];
 
 const matchCache = new Map();
+let categoryAliasCache = null;
+
+const CATEGORY_ALIAS_STRIP_PATTERN = /\b(gekookt|rauw|gem|m schil|z schil|met schil|zonder schil|verse?|diepvries|blik|uit blik|pot|glas|gedroogd|gestoomd|gegrild|gebakken|geroosterd|ongeschild|geschild|naturel|ongezoet|ongezouten|mager|magere|halfvol|halfvolle|vol|volle)\b/g;
 
 function normalizeName(value) {
   return String(value || '')
@@ -65,6 +75,52 @@ function normalizeName(value) {
     .replace(/[^a-z0-9]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function getCategoryAliasMatches() {
+  if (categoryAliasCache) return categoryAliasCache;
+
+  const aliases = [];
+  if (!(nevoReady && nevoData?.items?.length && Array.isArray(nevoData.groups))) {
+    categoryAliasCache = aliases;
+    return aliases;
+  }
+
+  for (const item of nevoData.items) {
+    const group = item?.g !== undefined ? nevoData.groups[item.g] : '';
+    const baseName = normalizeName(item.n)
+      .replace(CATEGORY_ALIAS_STRIP_PATTERN, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!baseName || baseName.length < 3) continue;
+    if (EXCLUDE_NAME_PATTERN.test(baseName)) continue;
+    if (OUTSIDE_GROUPS.has(group) || OUTSIDE_NAME_PATTERN.test(baseName)) continue;
+
+    let inferredCategory = null;
+    for (const matcher of POSITIVE_GROUP_MATCHERS) {
+      if (!matcher.groups.includes(group)) continue;
+      if (!matcher.names.test(baseName)) continue;
+      if (matcher.category === 'zuivel' && SWEET_DAIRY_PATTERN.test(baseName)) continue;
+      if (matcher.category === 'onverzadigd_vet' && SALTED_NUTS_PATTERN.test(baseName)) continue;
+      if (matcher.category === 'onverzadigd_vet' && HARD_FAT_PATTERN.test(baseName)) continue;
+      inferredCategory = matcher.category;
+      break;
+    }
+
+    if (!inferredCategory) continue;
+
+    aliases.push({
+      category: inferredCategory,
+      alias: baseName,
+    });
+  }
+
+  categoryAliasCache = aliases
+    .sort((a, b) => b.alias.length - a.alias.length)
+    .filter((entry, idx, arr) => arr.findIndex(other => other.category === entry.category && other.alias === entry.alias) === idx);
+
+  return categoryAliasCache;
 }
 
 function singularizeUnit(unit) {
@@ -120,20 +176,22 @@ function getMatchedProduct(itemName) {
   if (!normalized || normalized.length < 2) return null;
   if (matchCache.has(normalized)) return matchCache.get(normalized);
 
-  const results = searchNevo(itemName);
-  const top = results[0] || null;
-  if (!top) {
+  const match = matchItemToNevo({ foodName: itemName, gram: null, count: 1, unit: null });
+  if (!match) {
     matchCache.set(normalized, null);
     return null;
   }
-
-  const topName = normalizeName(top.n);
-  const score = Number(top._score) || 0;
-  const isExactish = topName === normalized || topName.startsWith(normalized) || normalized.startsWith(topName);
-  const accepted = isExactish || score >= 32;
-  const match = accepted ? top : null;
   matchCache.set(normalized, match);
   return match;
+}
+
+function classifyDirectOverride(itemName) {
+  const name = normalizeName(itemName);
+  if (!name || EXCLUDE_NAME_PATTERN.test(name)) return null;
+  for (const rule of DIRECT_CATEGORY_OVERRIDES) {
+    if (rule.names.test(name)) return { type: 'category', category: rule.category, direct: true };
+  }
+  return null;
 }
 
 function classifyMatchedProduct(product, itemName) {
@@ -160,8 +218,18 @@ function classifyMatchedProduct(product, itemName) {
 }
 
 function classifyNameFallback(itemName) {
+  const direct = classifyDirectOverride(itemName);
+  if (direct) return direct;
   const name = normalizeName(itemName);
   if (!name || EXCLUDE_NAME_PATTERN.test(name)) return { type: 'ignored' };
+
+  const categoryAlias = getCategoryAliasMatches().find(entry =>
+    name === entry.alias
+    || name.includes(entry.alias)
+    || entry.alias.includes(name)
+  );
+  if (categoryAlias) return { type: 'category', category: categoryAlias.category, inferred: 'category-alias' };
+
   if (/\b(zilvervliesrijst|zilvervlies rijst|bruine rijst|brown rice)\b/.test(name)) {
     return { type: 'category', category: 'volkoren' };
   }
@@ -236,12 +304,23 @@ export function schijfDagScore(day) {
         continue;
       }
 
+      if (classification.type === 'category' && !gram) {
+        ignoredItems.push({
+          ...entry,
+          reason: 'Wel herkend voor de Schijf, maar zonder hoeveelheid niet mee te tellen.',
+        });
+        continue;
+      }
+
       if (classification.type === 'outside') {
         outsideItems.push(entry);
         continue;
       }
 
-      ignoredItems.push(entry);
+      ignoredItems.push({
+        ...entry,
+        reason: matchedProduct ? 'Geen duidelijke Schijf-categorie gevonden.' : 'Geen betrouwbare productmatch gevonden.',
+      });
     }
   }
 
@@ -324,7 +403,7 @@ function renderItemList(items, emptyText) {
   return items.map(item => {
     const gramText = item.gram ? `${item.gram}g` : 'portie onbekend';
     return `<div style="display:flex;justify-content:space-between;gap:0.7rem;padding:0.35rem 0;border-bottom:1px solid var(--border-subtle);font-size:0.78rem">
-      <span style="min-width:0">${item.naam} <span style="color:var(--tertiary)">(${item.maaltijdLabel.replace(/^[^\s]+\s/, '')})</span></span>
+      <span style="min-width:0">${item.naam} <span style="color:var(--tertiary)">(${item.maaltijdLabel.replace(/^[^\s]+\s/, '')})</span>${item.reason ? `<br><span style="color:var(--muted);font-size:0.72rem">${item.reason}</span>` : ''}${item.matchedName ? `<br><span style="color:var(--tertiary);font-size:0.72rem">Match: ${item.matchedName}</span>` : ''}</span>
       <span style="white-space:nowrap;color:var(--muted)">${gramText}</span>
     </div>`;
   }).join('');

@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kcalculator — Handleiding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Design Tokens ─────────────────────────────────── */
+:root {
+  --bg: #eff3f0;
+  --surface: rgba(255,255,255,0.82);
+  --surface-strong: #ffffff;
+  --surface-soft: #edf3ee;
+  --surface-muted: #e6ece7;
+  --border: rgba(17,26,20,0.1);
+  --border-strong: rgba(17,26,20,0.16);
+  --text: #101914;
+  --muted: #5a6c62;
+  --tertiary: #8c9d93;
+  --accent: #1db954;
+  --accent-light: #e8f8ee;
+  --accent-hover: #179846;
+  --accent-wash: rgba(29,185,84,0.14);
+  --danger: #d44040;
+  --blue: #2da8b8;
+  --water: #2097a8;
+  --fiber: #7c6aad;
+  --warning: #e6b94f;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 30px;
+  --shadow-sm: 0 10px 24px rgba(16,25,20,0.05);
+  --shadow-md: 0 20px 52px rgba(16,25,20,0.08), 0 2px 8px rgba(16,25,20,0.04);
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Nunito', sans-serif;
+}
+body.dark {
+  --bg: #09100c;
+  --surface: rgba(17,26,20,0.76);
+  --surface-strong: #101814;
+  --surface-soft: #151f19;
+  --surface-muted: #1a261f;
+  --border: rgba(228,237,231,0.1);
+  --border-strong: rgba(228,237,231,0.17);
+  --text: #e6eee8;
+  --muted: #88a392;
+  --tertiary: #587162;
+  --accent: #22c35a;
+  --accent-light: rgba(34,195,90,0.12);
+  --accent-hover: #30d06a;
+  --accent-wash: rgba(34,195,90,0.18);
+  --danger: #ef6666;
+  --blue: #37bbcf;
+  --water: #30abbe;
+  --fiber: #a48ad4;
+  --warning: #f0c96f;
+  --shadow-sm: 0 10px 24px rgba(0,0,0,0.28);
+  --shadow-md: 0 22px 56px rgba(0,0,0,0.36);
+}
+
+/* ── Reset & Base ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  transition: background .3s, color .3s;
+}
+
+/* ── Sticky Nav ────────────────────────────────────── */
+.guide-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface-strong);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 0 1.5rem;
+  transition: background .3s;
+}
+.guide-nav-inner {
+  max-width: 900px; margin: 0 auto;
+  display: flex; align-items: center; gap: 1rem;
+  height: 3.5rem;
+  overflow-x: auto; scrollbar-width: none;
+}
+.guide-nav-inner::-webkit-scrollbar { display: none; }
+.guide-nav a {
+  color: var(--muted); text-decoration: none;
+  font-size: .82rem; font-weight: 600;
+  white-space: nowrap; padding: .35rem .6rem;
+  border-radius: 8px; transition: all .2s;
+}
+.guide-nav a:hover { color: var(--text); background: var(--accent-wash); }
+.nav-back {
+  background: var(--accent-light);
+  color: var(--accent) !important;
+  font-weight: 700 !important;
+}
+.nav-back:hover {
+  background: var(--accent);
+  color: #fff !important;
+}
+.nav-brand {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 1.1rem; color: var(--accent) !important;
+  margin-right: .5rem; flex-shrink: 0;
+}
+.dark-toggle {
+  margin-left: auto; flex-shrink: 0;
+  background: var(--surface-muted); border: 1px solid var(--border);
+  border-radius: 20px; padding: .3rem .7rem;
+  cursor: pointer; font-size: .9rem; line-height: 1;
+  transition: all .2s; color: var(--text);
+}
+.dark-toggle:hover { border-color: var(--accent); }
+
+/* ── Layout ────────────────────────────────────────── */
+.guide-wrap {
+  max-width: 900px; margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* ── Hero ──────────────────────────────────────────── */
+.hero {
+  text-align: center; padding: 3rem 1rem 2.5rem;
+}
+.hero-icon {
+  width: 80px; height: 80px; border-radius: 22px;
+  background: var(--accent); display: inline-flex;
+  align-items: center; justify-content: center;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 8px 32px rgba(29,185,84,0.25);
+}
+.hero-icon svg { width: 44px; height: 44px; fill: #fff; }
+.hero h1 {
+  font-family: var(--font-display); font-weight: 900;
+  font-size: 2.6rem; letter-spacing: -.02em;
+  margin-bottom: .5rem;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  color: var(--muted); font-size: 1.1rem;
+  max-width: 520px; margin: 0 auto;
+}
+
+/* ── Section ───────────────────────────────────────── */
+.section { margin-top: 3rem; }
+.section-header {
+  display: flex; align-items: center; gap: .75rem;
+  margin-bottom: 1.25rem;
+}
+.section-icon {
+  width: 44px; height: 44px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.section-icon svg { width: 24px; height: 24px; }
+.section-header h2 {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 1.5rem;
+}
+.section-body { padding-left: .25rem; }
+.section-body p { margin-bottom: .75rem; color: var(--muted); }
+
+/* ── Cards ─────────────────────────────────────────── */
+.card-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem; margin: 1rem 0;
+}
+.card {
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem; transition: box-shadow .2s, border-color .2s;
+}
+.card:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); }
+.card-title {
+  font-weight: 700; font-size: .95rem;
+  margin-bottom: .35rem; display: flex;
+  align-items: center; gap: .5rem;
+}
+.card-title .emoji { font-size: 1.15rem; }
+.card p { color: var(--muted); font-size: .88rem; line-height: 1.55; }
+
+/* ── Steps ─────────────────────────────────────────── */
+.steps { counter-reset: step; list-style: none; margin: 1rem 0; }
+.steps li {
+  counter-increment: step; position: relative;
+  padding: .75rem .75rem .75rem 3.25rem;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: .6rem; font-size: .92rem;
+  transition: border-color .2s;
+}
+.steps li:hover { border-color: var(--accent); }
+.steps li::before {
+  content: counter(step);
+  position: absolute; left: .85rem; top: .7rem;
+  width: 1.7rem; height: 1.7rem; border-radius: 50%;
+  background: var(--accent-wash); color: var(--accent);
+  font-weight: 700; font-size: .82rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Tip Box ───────────────────────────────────────── */
+.tip {
+  background: var(--accent-light);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: .85rem 1rem; margin: 1rem 0;
+  font-size: .88rem; color: var(--text);
+}
+.tip strong { color: var(--accent); }
+
+/* ── Macro Pills ───────────────────────────────────── */
+.macro-row { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0; }
+.macro-pill {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .3rem .7rem; border-radius: 20px;
+  font-size: .82rem; font-weight: 600;
+}
+.macro-pill.kcal   { background: var(--accent-wash); color: var(--accent); }
+.macro-pill.carbs  { background: rgba(230,185,79,0.15); color: var(--warning); }
+.macro-pill.fat    { background: rgba(212,64,64,0.12); color: var(--danger); }
+.macro-pill.protein{ background: rgba(45,168,184,0.12); color: var(--blue); }
+.macro-pill.fiber  { background: rgba(124,106,173,0.12); color: var(--fiber); }
+.macro-pill.water  { background: rgba(32,151,168,0.12); color: var(--water); }
+
+/* ── Divider ───────────────────────────────────────── */
+.divider {
+  border: none; border-top: 1px solid var(--border);
+  margin: 2.5rem 0;
+}
+
+/* ── Footer ────────────────────────────────────────── */
+.guide-footer {
+  text-align: center; padding: 2rem 0;
+  color: var(--tertiary); font-size: .82rem;
+}
+
+/* ── Section icon color variants ───────────────────── */
+.si-green  { background: var(--accent-wash); }
+.si-green svg  { fill: var(--accent); }
+.si-blue   { background: rgba(45,168,184,0.12); }
+.si-blue svg   { fill: var(--blue); }
+.si-purple { background: rgba(124,106,173,0.12); }
+.si-purple svg { fill: var(--fiber); }
+.si-yellow { background: rgba(230,185,79,0.15); }
+.si-yellow svg { fill: var(--warning); }
+.si-red    { background: rgba(212,64,64,0.12); }
+.si-red svg    { fill: var(--danger); }
+
+/* ── Responsive ────────────────────────────────────── */
+@media (max-width: 600px) {
+  .hero h1 { font-size: 2rem; }
+  .hero p { font-size: .98rem; }
+  .card-grid { grid-template-columns: 1fr; }
+  .guide-wrap { padding: 1.25rem 1rem 3rem; }
+  .section-header h2 { font-size: 1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════ NAV ════ -->
+<nav class="guide-nav">
+  <div class="guide-nav-inner">
+    <a href="./" class="nav-back">← Terug naar app</a>
+    <a href="#top" class="nav-brand">Kcalculator</a>
+    <a href="#account">Account</a>
+    <a href="#maaltijden">Maaltijden</a>
+    <a href="#favorieten">Favorieten</a>
+    <a href="#import">Import</a>
+    <a href="#barcode">Barcode</a>
+    <a href="#data">Data</a>
+    <a href="#gewicht">Gewicht</a>
+    <a href="#sync">Sync</a>
+    <a href="#instellingen">Instellingen</a>
+    <button class="dark-toggle" onclick="document.body.classList.toggle('dark')" aria-label="Wissel thema">
+      <span class="toggle-icon">&#9790;</span>
+    </button>
+  </div>
+</nav>
+
+<div class="guide-wrap" id="top">
+
+<!-- ════ HERO ════ -->
+<div class="hero">
+  <div class="hero-icon">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+  </div>
+  <h1><span>K</span>calculator Handleiding</h1>
+  <p>Alles wat je moet weten om het meeste uit je slimme voedingstracker te halen.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ════ 1. WELKOM ════ -->
+<section class="section" id="welkom">
+  <div class="section-header">
+    <div class="section-icon si-green">
+      <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+    </div>
+    <h2>Welkom</h2>
+  </div>
+  <div class="section-body">
+    <p>Kcalculator is een slim voedingsdashboard waarmee je dagelijkse maaltijden bijhoudt, macro's volgt en AI-gestuurde inzichten krijgt over je voeding. De app werkt volledig in je browser en synchroniseert optioneel naar de cloud.</p>
+    <div class="macro-row">
+      <span class="macro-pill kcal">Calorieën</span>
+      <span class="macro-pill carbs">Koolhydraten</span>
+      <span class="macro-pill fat">Vet</span>
+      <span class="macro-pill protein">Eiwit</span>
+      <span class="macro-pill fiber">Vezels</span>
+      <span class="macro-pill water">Water</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 2. ACCOUNT ════ -->
+<section class="section" id="account">
+  <div class="section-header">
+    <div class="section-icon si-blue">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    </div>
+    <h2>Aan de Slag</h2>
+  </div>
+  <div class="section-body">
+    <p>Je kunt Kcalculator op drie manieren gebruiken:</p>
+    <ol class="steps">
+      <li><strong>E-mail &amp; wachtwoord</strong> — Maak een account aan om je data veilig in de cloud op te slaan en op meerdere apparaten te gebruiken.</li>
+      <li><strong>Magic link</strong> — Ontvang een inloglink per e-mail, geen wachtwoord nodig.</li>
+      <li><strong>Zonder account</strong> — Gebruik de app volledig lokaal. Je data blijft op je apparaat opgeslagen.</li>
+    </ol>
+    <div class="tip"><strong>Tip:</strong> Met een account worden je maaltijden, favorieten en instellingen automatisch gesynchroniseerd tussen al je apparaten.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 3. MAALTIJDEN ════ -->
+<section class="section" id="maaltijden">
+  <div class="section-header">
+    <div class="section-icon si-green">
+      <svg viewBox="0 0 24 24"><path d="M8.1 13.34l2.83-2.83L3.91 3.5a4.008 4.008 0 000 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z"/></svg>
+    </div>
+    <h2>Maaltijden Bijhouden</h2>
+  </div>
+  <div class="section-body">
+    <p>De kern van Kcalculator: log wat je eet en drink, verdeeld over 7 momenten op de dag.</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span class="emoji">🌅</span> Ontbijt</div>
+        <p>Start je dag met het loggen van je ontbijt.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🍎</span> Ochtendsnack</div>
+        <p>Tussendoortje in de ochtend.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">☀️</span> Lunch</div>
+        <p>Je middagmaaltijd bijhouden.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🍪</span> Middagsnack</div>
+        <p>Snack in de middag.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🌙</span> Avondeten</div>
+        <p>De hoofdmaaltijd van de dag.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🍫</span> Avondsnack</div>
+        <p>Iets lekkers voor het slapen.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🥤</span> Drinken</div>
+        <p>Water, koffie, thee en meer.</p>
+      </div>
+    </div>
+
+    <h3 style="font-family:var(--font-display);font-weight:600;margin:1.5rem 0 .75rem">Hoe voeg je items toe?</h3>
+    <ol class="steps">
+      <li>Klik op een maaltijdtype om het invoerveld te openen.</li>
+      <li>Begin met typen — de <strong>autocomplete</strong> doorzoekt de NEVO-database (2.000+ Nederlandse voedingsmiddelen).</li>
+      <li>Selecteer een product en pas de <strong>hoeveelheid</strong> aan (in grammen of porties).</li>
+      <li>Het item verschijnt in je maaltijdlijst met automatisch berekende macro's.</li>
+    </ol>
+    <h3 style="font-family:var(--font-display);font-weight:600;margin:1.5rem 0 .75rem">Kopie dag</h3>
+    <ol class="steps">
+      <li>Tik naast <strong>Vandaag</strong> op het kopieer-icoon met de twee overlappende vakken.</li>
+      <li>Kies de datum waarvan je de maaltijden wilt overnemen.</li>
+      <li>Tik op <strong>Kopieer naar deze dag</strong> om alles over te zetten.</li>
+      <li>De huidige dag neemt dan alle maaltijden van die bron-dag over.</li>
+    </ol>
+    <div class="tip"><strong>Let op:</strong> Als er al maaltijden op de huidige dag staan, vraagt de app eerst om bevestiging voordat die worden vervangen.</div>
+    <div class="tip"><strong>Tip:</strong> Tik op een item om het te bewerken — je kunt de hoeveelheid, macro's en het maaltijdtype aanpassen. Veeg of klik op het prullenbak-icoon om te verwijderen.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 4. FAVORIETEN ════ -->
+<section class="section" id="favorieten">
+  <div class="section-header">
+    <div class="section-icon si-yellow">
+      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    </div>
+    <h2>Favorieten &amp; Recepten</h2>
+  </div>
+  <div class="section-body">
+    <p>Sla veelgebruikte producten en complete maaltijden op als favoriet voor snelle invoer.</p>
+    <ol class="steps">
+      <li><strong>Enkel product opslaan</strong> — Tik op het hart-icoon bij een item om het als favoriet te bewaren.</li>
+      <li><strong>Recept aanmaken</strong> — Combineer meerdere items tot een maaltijdgroep (bijv. "Pasta Bolognese") en sla het geheel op.</li>
+      <li><strong>Snel toevoegen</strong> — Open het favorieten-paneel en tik op een favoriet om het direct aan je huidige maaltijd toe te voegen.</li>
+    </ol>
+    <div class="tip"><strong>Tip:</strong> Favorieten worden automatisch gesynchroniseerd als je bent ingelogd. Ze zijn direct beschikbaar op al je apparaten.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 5. SLIMME IMPORT ════ -->
+<section class="section" id="import">
+  <div class="section-header">
+    <div class="section-icon si-purple">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+    </div>
+    <h2>Slimme Import (AI)</h2>
+  </div>
+  <div class="section-body">
+    <p>Gebruik AI om snel voedingswaarden te achterhalen — op vier verschillende manieren.</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span class="emoji">💬</span> Gerechtnaam</div>
+        <p>Typ een gerecht (bijv. "nasi goreng") en AI schat de voedingswaarden in op basis van standaard porties en ingrediënten.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">✏️</span> Handmatig</div>
+        <p>Voer zelf voedingswaarden in als je de exacte macro's kent (bijv. van een verpakking).</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🔗</span> URL Import</div>
+        <p>Plak een link naar een recept en AI extraheert automatisch de ingrediënten en voedingswaarden.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">📸</span> Foto Upload</div>
+        <p>Maak een foto van je maaltijd of een recept en laat AI de voedingswaarden analyseren.</p>
+      </div>
+    </div>
+    <div class="tip"><strong>Tip:</strong> Na de AI-analyse kun je elk ingrediënt koppelen aan een product uit de NEVO-database voor nauwkeurigere waarden.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 6. APPLE HEALTH IMPORT ════ -->
+<section class="section" id="apple-health">
+  <div class="section-header">
+    <div class="section-icon si-blue">
+      <svg viewBox="0 0 24 24"><path d="M16.37 12.3c-.02-2.12 1.74-3.14 1.82-3.19-1-.98-2.55-1.12-3.09-1.14-1.31-.14-2.57.77-3.24.77-.68 0-1.72-.75-2.83-.73-1.45.02-2.79.84-3.54 2.15-1.52 2.63-.39 6.52 1.09 8.65.72 1.04 1.59 2.2 2.73 2.16 1.09-.05 1.5-.69 2.82-.69 1.33 0 1.7.69 2.84.66 1.18-.02 1.92-1.06 2.63-2.11.83-1.2 1.17-2.37 1.19-2.43-.03-.01-2.27-.87-2.4-3.1zM14.42 6.59c.59-.72 1-1.72.89-2.72-.86.03-1.9.58-2.52 1.3-.56.65-1.04 1.67-.91 2.65.96.07 1.94-.49 2.54-1.23z"/></svg>
+    </div>
+    <h2>Apple Health Import</h2>
+  </div>
+  <div class="section-body">
+    <p>Je kunt verbruiksdata op twee manieren importeren: via een volledige export uit Apple Health, of via een CSV-bestand uit een app zoals Auto Export. Beide routes vullen je actieve energie en rustverbruik aan, zodat het data-overzicht je TDEE en energiebalans kan tonen.</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span class="emoji">📦</span> Volledige Apple Health export</div>
+        <p>Dit is de meest complete route. Je exporteert je hele Apple Health-database als ZIP/XML en importeert daarna het bestand in de app.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">📄</span> CSV via Auto Export</div>
+        <p>Handig als je liever met compacte CSV-bestanden werkt of regelmatig een verse export wilt maken zonder de hele Health-dump.</p>
+      </div>
+    </div>
+
+    <p><strong>Variant 1: volledige Apple Health export</strong></p>
+    <ol class="steps">
+      <li>Open op je iPhone de <strong>Gezondheid</strong>-app en ga naar je profiel.</li>
+      <li>Kies <strong>Exporteer alle gezondheidsgegevens</strong>. Apple maakt dan een ZIP-bestand met daarin onder andere een XML-export.</li>
+      <li>Stuur dit bestand naar jezelf of sla het op in Bestanden/Mac.</li>
+      <li>Open in Kcalculator <strong>Instellingen &gt; Data &gt; Apple Health</strong> of gebruik de <strong>🍎 Import</strong>-knop onder de grafiek in het data-overzicht.</li>
+      <li>Selecteer het XML-bestand of het uitgepakte exportbestand en kies eventueel een startdatum.</li>
+      <li>Na import worden actieve energie en rustverbruik per dag opgeslagen.</li>
+    </ol>
+
+    <p><strong>Variant 2: CSV via Auto Export</strong></p>
+    <ol class="steps">
+      <li>Gebruik een export-app zoals <strong>Auto Export</strong> om Apple Health-data naar CSV te schrijven.</li>
+      <li>Zorg dat in elk geval <strong>Active Energy</strong> en <strong>Resting Energy</strong> of de Nederlandse varianten daarvan in de export zitten.</li>
+      <li>Exporteer het CSV-bestand en bewaar het lokaal op je telefoon of computer.</li>
+      <li>Open weer <strong>Instellingen &gt; Data &gt; Apple Health</strong> of de <strong>🍎 Import</strong>-knop in het data-overzicht.</li>
+      <li>Selecteer nu het CSV-bestand. De app leest zelf zowel Nederlandse als Engelse kolomnamen voor energie.</li>
+      <li>Na afloop zie je in het data-overzicht de TDEE-lijn en de balans terug, zodra er voor die dagen ook voedingsinname is.</li>
+    </ol>
+
+    <div class="tip"><strong>Belangrijk:</strong> een nieuwe Apple Health-import is leidend voor de geïmporteerde periode. Heb je eerder handmatig TDEE ingevuld voor die dagen, dan wordt die overschreven door de Apple Health-data.</div>
+    <div class="tip"><strong>Tip:</strong> zie je geen TDEE-lijn? Controleer dan of je export echt <strong>actieve energie</strong> en <strong>rustenergie</strong> bevat, en of je voor die dagen ook maaltijden hebt gelogd.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 7. BARCODE ════ -->
+<section class="section" id="barcode">
+  <div class="section-header">
+    <div class="section-icon si-blue">
+      <svg viewBox="0 0 24 24"><path d="M2 4h2v16H2V4zm4 0h1v16H6V4zm2 0h2v16H8V4zm3 0h2v16h-2V4zm3 0h2v16h-2V4zm3 0h1v16h-1V4zm2 0h2v16h-2V4z"/></svg>
+    </div>
+    <h2>Barcode Scanner</h2>
+  </div>
+  <div class="section-body">
+    <p>Scan de barcode van een product met je camera om het direct op te zoeken.</p>
+    <ol class="steps">
+      <li>Tik op het <strong>barcode-icoon</strong> in de invoerbalk.</li>
+      <li>Richt je camera op de barcode van het product.</li>
+      <li>Het product wordt automatisch herkend en de voedingswaarden worden ingeladen.</li>
+    </ol>
+    <div class="tip"><strong>Tip:</strong> De scanner werkt het best bij goed licht. Zorg dat de barcode scherp in beeld is.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 8. DATA & INZICHTEN ════ -->
+<section class="section" id="data">
+  <div class="section-header">
+    <div class="section-icon si-green">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+    </div>
+    <h2>Data &amp; Inzichten</h2>
+  </div>
+  <div class="section-body">
+    <p>Bekijk trends, analyseer je voeding en krijg persoonlijke adviezen.</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span class="emoji">📊</span> Dagoverzicht</div>
+        <p>Zie je dagelijkse totalen voor calorieën, koolhydraten, vet, eiwit en vezels in één oogopslag.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">📈</span> Grafieken</div>
+        <p>Bekijk trends over 7, 30 of 90 dagen met interactieve grafieken en sparklines.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🤖</span> AI Adviezen</div>
+        <p>Ontvang persoonlijke voedingsadviezen op basis van je dag- of weekpatronen, inclusief de Schijf van Vijf analyse.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🔬</span> Micronutriënten</div>
+        <p>Schatting van je vitamine- en mineralenintake (o.a. vitamine D, ijzer, calcium, B12).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 9. GEWICHT ════ -->
+<section class="section" id="gewicht">
+  <div class="section-header">
+    <div class="section-icon si-red">
+      <svg viewBox="0 0 24 24"><path d="M12 3c-3.27 0-5.94 2.52-5.94 6 0 3.34 2.69 6.1 6.06 6.1S18.06 12.34 18.06 9c0-3.48-2.67-6-6.06-6zm3.94 7h-3v3h-2v-3H8V8h2.94V5h2v3H16l-.06 2zM5 21h14v-2H5v2z"/></svg>
+    </div>
+    <h2>Gewicht Bijhouden</h2>
+  </div>
+  <div class="section-body">
+    <p>Houd je gewichtsverloop bij en bekijk je voortgang over tijd.</p>
+    <ol class="steps">
+      <li>Ga naar het <strong>gewicht-tabblad</strong> in de app.</li>
+      <li>Voer je huidige gewicht in en selecteer de datum.</li>
+      <li>Bekijk je gewichtshistorie en trends in de grafiek.</li>
+    </ol>
+    <div class="tip"><strong>Tip:</strong> Weeg jezelf elke dag op hetzelfde moment (bijv. 's ochtends voor het ontbijt) voor de meest consistente resultaten.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 9. SYNC ════ -->
+<section class="section" id="sync">
+  <div class="section-header">
+    <div class="section-icon si-blue">
+      <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+    </div>
+    <h2>Synchronisatie &amp; Data</h2>
+  </div>
+  <div class="section-body">
+    <p>Je data is veilig — lokaal opgeslagen en optioneel gesynchroniseerd naar de cloud.</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span class="emoji">☁️</span> Cloud Sync</div>
+        <p>Met een account worden maaltijden, favorieten en instellingen automatisch gesynchroniseerd.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">📴</span> Offline-first</div>
+        <p>Geen internet? Geen probleem. De app werkt volledig offline en synchroniseert zodra je weer online bent.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">💾</span> Exporteren</div>
+        <p>Download al je data als JSON- of CSV-bestand voor eigen gebruik of backup.</p>
+      </div>
+    </div>
+    <div class="tip"><strong>Tip:</strong> Gebruik de handmatige sync-knop in instellingen als je er zeker van wilt zijn dat alles up-to-date is.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 10. INSTELLINGEN ════ -->
+<section class="section" id="instellingen">
+  <div class="section-header">
+    <div class="section-icon si-yellow">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+    </div>
+    <h2>Instellingen</h2>
+  </div>
+  <div class="section-body">
+    <p>Pas de app aan naar jouw wensen.</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span class="emoji">🎯</span> Doelen</div>
+        <p>Stel persoonlijke doelen in voor calorieën, koolhydraten, vet, eiwit, vezels en water.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">📥</span> Apple Health</div>
+        <p>Importeer actieve energie en rustverbruik uit een Apple Health XML-export of CSV-bestand.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🔥</span> Handmatige TDEE</div>
+        <p>Heb je geen Apple Health of activiteitsdata? Voeg dan per dag handmatig een TDEE toe als fallback voor je energiebalans in het data-overzicht.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">📤</span> Exporteer data</div>
+        <p>Download je gegevens als JSON- of CSV-bestand voor backup of eigen analyse.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🗑️</span> Data verwijderen</div>
+        <p>Verwijder voedings- of energiedata per dag of in bulk als je iets opnieuw wilt opbouwen.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">💬</span> Feedback</div>
+        <p>Gebruik de feedbackknop in instellingen om ideeën, verbeteringen of bugs te delen.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🤖</span> AI Provider</div>
+        <p>Kies je AI-engine: Claude, Gemini of OpenAI. Voer je eigen API-key in voor directe toegang.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🛒</span> Supermarktfilter</div>
+        <p>Filter producten op supermarkt voor relevantere zoekresultaten.</p>
+      </div>
+    </div>
+    <div class="tip"><strong>Tip:</strong> Onder <em>Instellingen → Data</em> vind je dezelfde acties als in de app: <em>📥 Apple Health</em>, <em>🔥 Handmatige TDEE</em>, <em>📤 Exporteer data</em>, <em>🗑️ Data verwijderen</em> en <em>💬 Feedback</em>.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<footer class="guide-footer">
+  Kcalculator — Slim voedingsdashboard
+</footer>
+
+</div>
+
+<script>
+// Restore dark mode preference
+if (localStorage.getItem('kcalc-dark') === '1' || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !localStorage.getItem('kcalc-dark'))) {
+  document.body.classList.add('dark');
+}
+document.querySelector('.dark-toggle').addEventListener('click', () => {
+  localStorage.setItem('kcalc-dark', document.body.classList.contains('dark') ? '1' : '0');
+});
+</script>
+</body>
+</html>

@@ -37,10 +37,6 @@
             <p>Log in om te syncen, inzichten te bewaren en slimmer verder te bouwen vanuit je eigen data.</p>
           </div>
         </div>
-        <div class="auth-hero-note">
-          <strong>Persoonlijke toegang</strong>
-          <span>Nieuwe accounts staan nu standaard uit. Toegang geef je voorlopig handmatig.</span>
-        </div>
       </div>
 
       <div class="setup-field">
@@ -74,6 +70,10 @@
 
     <!-- STATE 2: User settings -->
     <div id="setup-user" style="display:none">
+      <div class="setup-hint" style="margin-bottom:0.9rem">
+        Hulp nodig? Bekijk de
+        <a href="handleiding.html" target="_blank" rel="noopener noreferrer">handleiding</a>.
+      </div>
       <div class="settings-layout">
 
         <!-- LEFT SIDEBAR NAV -->
@@ -210,9 +210,12 @@
             <div class="setup-action-grid">
               <button class="btn-secondary setup-action-btn" id="settings-goals-btn">🎯 Doelen</button>
               <button class="btn-secondary setup-action-btn" id="settings-import-btn">📥 Apple Health</button>
+              <button class="btn-secondary setup-action-btn" id="settings-manual-tdee-btn">🔥 Handmatige TDEE</button>
+              <button class="btn-secondary setup-action-btn" id="settings-feedback-btn">💬 Feedback</button>
               <button class="btn-secondary setup-action-btn" id="settings-export-btn">📤 Exporteer data</button>
               <button class="btn-secondary setup-action-btn" id="open-data-mgmt-btn">🗑️ Data verwijderen</button>
             </div>
+            <div class="setup-hint" style="margin-top:0.7rem">Geen activiteitsdata beschikbaar? Voeg handmatig een TDEE per dag toe als fallback voor je energiebalans.</div>
             <div class="setup-field setup-inline-action" style="margin-top:1rem">
               <label>Productdatabase</label>
               <button class="btn-secondary setup-inline-btn" id="refresh-db-btn">🔄 Vernieuw cache</button>
@@ -238,6 +241,29 @@
 
         </div><!-- /.settings-content -->
       </div><!-- /.settings-layout -->
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL TDEE MODAL -->
+<div class="modal-overlay" id="manual-tdee-modal" role="dialog" aria-modal="true" aria-label="Handmatige TDEE invoer">
+  <div class="modal" style="max-width:460px">
+    <h3>Handmatige TDEE</h3>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem">
+      Gebruik dit als je geen Apple Health of andere activiteitsdata hebt. Vul de totale TDEE voor een dag in, zodat de energiebalans toch zichtbaar wordt.
+    </p>
+    <div class="edit-field" style="margin-bottom:0.8rem">
+      <label>Datum</label>
+      <input type="date" id="manual-tdee-date">
+    </div>
+    <div class="edit-field">
+      <label>TDEE (kcal)</label>
+      <input type="number" id="manual-tdee-kcal" min="1" step="1" placeholder="Bijv. 2350">
+    </div>
+    <div class="setup-status" id="manual-tdee-status" style="margin-top:0.8rem"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" id="manual-tdee-cancel-btn">Annuleren</button>
+      <button class="btn-primary" id="manual-tdee-save-btn">Opslaan</button>
     </div>
   </div>
 </div>
@@ -681,7 +707,13 @@ Vet: 3.3g"></textarea>
   </button>
   <div class="header-actions">
     <button class="sync-indicator" id="sync-btn" title="Klik om te synchroniseren" type="button"><div class="sync-dot offline" id="sync-dot"></div><span class="sync-label" id="sync-label">lokaal</span></button>
-    <button class="icon-btn" id="dark-toggle" title="Dark mode" aria-label="Schakel donkere modus">🌙</button>
+    <a class="icon-btn help-doc-btn" href="handleiding.html" target="_blank" rel="noopener noreferrer" title="Open handleiding" aria-label="Open handleiding">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.2"/>
+        <path d="M6.7 6.1a1.55 1.55 0 1 1 2.25 1.38c-.72.38-.95.7-.95 1.42" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="8" cy="11.6" r="0.8" fill="currentColor"/>
+      </svg>
+    </a>
     <button class="icon-btn" id="week-btn" title="Weekoverzicht" aria-label="Weekoverzicht openen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="6" width="3" height="9" rx="1" fill="currentColor" opacity="0.4"/><rect x="6" y="3" width="3" height="12" rx="1" fill="currentColor" opacity="0.65"/><rect x="11" y="1" width="3" height="14" rx="1" fill="currentColor"/></svg></button>
     <button class="icon-btn" id="smart-import-header-btn" title="Product of gerecht toevoegen" aria-label="Product of gerecht toevoegen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="4.2" stroke="currentColor" stroke-width="1.2"/><path d="M3 3.2v6.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2.2 3.2v2.4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M3.8 3.2v2.4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M13 3.2v9.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M11.8 3.2c0 1 .5 1.8 1.2 2.2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><path d="M7.2 8h1.6" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg></button>
     <button class="icon-btn icon-btn-beta" id="advies-header-btn" title="Analyse (BETA)" aria-label="Analyse openen (BETA)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.7 1 2 3.5 2 6.5c0 1.8 1 3.4 2.5 4.3V13a1 1 0 001 1h5a1 1 0 001-1v-2.2C13 9.9 14 8.3 14 6.5 14 3.5 11.3 1 8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M6 14.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="1" fill="currentColor"/><path d="M8 7v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
@@ -902,6 +934,9 @@ Vet: 3.3g"></textarea>
     <div class="smart-import-body" id="smart-import-body">
       <!-- TAB: Herkennen -->
       <section class="smart-section" data-section="dish_name">
+        <div class="setup-hint" style="margin-bottom:0.8rem">
+          Functie nog in experimentele fase, werkt het best met betaalde API Key. Werkt voornamelijk goed voor recepten, maar neem adviezen niet klakkeloos over.
+        </div>
         <div class="smart-form-row">
           <label for="smart-dish-input">Gerecht, recept of vraag</label>
           <textarea id="smart-dish-input" rows="8" placeholder="Voer hier een gerecht in: &quot;Erwtensoep, Nasi Lemak, Pasta Pesto&quot;.&#10;Of &quot;Een pistache ijsje met hoorntje van een ijssalon&quot;&#10;Of plak een recept met de ingrediënten per regel.&#10;- Pasta 75 g&#10;- Kipfilet 150 g&#10;- Courgette 200 g&#10;- Pesto 20 g&#10;- Parmezaan 10 g"></textarea>

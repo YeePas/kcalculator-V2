@@ -12,7 +12,7 @@ export const DRINKS_KEY = 'eetdagboek_drinks_v1';
 export const CUSTOM_KEY = 'eetdagboek_custom_v1';
 export const ENERGY_LOCAL_KEY = 'eetdagboek_energy_local_v1';
 export const WEIGHT_KEY = 'eetdagboek_weight_v1';
-export const ENABLE_BETA_BUG_REPORT = false;
+export const ENABLE_BETA_BUG_REPORT = true;
 // Hardcoded Supabase fallback (from .env at build time)
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';

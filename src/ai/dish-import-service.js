@@ -63,6 +63,31 @@ function parseAiMacroText(text) {
   return parsed;
 }
 
+export function humanizeDishImportError(error) {
+  const raw = String(error?.message || '').trim();
+  if (!raw) return 'Er ging iets mis bij het analyseren. Probeer het nog eens.';
+
+  if (/geen bruikbare json of macrotekst/i.test(raw)) {
+    return 'Ik kon hier nog geen bruikbare voedingsinschatting uit halen. Probeer een duidelijkere gerechtnaam of vul de waarden handmatig aan.';
+  }
+  if (/geen json gevonden|geldige json/i.test(raw)) {
+    return 'De AI gaf een onduidelijk antwoord terug. Probeer het opnieuw of voer de voedingswaarden handmatig in.';
+  }
+  if (/ai-proxy niet bereikbaar|netwerkfout|failed to fetch|load failed/i.test(raw)) {
+    return 'De koppeling met de AI is nu even niet bereikbaar. Probeer het zo nog eens.';
+  }
+  if (/api-key|testsleutel|supabase|ai is niet beschikbaar/i.test(raw)) {
+    return 'De AI is nog niet goed ingesteld. Controleer je AI-instellingen en probeer daarna opnieuw.';
+  }
+  if (/openai|gemini|claude|ai-proxy fout/i.test(raw)) {
+    return 'De AI kon dit verzoek nu niet goed verwerken. Probeer het opnieuw of voer het gerecht handmatig in.';
+  }
+  if (/ongeldige url/i.test(raw)) {
+    return 'Deze link lijkt niet geldig. Controleer de URL en probeer het opnieuw.';
+  }
+  return raw;
+}
+
 export function normalizeImportUrl(urlInput) {
   const raw = String(urlInput || '').trim();
   if (!raw) throw new Error('Vul een URL in');
@@ -233,7 +258,8 @@ export function buildAiTextFallbackProposal(aiText, input, provider) {
     carbs_g: parsed.carbs_g,
     fat_g: parsed.fat_g,
     fiber_g: parsed.fiber_g,
-    assumptions: ['AI gaf geen geldige JSON terug; voedingswaarden zijn uit het tekstuele antwoord gehaald. Controleer de portie en broninterpretatie.'],
+    assumptions: [],
+    feedbackMessage: 'De AI gaf geen strak antwoord terug. Ik heb de voedingswaarden daarom uit de tekst gehaald, dus controleer de portie voor de zekerheid nog even.',
     alternatives: [],
     rawSourceInput: input,
     providerUsed: provider,
@@ -316,7 +342,8 @@ function createUnparsedAiFallbackProposal(input, provider) {
     carbs_g: 0,
     fat_g: 0,
     fiber_g: 0,
-    assumptions: ['AI gaf geen bruikbare JSON of macrotekst terug. Controleer dit gerecht handmatig en vul de waarden aan.'],
+    assumptions: [],
+    feedbackMessage: 'Ik kon hier nog geen betrouwbare voedingsinschatting uit halen. Controleer dit gerecht handmatig en vul de waarden aan waar nodig.',
     alternatives: [],
     rawSourceInput: input,
     providerUsed: provider,
@@ -523,7 +550,7 @@ export async function analyzeDishNameWithAI(input) {
       }
     }
   } catch (e) {
-    throw new Error(e?.message || 'AI-analyse mislukt. Controleer je provider, model en API-key.');
+    throw new Error(humanizeDishImportError(e));
   }
 }
 

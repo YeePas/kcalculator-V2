@@ -23,6 +23,8 @@ header .subtitle { font-size: 0.62rem; color: color-mix(in srgb, var(--accent) 7
 @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
 .icon-btn { background: color-mix(in srgb, var(--surface-strong) 78%, transparent); border: 1px solid var(--border); padding: 0.48rem; border-radius: 999px; cursor: pointer; font-size: 0.8rem; color: var(--muted); display: flex; align-items: center; gap: 0.3rem; transition: all 0.2s ease; box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); min-width: 38px; min-height: 38px; justify-content: center; }
 .icon-btn:hover { background: color-mix(in srgb, var(--surface-strong) 94%, var(--surface-soft)); color: var(--text); border-color: var(--border-strong); transform: translateY(-1px); }
+.help-doc-btn { text-decoration: none; line-height: 1; }
+.help-doc-btn svg { width: 16px; height: 16px; }
 #account-btn { padding: 0 0.78rem; min-width: 0; font-size: 0.76rem; font-weight: 700; min-height: 38px; }
 .icon-btn-beta { position: relative; }
 .icon-btn-beta::after { content: 'BETA'; position: absolute; top: -0.35rem; right: -0.7rem; font-size: 0.5rem; font-weight: 700; letter-spacing: 0.08em; color: #a06010; background: #fff3e0; border: 1px solid #e8a020; border-radius: 999px; padding: 0.06rem 0.22rem; line-height: 1; }

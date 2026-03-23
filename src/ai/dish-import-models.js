@@ -19,6 +19,7 @@ export function createDishProposal(partial) {
   const assumptions = Array.isArray(partial?.assumptions)
     ? partial.assumptions.map(a => cleanText(a)).filter(Boolean)
     : [];
+  const feedbackMessage = cleanText(partial?.feedbackMessage, '');
 
   return {
     sourceType,
@@ -33,6 +34,7 @@ export function createDishProposal(partial) {
     fat_g: Math.max(0, toNum(partial?.fat_g, 0)),
     fiber_g: Math.max(0, toNum(partial?.fiber_g, 0)),
     assumptions,
+    feedbackMessage,
     alternatives: Array.isArray(partial?.alternatives)
       ? partial.alternatives.map(a => cleanText(a)).filter(Boolean).slice(0, 5)
       : [],
@@ -65,6 +67,7 @@ export function mapProposalToFoodItem(proposal) {
       sourceType: p.sourceType,
       confidence: p.confidence,
       assumptions: p.assumptions,
+      feedbackMessage: p.feedbackMessage,
       providerUsed: p.providerUsed,
       rawSourceInput: p.rawSourceInput,
     },

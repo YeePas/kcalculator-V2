@@ -215,14 +215,14 @@
 .smart-recipe-servings { appearance: textfield; -moz-appearance: textfield; }
 .smart-recipe-servings::-webkit-outer-spin-button,
 .smart-recipe-servings::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.smart-recipe-ingredients { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem 0.75rem; align-items: start; padding-top: 1rem; border-top: 1px solid var(--border-subtle); }
+.smart-recipe-ingredients { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.6rem 0.75rem; align-items: start; padding-top: 1rem; border-top: 1px solid var(--border-subtle); }
 .smart-recipe-ingredients-title { grid-column: 1 / -1; font-size: 0.82rem; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 0.1rem; }
 .smart-recipe-ingredients-title-main { display: flex; flex-direction: column; gap: 0.22rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .smart-recipe-ingredients-title span { font-size: 0.76rem; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0.01em; }
 .smart-recipe-inline-add { flex: 0 0 auto !important; width: auto !important; min-width: 0 !important; padding: 0.34rem 0.68rem !important; font-size: 0.72rem !important; }
 .smart-recipe-inline-add-bottom { grid-column: 1 / -1; align-self: stretch; margin-top: 0.1rem; padding: 0.9rem 1rem !important; border-style: dashed !important; border-width: 1.5px !important; border-color: color-mix(in srgb, var(--accent) 18%, var(--border)) !important; background: color-mix(in srgb, var(--accent-light) 34%, var(--surface-strong)) !important; color: var(--text) !important; font-size: 0.84rem !important; justify-content: center; }
 .smart-recipe-inline-add-bottom:hover { border-color: color-mix(in srgb, var(--accent) 42%, var(--border)) !important; background: color-mix(in srgb, var(--accent-light) 54%, var(--surface-strong)) !important; }
-.smart-recipe-ingredient { display: grid; grid-template-columns: minmax(0, 2fr) minmax(132px, auto) minmax(240px, auto) auto; grid-template-areas: "main amount meta remove"; gap: 0.35rem 1rem; align-items: center; padding: 0.9rem 1rem; border: 1px solid var(--border); border-radius: calc(var(--radius-md) + 4px); background: linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 95%, rgba(255,255,255,0.54)) 0%, color-mix(in srgb, var(--surface-soft) 82%, var(--surface-strong)) 100%); overflow: visible; min-height: 94px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.68); }
+.smart-recipe-ingredient { display: grid; grid-template-columns: minmax(0, 1fr) minmax(132px, auto) minmax(220px, auto) auto; grid-template-areas: "main amount meta remove" "main amount meta remove"; gap: 0.35rem 1rem; align-items: center; padding: 0.9rem 1rem; border: 1px solid var(--border); border-radius: calc(var(--radius-md) + 4px); background: linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 95%, rgba(255,255,255,0.54)) 0%, color-mix(in srgb, var(--surface-soft) 82%, var(--surface-strong)) 100%); overflow: visible; min-height: 94px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.68); }
 .smart-recipe-ingredient > div { display: flex; flex-direction: column; min-width: 0; gap: 0.24rem; grid-area: main; align-self: stretch; justify-content: center; }
 .smart-recipe-ingredient-top { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 0.42rem; min-width: 0; }
 .smart-recipe-ingredient strong { font-size: 0.98rem; letter-spacing: -0.03em; line-height: 1.15; display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -275,8 +275,32 @@
 .smart-recipe-ingredient.is-editing .smart-recipe-match-editor { width: 100%; }
 .smart-recipe-ingredient.is-editing .smart-recipe-match-searchbar,
 .smart-recipe-ingredient.is-editing .smart-recipe-match-results { width: 100%; }
+@media (min-width: 901px) {
+  .smart-recipe-ingredient {
+    grid-template-columns: minmax(0, 1fr) minmax(132px, auto) auto;
+    grid-template-areas:
+      "main amount remove"
+      "main meta remove";
+    align-items: start;
+  }
+  .smart-recipe-ingredient > div {
+    justify-content: center;
+    padding-right: 0.25rem;
+  }
+  .smart-recipe-ingredient > span {
+    justify-self: start;
+    align-self: end;
+  }
+  .smart-recipe-ingredient > small {
+    justify-self: start;
+    align-self: start;
+    white-space: nowrap;
+  }
+  .smart-recipe-inline-remove {
+    align-self: center;
+  }
+}
 @media (max-width: 900px) {
-  .smart-recipe-ingredients { grid-template-columns: 1fr; }
   .smart-recipe-ingredient { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main remove" "amount amount" "meta meta"; }
   .smart-recipe-ingredient > span { justify-self: start; min-width: 0; }
   .smart-recipe-ingredient > small { justify-self: start; }
@@ -289,6 +313,7 @@
 .smart-macro-grid > div { min-height: 92px; background: linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 96%, rgba(255,255,255,0.5)) 0%, color-mix(in srgb, var(--surface-soft) 82%, var(--surface-strong)) 100%); border: 1px solid var(--border); border-radius: calc(var(--radius-md) + 4px); padding: 0.85rem 0.9rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 1px 0 rgba(255,255,255,0.68); }
 .smart-macro-grid span { display: block; color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .smart-macro-grid strong { font-size: 1.25rem; font-family: var(--font-display); line-height: 1; letter-spacing: -0.04em; }
+.smart-proposal-feedback { margin-top: 0.9rem; padding: 0.82rem 0.95rem; border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--border)); border-radius: calc(var(--radius-md) + 2px); background: color-mix(in srgb, var(--danger) 8%, var(--surface-strong)); color: color-mix(in srgb, var(--danger) 86%, var(--text)); font-size: 0.84rem; line-height: 1.45; }
 .smart-assumptions-details { font-size: 0.8rem; margin: 0; padding-top: 0.2rem; }
 .smart-assumptions-details summary { cursor: pointer; color: var(--muted); font-size: 0.78rem; font-weight: 700; }
 .smart-assumptions { margin: 0.25rem 0 0; padding-left: 1rem; }

@@ -9,22 +9,26 @@ import { sbHeaders } from '../supabase/config.js';
 function loadEnergyLocal() { return safeParse(ENERGY_LOCAL_KEY, {}); }
 function saveEnergyLocal(d) { try { localStorage.setItem(ENERGY_LOCAL_KEY, JSON.stringify(d)); } catch (e) { /* ignore */ } }
 
+function filterEnergyRange(map, dateFrom, dateTo) {
+  const result = {};
+  for (const [key, value] of Object.entries(map || {})) {
+    if (key >= dateFrom && key <= dateTo) result[key] = value;
+  }
+  return result;
+}
+
 export async function loadEnergyStatsRange(dateFrom, dateTo) {
   const local = loadEnergyLocal();
   if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) {
-    const result = {};
-    for (const [k, v] of Object.entries(local)) {
-      if (k >= dateFrom && k <= dateTo) result[k] = v;
-    }
-    return result;
+    return filterEnergyRange(local, dateFrom, dateTo);
   }
   try {
     const r = await fetch(
-      cfg.sbUrl + '/rest/v1/daily_energy_stats?date=gte.' + dateFrom + '&date=lte.' + dateTo +
+      cfg.sbUrl + '/rest/v1/daily_energy_stats?user_id=eq.' + authUser.id + '&date=gte.' + dateFrom + '&date=lte.' + dateTo +
       '&select=date,active_kcal,resting_kcal,tdee_kcal,source&order=date.asc',
-      { headers: sbHeaders() }
+      { headers: sbHeaders(), cache: 'no-store' }
     );
-    if (!r.ok) return local;
+    if (!r.ok) return filterEnergyRange(local, dateFrom, dateTo);
     const rows = await r.json();
     const result = {};
     rows.forEach(row => {
@@ -33,10 +37,16 @@ export async function loadEnergyStatsRange(dateFrom, dateTo) {
       result[row.date].resting_kcal += row.resting_kcal || 0;
       result[row.date].tdee_kcal += row.tdee_kcal || 0;
     });
+
+    // Server data is authoritative for the requested range:
+    // first clear any stale local entries in that window, then merge fresh rows back in.
+    for (const key of Object.keys(local)) {
+      if (key >= dateFrom && key <= dateTo) delete local[key];
+    }
     Object.assign(local, result);
     saveEnergyLocal(local);
     return result;
-  } catch (e) { return local; }
+  } catch (e) { return filterEnergyRange(local, dateFrom, dateTo); }
 }
 
 export function aggregatePeriod(entries, goalsObj, dayTotalsFn, energyMap) {
