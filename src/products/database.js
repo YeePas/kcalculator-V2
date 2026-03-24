@@ -17,6 +17,14 @@ const SEARCH_SYNONYMS = {
   boterham: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
   boterhammen: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
   brood: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
+  ei: ['ei kippen gekookt gem', 'ei kippen gebakken', 'ei kippen rauw gem'],
+  eieren: ['ei kippen gekookt gem', 'ei kippen gebakken', 'ei kippen rauw gem'],
+  eitje: ['ei kippen gekookt gem', 'ei kippen gebakken', 'ei kippen rauw gem'],
+  gekookt: ['ei kippen gekookt gem'],
+  'gekookt ei': ['ei kippen gekookt gem'],
+  'gebakken ei': ['ei kippen gebakken'],
+  'rauw ei': ['ei kippen rauw gem'],
+  'onbereid ei': ['ei kippen rauw gem'],
 };
 const BREAD_PRIORITY_TERMS = ['brood', 'boterham', 'boterhammen'];
 const BREAD_PRIORITY_RULES = [
@@ -24,6 +32,12 @@ const BREAD_PRIORITY_RULES = [
   { label: 'Bruin', test: name => /^tarwebrood bruin\b|^bruin tarwebrood\b/.test(name) },
   { label: 'Wit', test: name => /^tarwebrood wit\b/.test(name) },
   { label: 'Zuurdesem', test: name => /tarwedesembrood|desembrood/.test(name) && /brood/.test(name) && !/glutenvrij/.test(name) },
+];
+const EGG_PRIORITY_TERMS = ['ei', 'eieren', 'eitje', 'eitjes'];
+const EGG_PRIORITY_RULES = [
+  { original: 'ei kippen gekookt gem', alias: 'Ei algemeen - gekookt' },
+  { original: 'ei kippen gebakken', alias: 'Ei algemeen - gebakken' },
+  { original: 'ei kippen rauw gem', alias: 'Ei algemeen - onbereid' },
 ];
 
 function round1(v) {
@@ -113,6 +127,44 @@ function applyBreadPriority(results, query) {
     return !used.has(key);
   });
   return [...promoted, ...remainder];
+}
+
+function isEggPriorityQuery(query) {
+  const normalized = normalizeSearchText(query);
+  if (!normalized) return false;
+  const words = normalized.split(/\s+/).filter(Boolean);
+  return words.some(word => EGG_PRIORITY_TERMS.includes(word))
+    || normalized.includes('gekookt ei')
+    || normalized.includes('gebakken ei')
+    || normalized.includes('rauw ei')
+    || normalized.includes('onbereid ei');
+}
+
+function applyEggPriority(results, query) {
+  if (!isEggPriorityQuery(query) || !Array.isArray(results) || !results.length) return results;
+
+  const aliases = [];
+  const hiddenOriginals = new Set();
+  for (const rule of EGG_PRIORITY_RULES) {
+    const match = results.find(item => normalizeSearchText(item?.n) === rule.original);
+    if (!match) continue;
+    hiddenOriginals.add(`${String(match.n || '').toLowerCase()}|${String(match.b || '').toLowerCase()}`);
+    aliases.push({
+      ...match,
+      n: rule.alias,
+      s: match.n,
+      _score: (match._score || 0) + 1000,
+      _group: 'Eieren',
+    });
+  }
+
+  if (!aliases.length) return results;
+
+  const remainder = results.filter(item => {
+    const key = `${String(item?.n || '').toLowerCase()}|${String(item?.b || '').toLowerCase()}`;
+    return !hiddenOriginals.has(key);
+  });
+  return [...aliases, ...remainder];
 }
 
 function offKcalPer100(nutriments = {}) {
@@ -340,7 +392,7 @@ export function searchNevo(query) {
   }
 
   results.sort((a, b) => b._score - a._score);
-  return applyBreadPriority(results, query).slice(0, 8);
+  return applyEggPriority(applyBreadPriority(results, query), query).slice(0, 8);
 }
 
 export async function searchNevoHybrid(query, limit = 8) {

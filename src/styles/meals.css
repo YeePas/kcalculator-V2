@@ -125,6 +125,14 @@ textarea#food-input::placeholder { color: var(--tertiary); }
 
 .meal-item { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0; border-top: 1px solid var(--border-subtle); gap: 0.5rem; }
 .meal-item:first-child { border-top: none; }
+.meal-item.recipe-select-mode {
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+  border-radius: var(--radius-md);
+}
+.meal-item.selected-for-recipe {
+  background: color-mix(in srgb, var(--accent-light) 70%, transparent);
+}
 .item-name { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.15rem; letter-spacing: -0.02em; }
 .item-macros { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .macro { font-size: 0.68rem; color: var(--muted); display: flex; align-items: center; gap: 0.2rem; background: var(--surface-soft); padding: 0.15rem 0.4rem; border-radius: 999px; border: 1px solid var(--border-subtle); }
@@ -141,6 +149,27 @@ textarea#food-input::placeholder { color: var(--tertiary); }
 .item-fav:hover,
 .item-edit:hover { color: var(--text); border-color: var(--border); background: var(--surface-strong); transform: translateY(-1px); }
 .item-delete:hover { color: var(--danger); border-color: rgba(212, 64, 64, 0.25); background: rgba(212, 64, 64, 0.08); transform: translateY(-1px); }
+.meal-item-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  margin-left: 0.25rem;
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-strong) 90%, var(--surface-soft));
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.meal-item-check input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
 .recipe-group { border: 1px solid var(--border); border-radius: calc(var(--radius-md) + 2px); margin: 0.4rem 0; overflow: hidden; background: color-mix(in srgb, var(--surface-strong) 84%, var(--surface-soft)); }
 .recipe-group-header { padding: 0.75rem 0.85rem; background: transparent; }
 .recipe-group-header:hover { background: color-mix(in srgb, var(--surface-strong) 90%, var(--surface-soft)); }

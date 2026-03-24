@@ -275,6 +275,7 @@ body {
     <a href="./" class="nav-back">← Terug naar app</a>
     <a href="#top" class="nav-brand">Kcalculator</a>
     <a href="#account">Account</a>
+    <a href="#ai-providers">AI Providers</a>
     <a href="#maaltijden">Maaltijden</a>
     <a href="#favorieten">Favorieten</a>
     <a href="#import">Import</a>
@@ -311,7 +312,7 @@ body {
     <h2>Welkom</h2>
   </div>
   <div class="section-body">
-    <p>Kcalculator is een slim voedingsdashboard waarmee je dagelijkse maaltijden bijhoudt, macro's volgt en AI-gestuurde inzichten krijgt over je voeding. De app werkt volledig in je browser en synchroniseert optioneel naar de cloud.</p>
+    <p>Kcalculator is een slim voedingsdashboard waarmee je dagelijkse maaltijden bijhoudt, macro's volgt en AI-gestuurde inzichten krijgt over je voeding. De app werkt volledig in je browser en synchroniseert optioneel naar de cloud. Wanneer je gebruik maakt van inloggen, kun je op ieder device bij je gegevens.</p>
     <div class="macro-row">
       <span class="macro-pill kcal">Calorieën</span>
       <span class="macro-pill carbs">Koolhydraten</span>
@@ -341,6 +342,59 @@ body {
       <li><strong>Zonder account</strong> — Gebruik de app volledig lokaal. Je data blijft op je apparaat opgeslagen.</li>
     </ol>
     <div class="tip"><strong>Tip:</strong> Met een account worden je maaltijden, favorieten en instellingen automatisch gesynchroniseerd tussen al je apparaten.</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════ 3. AI PROVIDERS ════ -->
+<section class="section" id="ai-providers">
+  <div class="section-header">
+    <div class="section-icon si-purple">
+      <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v1.1a4.9 4.9 0 012.52 2.08l.95-.55a3 3 0 114.02 1.1l-.55.95A4.97 4.97 0 0122 12a4.97 4.97 0 01-.06.76l.55.95a3 3 0 11-4.02 1.1l-.95-.55A4.9 4.9 0 0115 17.34V19a3 3 0 11-6 0v-1.66a4.9 4.9 0 01-2.52-2.08l-.95.55a3 3 0 11-4.02-1.1l.55-.95A4.97 4.97 0 012 12c0-.26.02-.51.06-.76l-.55-.95a3 3 0 114.02-1.1l.95.55A4.9 4.9 0 019 6.1V5a3 3 0 013-3zm0 7a3 3 0 100 6 3 3 0 000-6z"/></svg>
+    </div>
+    <h2>AI Providers uitgelegd</h2>
+  </div>
+  <div class="section-body">
+    <p>Voor de meeste acties in Kcalculator heb je geen AI Provider nodig. Maar als je een gerecht wilt herkennen, een foto wilt uploaden of een diepere analyse wilt gebruiken, dan heb je wel een AI Provider met API-key nodig. In <strong>Instellingen → AI</strong> kies je per onderdeel welke provider Kcalculator standaard gebruikt.</p>
+    <ol class="steps">
+      <li><strong>Invullen</strong> wordt gebruikt voor algemene AI-invulacties in de app.</li>
+      <li><strong>Analyse</strong> wordt gebruikt voor advies, avondeten-suggesties, daganalyse en AI Week.</li>
+      <li><strong>Gerechten</strong> wordt gebruikt voor Slimme Import, gerecht-herkenning, recepten en URL-import.</li>
+      <li>De provider kies je centraal in Instellingen, maar het model selecteer je op de betreffende pagina zelf.</li>
+    </ol>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span class="emoji">🟢</span> Gemini</div>
+        <p><strong>Gratis instapoptie.</strong> In Kcalculator staat Gemini 2.5 Flash als gratis provider genoemd. Handig om te testen en voor lichtere taken.</p>
+        <p><a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer">API key aanmaken</a><br><a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener noreferrer">Officiële pricing</a></p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">⚪</span> OpenAI</div>
+        <p><strong>Betaald.</strong> In Kcalculator gebruik je meestal GPT-4o mini of GPT-4o. Dit werkt vaak sterk voor Slimme Import en uitgebreidere analyses.</p>
+        <p><a href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key" target="_blank" rel="noopener noreferrer">API key aanmaken</a><br><a href="https://openai.com/api/pricing" target="_blank" rel="noopener noreferrer">Officiële pricing</a></p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🟠</span> Claude</div>
+        <p><strong>Betaald.</strong> In Kcalculator gebruik je meestal Claude Haiku 4.5 of Sonnet 4.5. Deze werken vaak erg goed voor avondeten en Slimme Import.</p>
+        <p><a href="https://docs.anthropic.com/en/docs/quickstart" target="_blank" rel="noopener noreferrer">API key / quickstart</a><br><a href="https://www.anthropic.com/pricing" target="_blank" rel="noopener noreferrer">Officiële pricing</a></p>
+      </div>
+    </div>
+    <div class="tip"><strong>Kostenindicatie:</strong> onderstaande bedragen zijn grove schattingen voor een normale tekst-call in Kcalculator. Eenvoudige acties kosten meestal minder dan 1 cent, maar foto-analyse, URL-import en lange dag- of weekanalyses kunnen hoger uitvallen doordat er meer input en output wordt verwerkt.</div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span class="emoji">💸</span> Gemini 2.5 Flash</div>
+        <p>Gratis tier beschikbaar via Google AI Studio. Op de betaalde tier is een eenvoudige call vaak nog steeds ruim onder de 1 cent.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">💸</span> OpenAI</div>
+        <p><strong>GPT-4o mini:</strong> vaak minder dan $0.001 per simpele call.<br><strong>GPT-4o:</strong> vaak rond de $0.01 voor een vergelijkbare call.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">💸</span> Claude</div>
+        <p><strong>Haiku 4.5:</strong> vaak rond de $0.004 tot $0.005 per simpele call.<br><strong>Sonnet 4.5:</strong> vaak rond de $0.01 tot $0.02 per simpele call.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -378,19 +432,20 @@ body {
         <p>De hoofdmaaltijd van de dag.</p>
       </div>
       <div class="card">
-        <div class="card-title"><span class="emoji">🍫</span> Avondsnack</div>
+        <div class="card-title"><span class="emoji">🌜</span> Avondsnack</div>
         <p>Iets lekkers voor het slapen.</p>
       </div>
       <div class="card">
-        <div class="card-title"><span class="emoji">🥤</span> Drinken</div>
+        <div class="card-title"><span class="emoji">💧</span> Drinken</div>
         <p>Water, koffie, thee en meer.</p>
       </div>
     </div>
+    <div class="tip"><strong>Let op:</strong> Avondsnack en drinken hebben eigen iconen, zodat je die momenten snel kunt herkennen in de app.</div>
 
     <h3 style="font-family:var(--font-display);font-weight:600;margin:1.5rem 0 .75rem">Hoe voeg je items toe?</h3>
     <ol class="steps">
       <li>Klik op een maaltijdtype om het invoerveld te openen.</li>
-      <li>Begin met typen — de <strong>autocomplete</strong> doorzoekt de NEVO-database (2.000+ Nederlandse voedingsmiddelen).</li>
+      <li>Begin met typen — de <strong>autocomplete</strong> zoekt in de RIVM/NEVO- en Open Food Facts-database.</li>
       <li>Selecteer een product en pas de <strong>hoeveelheid</strong> aan (in grammen of porties).</li>
       <li>Het item verschijnt in je maaltijdlijst met automatisch berekende macro's.</li>
     </ol>
@@ -438,7 +493,7 @@ body {
     <h2>Slimme Import (AI)</h2>
   </div>
   <div class="section-body">
-    <p>Gebruik AI om snel voedingswaarden te achterhalen — op vier verschillende manieren.</p>
+    <p>Gebruik AI om snel voedingswaarden te achterhalen — op vier verschillende manieren. Dit werkt het beste met de API's van betaalde AI providers, zoals OpenAI of Claude.</p>
     <div class="card-grid">
       <div class="card">
         <div class="card-title"><span class="emoji">💬</span> Gerechtnaam</div>
@@ -457,7 +512,7 @@ body {
         <p>Maak een foto van je maaltijd of een recept en laat AI de voedingswaarden analyseren.</p>
       </div>
     </div>
-    <div class="tip"><strong>Tip:</strong> Na de AI-analyse kun je elk ingrediënt koppelen aan een product uit de NEVO-database voor nauwkeurigere waarden.</div>
+    <div class="tip"><strong>Tip:</strong> Na de AI-analyse kun je elk ingrediënt koppelen aan een product uit de NEVO-database voor nauwkeurigere waarden. Slimme Import werkt meestal het beste met betaalde AI API's, zoals OpenAI of Claude.</div>
   </div>
 </section>
 

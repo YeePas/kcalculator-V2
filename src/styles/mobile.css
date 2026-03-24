@@ -94,9 +94,24 @@
 
   /* Match items in review modal */
   .match-manual-btn { padding: 0.35rem 0.6rem; min-height: 32px; }
+  #match-modal .modal-btns { grid-template-columns: 1fr; }
+  .match-item-actions { display: grid; grid-template-columns: 1fr; }
+  .match-manual-btn { width: 100%; white-space: normal; overflow-wrap: anywhere; }
 
   /* Meal items - bigger delete button */
   .item-delete { width: 32px; height: 32px; font-size: 0.9rem; }
+  .save-recipe-action-row { flex-direction: column; }
+  .meal-item.recipe-select-mode {
+    align-items: flex-start;
+  }
+  .meal-item.recipe-select-mode > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .meal-item-check {
+    padding: 0.34rem 0.6rem;
+    font-size: 0.74rem;
+  }
 }
 
 /* ── iPhone 13 / compact phones ───────────────────────────── */
@@ -195,9 +210,18 @@
   .smart-actions .btn-primary,
   .smart-actions .btn-secondary,
   .smart-inline-select {
-    font-size: 0.78rem;
-    padding-left: 0.72rem;
-    padding-right: 0.72rem;
+    font-size: 0.74rem;
+    padding-top: 0.56rem;
+    padding-bottom: 0.56rem;
+    padding-left: 0.68rem;
+    padding-right: 0.68rem;
+  }
+  .smart-manage-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .smart-manage-actions button {
+    flex: 1 1 calc(50% - 0.15rem);
   }
   .mobile-tab {
     font-size: 0.58rem;

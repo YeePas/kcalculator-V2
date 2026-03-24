@@ -407,6 +407,41 @@
   .smart-inline-select {
     min-height: 38px;
   }
+
+  .smart-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .smart-actions .btn-primary,
+  .smart-actions .btn-secondary,
+  .smart-inline-select,
+  .smart-recipe-card .smart-actions .btn-primary,
+  .smart-recipe-card .smart-actions .btn-secondary {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .smart-recipe-inline-add-bottom {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .smart-manage-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .smart-manage-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .smart-manage-actions button {
+    min-width: 44px;
+  }
 }
 
 /* Management tab */

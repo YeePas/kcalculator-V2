@@ -90,6 +90,7 @@ const AI_PROVIDER_DEFAULT_MODELS = {
 import {
   openFavModal, renderFavList, saveFavorite,
   saveItemAsFavorite, deleteFav, saveMealAsRecipe,
+  startMealRecipeSelection, cancelMealRecipeSelection, toggleMealRecipeSelection,
   toggleFavExpand, addFavToMeal,
   openEditFavModal, initEditFavModalListeners, recalcEditFavTotals,
 } from './modals/favourites.js';
@@ -132,6 +133,7 @@ import {
 // ══════════════════════════════════════════════════════════════
 Object.assign(window, {
   toggleMealSection, toggleAllMealSections, saveMealAsRecipe, deleteRecipeGroup,
+  startMealRecipeSelection, cancelMealRecipeSelection, toggleMealRecipeSelection,
   saveItemAsFavorite, openEditModal, deleteItem,
   addFavToMeal, toggleFavExpand, deleteFav, openEditFavModal, recalcEditFavTotals,
   selectAcItem, setPortie, addNevoItem, importAcItemToCustom, openSmartImportPage, closeCustomModal,

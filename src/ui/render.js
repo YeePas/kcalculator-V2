@@ -4,6 +4,7 @@
 import {
   localData, currentDate, selMeal,
   authUser, cfg,
+  recipeSelectionMeal, recipeSelectionIndices,
 } from '../state.js';
 import {
   MEAL_NAMES, MEAL_LABELS, LOCAL_KEY,
@@ -67,6 +68,10 @@ export function _renderDayUI(day) {
   MEAL_NAMES.forEach(meal => {
     const items = day[meal] || [];
     const isDrink = meal === 'drinken';
+    const isRecipeSelectionActive = recipeSelectionMeal === meal;
+    const selectedCount = isRecipeSelectionActive
+      ? recipeSelectionIndices.filter(idx => items[idx]).length
+      : 0;
     const mCals = items.reduce((s, i) => s + (i.kcal || 0), 0);
     const mMl = isDrink ? items.reduce((s, i) => s + (i.ml || 0), 0) : 0;
 
@@ -84,7 +89,7 @@ export function _renderDayUI(day) {
       <div class="meal-items">
         ${items.length === 0 ? `<div class="empty-meal">Nog niets toegevoegd</div>` : ''}
         ${renderMealItems(items, meal)}
-        ${items.length >= 2 ? `<button class="save-recipe-btn" onclick="saveMealAsRecipe('${meal}')">🍽️ Opslaan als gerecht</button>` : ''}
+        ${items.length >= 2 ? renderMealRecipeActions(meal, selectedCount) : ''}
       </div>`;
     c.appendChild(sec);
   });
@@ -125,6 +130,7 @@ export function toggleAllMealSections() {
 /* ── renderMealItems: handle recipe groups ────────────────── */
 export function renderMealItems(items, meal) {
   if (!items.length) return '';
+  const isRecipeSelectionActive = recipeSelectionMeal === meal;
   const groups = [];
   let currentGroup = null;
 
@@ -151,7 +157,7 @@ export function renderMealItems(items, meal) {
     const totProt = g.items.reduce((s, x) => s + (x.item.eiwitten_g || 0), 0);
     const uid = g.groupId.replace(/[^a-zA-Z0-9]/g, '_');
 
-    return `<div class="recipe-group collapsed" id="rg-${uid}">
+    return `<div class="recipe-group${isRecipeSelectionActive ? '' : ' collapsed'}" id="rg-${uid}">
       <div class="recipe-group-header" onclick="document.getElementById('rg-${uid}').classList.toggle('collapsed')">
         <div class="recipe-group-name">
           <span class="recipe-group-toggle">▾</span>
@@ -177,20 +183,41 @@ export function renderMealItems(items, meal) {
 /* ── renderItem ────────────────────────────────────────────── */
 export function renderItem(item, meal, idx) {
   const isDrink = meal === 'drinken';
+  const isRecipeSelectionActive = recipeSelectionMeal === meal;
+  const isSelectedForRecipe = isRecipeSelectionActive && recipeSelectionIndices.includes(idx);
   const macros = isDrink
     ? `<span class="macro"><span class="macro-dot dot-w"></span>${item.ml || 0} ml</span><span class="macro"><span class="macro-dot dot-c"></span>${r1(item.koolhydraten_g || 0)}g kh</span><span class="macro"><span class="macro-dot dot-v"></span>${r1(item.vetten_g || 0)}g vet</span><span class="macro"><span class="macro-dot dot-e"></span>${r1(item.eiwitten_g || 0)}g eiwit</span>`
     : `<span class="macro"><span class="macro-dot dot-c"></span>${r1(item.koolhydraten_g || 0)}g kh</span><span class="macro"><span class="macro-dot dot-v"></span>${r1(item.vetten_g || 0)}g vet</span><span class="macro"><span class="macro-dot dot-e"></span>${r1(item.eiwitten_g || 0)}g eiwit</span>${item.vezels_g > 0 ? `<span class="macro" style="opacity:0.6">${r1(item.vezels_g)}g vezel</span>` : ''}`;
   const right = `${item.kcal || 0} kcal`;
-  return `<div class="meal-item">
+  return `<div class="meal-item${isRecipeSelectionActive ? ' recipe-select-mode' : ''}${isSelectedForRecipe ? ' selected-for-recipe' : ''}">
     <div style="flex:1;min-width:0">
       <div class="item-name">${esc(item.naam)}${item.portie ? ` <span style="font-weight:300;color:var(--muted);font-size:0.8rem">(${esc(item.portie)})</span>` : ''}</div>
       <div class="item-macros">${macros}</div>
     </div>
     <div style="display:flex;align-items:center;gap:0.15rem;flex-shrink:0">
       <span class="item-cals">${right}</span>
-      <button class="item-fav" onclick="saveItemAsFavorite('${meal}',${idx})" title="Als favoriet opslaan">⭐</button>
+      ${isRecipeSelectionActive
+        ? `<label class="meal-item-check" title="Meenemen in gerecht">
+            <input type="checkbox" ${isSelectedForRecipe ? 'checked' : ''} onchange="toggleMealRecipeSelection('${meal}',${idx})">
+            <span>Opslaan</span>
+          </label>`
+        : `<button class="item-fav" onclick="saveItemAsFavorite('${meal}',${idx})" title="Als favoriet opslaan">⭐</button>
       <button class="item-edit" onclick="openEditModal('${meal}',${idx})" title="Bewerken">✏️</button>
-      <button class="item-delete" onclick="deleteItem('${meal}',${idx})">✕</button>
+      <button class="item-delete" onclick="deleteItem('${meal}',${idx})">✕</button>`}
+    </div>
+  </div>`;
+}
+
+function renderMealRecipeActions(meal, selectedCount) {
+  const isRecipeSelectionActive = recipeSelectionMeal === meal;
+  if (!isRecipeSelectionActive) {
+    return `<button class="save-recipe-btn" onclick="startMealRecipeSelection('${meal}')">🍽️ Kies items voor gerecht</button>`;
+  }
+  return `<div class="save-recipe-actions">
+    <div class="save-recipe-meta">${selectedCount >= 2 ? `${selectedCount} items geselecteerd` : 'Selecteer minimaal 2 items'}</div>
+    <div class="save-recipe-action-row">
+      <button class="save-recipe-btn primary" onclick="saveMealAsRecipe('${meal}')" ${selectedCount < 2 ? 'disabled' : ''}>🍽️ Opslaan als gerecht</button>
+      <button class="save-recipe-btn cancel" onclick="cancelMealRecipeSelection()">Annuleren</button>
     </div>
   </div>`;
 }

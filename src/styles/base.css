@@ -173,6 +173,60 @@ body.dark .provider-btn.active { background: color-mix(in srgb, var(--accent-lig
 .settings-tab.active { display: block; padding-bottom: 0.5rem; }
 .settings-tab-title { font-family: var(--font-body); font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 0.3rem; }
 .settings-tab-sub { font-size: 0.76rem; color: var(--muted); margin: 0 0 0.8rem; line-height: 1.45; }
+.settings-info-card {
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-md) + 2px);
+  background: color-mix(in srgb, var(--surface-strong) 88%, var(--surface-soft));
+  margin-bottom: 0.8rem;
+}
+.settings-info-card p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+.settings-info-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+.settings-info-card a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.settings-info-card a:hover {
+  text-decoration: underline;
+}
+.settings-support-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.85rem;
+  padding: 0.72rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: color-mix(in srgb, var(--accent-light) 48%, var(--surface-strong));
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.settings-support-qr-wrap {
+  margin-top: 0.85rem;
+  display: flex;
+  justify-content: center;
+}
+.settings-support-qr {
+  width: min(100%, 240px);
+  height: auto;
+  display: block;
+  border-radius: 24px;
+  padding: 0.7rem;
+  background: color-mix(in srgb, var(--surface-strong) 90%, transparent);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
 .settings-save-area { margin-top: auto; padding-top: 0.9rem; border-top: 1px solid var(--border); }
 
 @media (max-width: 600px) {

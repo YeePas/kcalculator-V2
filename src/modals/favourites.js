@@ -2,6 +2,8 @@
 
 import {
   localData, currentDate, selMeal, authUser, cfg,
+  recipeSelectionMeal, recipeSelectionIndices,
+  setRecipeSelectionMeal, setRecipeSelectionIndices,
 } from '../state.js';
 import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
 import { emptyDay, esc, r1 } from '../utils.js';
@@ -13,6 +15,41 @@ import { renderQuickFavs } from '../ui/misc.js';
 import { searchNevo } from '../products/database.js';
 import { buildMealItem } from '../products/matcher.js';
 import { submit } from '../input/submit.js';
+
+function rerenderCurrentDay() {
+  _renderDayUI(localData[currentDate] || emptyDay());
+}
+
+export function startMealRecipeSelection(meal) {
+  const day = localData[currentDate] || emptyDay();
+  const items = day[meal] || [];
+  if (items.length < 2) return;
+  setRecipeSelectionMeal(meal);
+  setRecipeSelectionIndices(items.map((_, idx) => idx));
+  rerenderCurrentDay();
+}
+
+export function cancelMealRecipeSelection() {
+  if (!recipeSelectionMeal) return;
+  setRecipeSelectionMeal(null);
+  setRecipeSelectionIndices([]);
+  rerenderCurrentDay();
+}
+
+export function toggleMealRecipeSelection(meal, idx) {
+  const day = localData[currentDate] || emptyDay();
+  const items = day[meal] || [];
+  if (!items[idx]) return;
+
+  const next = recipeSelectionMeal === meal ? [...recipeSelectionIndices] : [];
+  const existingIdx = next.indexOf(idx);
+  if (existingIdx >= 0) next.splice(existingIdx, 1);
+  else next.push(idx);
+
+  setRecipeSelectionMeal(meal);
+  setRecipeSelectionIndices(next.sort((a, b) => a - b));
+  rerenderCurrentDay();
+}
 
 export function openFavModal() {
   document.getElementById('fav-modal').classList.add('open');
@@ -96,23 +133,30 @@ export function deleteFav(idx) {
 export function saveMealAsRecipe(meal) {
   const day = localData[currentDate] || emptyDay();
   const items = day[meal] || [];
-  if (items.length < 2) return;
+  const selectedItems = recipeSelectionMeal === meal
+    ? recipeSelectionIndices.map(idx => items[idx]).filter(Boolean)
+    : items;
+  if (selectedItems.length < 2) {
+    document.getElementById('status').textContent = 'Selecteer minimaal 2 items om als gerecht op te slaan.';
+    document.getElementById('status').className = 'status-msg error';
+    return;
+  }
 
   const defaultName = MEAL_LABELS[meal] + ' ' + new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
   const naam = prompt('Naam voor dit gerecht:', defaultName);
   if (!naam) return;
 
   const totals = { kcal: 0, koolhydraten_g: 0, vezels_g: 0, vetten_g: 0, eiwitten_g: 0, ml: 0 };
-  for (const it of items) {
+  for (const it of selectedItems) {
     totals.kcal += it.kcal || 0; totals.koolhydraten_g += it.koolhydraten_g || 0;
     totals.vezels_g += it.vezels_g || 0; totals.vetten_g += it.vetten_g || 0;
     totals.eiwitten_g += it.eiwitten_g || 0; totals.ml += it.ml || 0;
   }
 
   const fav = {
-    naam, tekst: items.map(it => it.naam).join(', '), maaltijd: meal, isRecipe: true,
-    items: items.map(it => ({ ...it })),
-    item: { naam, portie: `${items.length} ingrediënten`, ...totals },
+    naam, tekst: selectedItems.map(it => it.naam).join(', '), maaltijd: meal, isRecipe: true,
+    items: selectedItems.map(it => ({ ...it })),
+    item: { naam, portie: `${selectedItems.length} ingrediënten`, ...totals },
     uses: 0,
     createdAt: Date.now(),
   };
@@ -122,7 +166,10 @@ export function saveMealAsRecipe(meal) {
   saveFavs(favs);
   syncFavoritesToSupabase();
   renderQuickFavs();
-  document.getElementById('status').textContent = `🍽️ "${naam}" opgeslagen als gerecht (${items.length} items)`;
+  setRecipeSelectionMeal(null);
+  setRecipeSelectionIndices([]);
+  rerenderCurrentDay();
+  document.getElementById('status').textContent = `🍽️ "${naam}" opgeslagen als gerecht (${selectedItems.length} items)`;
   document.getElementById('status').className = 'status-msg';
 }
 

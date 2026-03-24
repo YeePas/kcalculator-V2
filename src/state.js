@@ -64,6 +64,10 @@ export let editBaseGram = null;
 // Match modal state
 export let matchState = [];
 
+// Temporary meal selection for saving a recipe
+export let recipeSelectionMeal = null;
+export let recipeSelectionIndices = [];
+
 /* ── Setters ──────────────────────────────────────────────
    Because ES module exports are live bindings but cannot
    be reassigned from outside the declaring module, we
@@ -102,3 +106,5 @@ export function setEditIdx(v) { editIdx = v; }
 export function setEditBasePer100(v) { editBasePer100 = v; }
 export function setEditBaseGram(v) { editBaseGram = v; }
 export function setMatchState(v) { matchState = v; }
+export function setRecipeSelectionMeal(v) { recipeSelectionMeal = v; }
+export function setRecipeSelectionIndices(v) { recipeSelectionIndices = Array.isArray(v) ? v : []; }
