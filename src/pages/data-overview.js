@@ -17,6 +17,49 @@ import { renderWeightChart } from './weight.js';
 import { loadWeight } from '../storage.js';
 import { estimateMicroHeuristic, renderMicroDashboard, RDA } from './micronutrients.js';
 
+const DATA_OVERVIEW_BLOCKS_KEY = 'kcalculator_data_overview_blocks_v1';
+const DATA_OVERVIEW_BLOCKS = [
+  { id: 'highlights', label: 'Highlights' },
+  { id: 'kpis', label: 'KPI\'s' },
+  { id: 'intake', label: 'Intake' },
+  { id: 'macros', label: 'Macro\'s' },
+  { id: 'meals', label: 'Maaltijden' },
+  { id: 'micros', label: 'Micronutriënten' },
+  { id: 'balance', label: 'Energiebalans' },
+  { id: 'weight', label: 'Gewicht' },
+  { id: 'stats', label: 'Statistieken' },
+  { id: 'products', label: 'Producten' },
+];
+
+function getDefaultBlockVisibility() {
+  return Object.fromEntries(DATA_OVERVIEW_BLOCKS.map(block => [block.id, true]));
+}
+
+function loadDataOverviewBlocks() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DATA_OVERVIEW_BLOCKS_KEY) || '{}');
+    return { ...getDefaultBlockVisibility(), ...raw };
+  } catch {
+    return getDefaultBlockVisibility();
+  }
+}
+
+function saveDataOverviewBlocks(visibility) {
+  localStorage.setItem(DATA_OVERVIEW_BLOCKS_KEY, JSON.stringify(visibility));
+}
+
+function renderBlockToggles(visibility) {
+  return (
+    '<div class="do-block-toggles">' +
+      DATA_OVERVIEW_BLOCKS.map(block => (
+        '<button class="do-block-toggle' + (visibility[block.id] !== false ? ' active' : '') + '" type="button" data-do-toggle="' + block.id + '">' +
+          (visibility[block.id] !== false ? '✓ ' : '') + block.label +
+        '</button>'
+      )).join('') +
+    '</div>'
+  );
+}
+
 function balanceColor(balance, hasData) {
   if (!hasData || balance === null || balance === undefined) return 'var(--muted)';
   if (balance < -300) return 'var(--green)';
@@ -137,16 +180,17 @@ export async function renderDataOverzicht(numDays) {
 
     const { insights, consistency, weekdayWeekend, mealAnalysis, topFoods, extremes } = generateInsights(a, goals);
     const periodLabel = numDays === 7 ? 'deze week' : numDays === 30 ? 'deze maand' : numDays === 365 ? 'dit jaar' : a.totalDays + ' dagen';
+    const visibleBlocks = loadDataOverviewBlocks();
 
     if (a.activeDays === 0) {
       contentEl.innerHTML = '<div class="do-empty">Geen data gevonden voor deze periode.<br>Voeg eerst maaltijden toe!</div>';
       return;
     }
 
-    let html = '<div class="do-shell">';
+    let html = renderBlockToggles(visibleBlocks) + '<div class="do-shell">';
 
     // Smart insights
-    if (insights.length > 0) {
+    if (visibleBlocks.highlights !== false && insights.length > 0) {
       html += '<section class="do-section do-insights-section">';
       html += sectionHead('🧠 Highlights', periodLabel, insights.length + ' signalen');
       html += '<div class="do-insights-list">';
@@ -158,49 +202,55 @@ export async function renderDataOverzicht(numDays) {
     }
 
     // KPIs
-    html += '<section class="do-overview-hero">';
-    html += '<div class="do-overview-copy">';
-    html += '<span class="do-eyebrow">Data dashboard</span>';
-    html += '<h3>' + (numDays === 7 ? 'Weekoverzicht' : numDays === 30 ? 'Maandoverzicht' : numDays === 365 ? 'Jaaroverzicht' : 'Overzicht') + '</h3>';
-    html += '<p>' + a.activeDays + ' actieve dagen binnen ' + periodLabel + '. Focus op intake, ritme en producten die je patroon bepalen.</p>';
-    html += '</div>';
-    html += '<div class="do-kpi-grid">';
-    html += kpiCard(a.avgIntake, 'kcal/dag', 'var(--accent)');
-    html += kpiCard(a.activeDays + '/' + a.totalDays, 'actieve dagen', 'var(--text)');
-    html += kpiCard(consistency.score + '%', 'consistentie', consistency.score >= 70 ? 'var(--green)' : consistency.score >= 40 ? '#e67e22' : 'var(--danger)');
-    if (a.daysWithEnergy > 0) html += kpiCard((a.avgBalance > 0 ? '+' : '') + a.avgBalance, 'gem. balans', balanceColor(a.avgBalance, true));
-    if (goals.kcal) html += kpiCard(a.daysOnTarget, 'op doel', 'var(--green)');
-    html += kpiCard(a.avgFiber + 'g', 'vezels/dag', 'var(--fiber)');
-    html += '</div></section>';
+    if (visibleBlocks.kpis !== false) {
+      html += '<section class="do-overview-hero">';
+      html += '<div class="do-overview-copy">';
+      html += '<span class="do-eyebrow">Data dashboard</span>';
+      html += '<h3>' + (numDays === 7 ? 'Weekoverzicht' : numDays === 30 ? 'Maandoverzicht' : numDays === 365 ? 'Jaaroverzicht' : 'Overzicht') + '</h3>';
+      html += '<p>' + a.activeDays + ' actieve dagen binnen ' + periodLabel + '. Focus op intake, ritme en producten die je patroon bepalen.</p>';
+      html += '</div>';
+      html += '<div class="do-kpi-grid">';
+      html += kpiCard(a.avgIntake, 'kcal/dag', 'var(--accent)');
+      html += kpiCard(a.activeDays + '/' + a.totalDays, 'actieve dagen', 'var(--text)');
+      html += kpiCard(consistency.score + '%', 'consistentie', consistency.score >= 70 ? 'var(--green)' : consistency.score >= 40 ? '#e67e22' : 'var(--danger)');
+      if (a.daysWithEnergy > 0) html += kpiCard((a.avgBalance > 0 ? '+' : '') + a.avgBalance, 'gem. balans', balanceColor(a.avgBalance, true));
+      if (goals.kcal) html += kpiCard(a.daysOnTarget, 'op doel', 'var(--green)');
+      html += kpiCard(a.avgFiber + 'g', 'vezels/dag', 'var(--fiber)');
+      html += '</div></section>';
+    }
 
     html += '<div class="do-main-grid">';
 
     // Energy chart
-    html += '<section class="do-section do-feature-card">';
-    html += sectionHead(
-      '📈 Intake' + (a.daysWithEnergy > 0 ? ' vs verbruik' : ''),
-      'Dagelijks verloop over ' + periodLabel,
-      goals.kcal ? 'Doel ' + goals.kcal + ' kcal' : ''
-    );
-    html += '<div class="do-chart" id="do-energy-chart"></div>';
-    html += '<div class="do-legend"><span><span class="do-legend-dot" style="background:var(--accent)"></span>Intake</span>';
-    if (a.daysWithEnergy > 0) html += '<span><span class="do-legend-dot" style="background:var(--tdee-line)"></span>TDEE</span>';
-    if (goals.kcal) html += '<span><span class="do-legend-dot" style="background:var(--muted)"></span>Doel (' + goals.kcal + ')</span>';
-    html += '</div>';
-    html += '<div style="margin-top:0.8rem;display:flex;justify-content:flex-start;gap:0.55rem;flex-wrap:wrap">'
-      + '<button class="btn-secondary" type="button" onclick="document.getElementById(\'settings-import-btn\')?.click()" style="flex:0 0 auto">🍎 Import</button>'
-      + '<button class="btn-secondary" type="button" data-action="open-manual-tdee" style="flex:0 0 auto">✏️ TDEE</button>'
-      + '</div>';
-    html += '</section>';
+    if (visibleBlocks.intake !== false) {
+      html += '<section class="do-section do-feature-card">';
+      html += sectionHead(
+        '📈 Intake' + (a.daysWithEnergy > 0 ? ' vs verbruik' : ''),
+        'Dagelijks verloop over ' + periodLabel,
+        goals.kcal ? 'Doel ' + goals.kcal + ' kcal' : ''
+      );
+      html += '<div class="do-chart" id="do-energy-chart"></div>';
+      html += '<div class="do-legend"><span><span class="do-legend-dot" style="background:var(--accent)"></span>Intake</span>';
+      if (a.daysWithEnergy > 0) html += '<span><span class="do-legend-dot" style="background:var(--tdee-line)"></span>TDEE</span>';
+      if (goals.kcal) html += '<span><span class="do-legend-dot" style="background:var(--muted)"></span>Doel (' + goals.kcal + ')</span>';
+      html += '</div>';
+      html += '<div style="margin-top:0.8rem;display:flex;justify-content:flex-start;gap:0.55rem;flex-wrap:wrap">'
+        + '<button class="btn-secondary" type="button" onclick="document.getElementById(\'settings-import-btn\')?.click()" style="flex:0 0 auto">🍎 Import</button>'
+        + '<button class="btn-secondary" type="button" data-action="open-manual-tdee" style="flex:0 0 auto">✏️ TDEE</button>'
+        + '</div>';
+      html += '</section>';
+    }
 
     // Macro chart + donut
-    html += '<section class="do-section">';
-    html += sectionHead('🥗 Macro-verdeling', 'Per dag gestapeld en als totale verhouding', Math.round(a.avgCarbs + a.avgFat + a.avgProt) + 'g gemiddeld');
-    html += '<div class="do-split-card do-split-card-macros">';
-    html += '<div class="do-split-pane do-split-pane-wide"><div class="do-chart" id="do-macro-chart"></div>';
-    html += '<div class="do-legend"><span><span class="do-legend-dot" style="background:var(--blue)"></span>Kh</span><span><span class="do-legend-dot" style="background:var(--danger)"></span>Vet</span><span><span class="do-legend-dot" style="background:var(--green)"></span>Eiwit</span></div></div>';
-    html += '<div class="do-split-pane do-split-pane-compact"><div class="do-chart" id="do-macro-donut"></div></div>';
-    html += '</div></section>';
+    if (visibleBlocks.macros !== false) {
+      html += '<section class="do-section">';
+      html += sectionHead('🥗 Macro-verdeling', 'Per dag gestapeld en als totale verhouding', Math.round(a.avgCarbs + a.avgFat + a.avgProt) + 'g gemiddeld');
+      html += '<div class="do-split-card do-split-card-macros">';
+      html += '<div class="do-split-pane do-split-pane-wide"><div class="do-chart" id="do-macro-chart"></div>';
+      html += '<div class="do-legend"><span><span class="do-legend-dot" style="background:var(--blue)"></span>Kh</span><span><span class="do-legend-dot" style="background:var(--danger)"></span>Vet</span><span><span class="do-legend-dot" style="background:var(--green)"></span>Eiwit</span></div></div>';
+      html += '<div class="do-split-pane do-split-pane-compact"><div class="do-chart" id="do-macro-donut"></div></div>';
+      html += '</div></section>';
+    }
 
     // Meal analysis + Micronutrients
     const mealEntries = Object.entries(mealAnalysis.meals).filter(([_, m]) => m.daysWithMeal > 0);
@@ -211,10 +261,10 @@ export async function renderDataOverzicht(numDays) {
     const hasMeals = mealEntries.length > 0;
     const hasMicro = allPeriodItemsForMicro.length > 0;
 
-    if (hasMeals || hasMicro) {
+    if ((visibleBlocks.meals !== false && hasMeals) || (visibleBlocks.micros !== false && hasMicro)) {
       html += '<div class="do-grid-2">';
 
-      if (hasMeals) {
+      if (visibleBlocks.meals !== false && hasMeals) {
         html += '<section class="do-section">';
         html += sectionHead('🍽️ Maaltijdanalyse', 'Hoeveel elke maaltijd bijdraagt aan je totale intake', mealEntries.length + ' eetmomenten');
         html += '<div class="do-meal-grid">';
@@ -226,7 +276,7 @@ export async function renderDataOverzicht(numDays) {
         html += '</div></section>';
       }
 
-      if (hasMicro) {
+      if (visibleBlocks.micros !== false && hasMicro) {
         html += '<section class="do-section">';
         html += sectionHead('💊 Micronutriënten', 'Gem./dag · ' + a.activeDays + ' dagen · 💡 = bronnen bij tekort', '(schatting)');
         html += '<div id="do-micro-chart"></div></section>';
@@ -236,15 +286,17 @@ export async function renderDataOverzicht(numDays) {
     }
 
     // Energy balance
-    if (a.daysWithEnergy > 0) {
+    if (visibleBlocks.balance !== false && a.daysWithEnergy > 0) {
       const cumColor = balanceColor(a.cumulativeBalance, true);
+      const totalBalanceLabel = a.cumulativeBalance >= 0 ? 'Totaal overschot' : 'Totaal tekort';
       html += '<section class="do-section">';
-      html += sectionHead('⚡ Energiebalans', 'Relatie tussen intake, verbruik en activiteit', formatBalance(a.cumulativeBalance, true));
+      html += sectionHead('⚡ Energiebalans', 'Totaal kcal-tekort of -overschot ten opzichte van je TDEE over ' + periodLabel, formatBalance(a.cumulativeBalance, true));
       html += '<div class="do-stat-grid">';
-      html += '<div class="do-stat"><span class="do-stat-label">Gem. intake</span><span class="do-stat-val">' + a.avgIntake + ' kcal</span></div>';
+      html += '<div class="do-stat"><span class="do-stat-label">Gem. intake (met TDEE)</span><span class="do-stat-val">' + a.avgIntakeWithEnergy + ' kcal</span></div>';
       html += '<div class="do-stat"><span class="do-stat-label">Gem. TDEE</span><span class="do-stat-val">' + a.avgTDEE + ' kcal</span></div>';
+      html += '<div class="do-stat"><span class="do-stat-label">Gem. rustverbranding</span><span class="do-stat-val">' + a.avgResting + ' kcal</span></div>';
       html += '<div class="do-stat"><span class="do-stat-label">Gem. actief</span><span class="do-stat-val">' + a.avgActive + ' kcal</span></div>';
-      html += '<div class="do-stat"><span class="do-stat-label">Netto</span><span class="do-stat-val" style="color:' + cumColor + '">' + (a.cumulativeBalance > 0 ? '+' : '') + a.cumulativeBalance + ' kcal</span></div>';
+      html += '<div class="do-stat"><span class="do-stat-label">' + totalBalanceLabel + '</span><span class="do-stat-val" style="color:' + cumColor + '">' + (a.cumulativeBalance > 0 ? '+' : '') + Math.abs(a.cumulativeBalance) + ' kcal</span></div>';
       html += '</div>';
       html += '</section>';
     }
@@ -252,7 +304,7 @@ export async function renderDataOverzicht(numDays) {
     // Weight chart
     const weightData = loadWeight();
     const weightEntries = Object.keys(weightData).filter(d => d >= dateKeys[0] && d <= dateKeys[dateKeys.length - 1]);
-    if (weightEntries.length >= 2) {
+    if (visibleBlocks.weight !== false && weightEntries.length >= 2) {
       html += '<section class="do-section">';
       html += sectionHead('⚖️ Gewicht', 'Verloop binnen dezelfde periode', weightEntries.length + ' meetpunten');
       html += '<div class="do-chart" id="do-weight-chart"></div></section>';
@@ -267,22 +319,24 @@ export async function renderDataOverzicht(numDays) {
     html += '<div class="do-grid-2">';
 
     // Statistieken
-    html += '<section class="do-section">';
-    html += sectionHead('📊 Statistieken', 'Variatie, ritme en uitschieters', a.totalDays + ' dagen');
-    html += '<div class="do-stat-grid">';
-    html += '<div class="do-stat"><span class="do-stat-label">Consistentie</span><span class="do-stat-val" style="color:' + (cs.score >= 70 ? 'var(--green)' : cs.score >= 40 ? '#e67e22' : 'var(--danger)') + '">' + cs.score + '%</span></div>';
-    html += '<div class="do-stat"><span class="do-stat-label">Spreiding</span><span class="do-stat-val">' + cs.intakeStdDev + ' kcal σ</span></div>';
-    if (ww.weekday.days > 0 && ww.weekend.days > 0) {
-      const diff = ww.differences.intakeDiff;
-      html += '<div class="do-stat"><span class="do-stat-label">Weekdag</span><span class="do-stat-val">' + ww.weekday.avgIntake + ' kcal</span></div>';
-      html += '<div class="do-stat"><span class="do-stat-label">Weekend</span><span class="do-stat-val">' + ww.weekend.avgIntake + ' kcal <small style="color:' + (Math.abs(diff) > 200 ? 'var(--danger)' : 'var(--muted)') + '">(' + (diff > 0 ? '+' : '') + diff + ')</small></span></div>';
+    if (visibleBlocks.stats !== false) {
+      html += '<section class="do-section">';
+      html += sectionHead('📊 Statistieken', 'Variatie, ritme en uitschieters', a.totalDays + ' dagen');
+      html += '<div class="do-stat-grid">';
+      html += '<div class="do-stat"><span class="do-stat-label">Consistentie</span><span class="do-stat-val" style="color:' + (cs.score >= 70 ? 'var(--green)' : cs.score >= 40 ? '#e67e22' : 'var(--danger)') + '">' + cs.score + '%</span></div>';
+      html += '<div class="do-stat"><span class="do-stat-label">Spreiding</span><span class="do-stat-val">' + cs.intakeStdDev + ' kcal σ</span></div>';
+      if (ww.weekday.days > 0 && ww.weekend.days > 0) {
+        const diff = ww.differences.intakeDiff;
+        html += '<div class="do-stat"><span class="do-stat-label">Weekdag</span><span class="do-stat-val">' + ww.weekday.avgIntake + ' kcal</span></div>';
+        html += '<div class="do-stat"><span class="do-stat-label">Weekend</span><span class="do-stat-val">' + ww.weekend.avgIntake + ' kcal <small style="color:' + (Math.abs(diff) > 200 ? 'var(--danger)' : 'var(--muted)') + '">(' + (diff > 0 ? '+' : '') + diff + ')</small></span></div>';
+      }
+      if (ex.highestIntake) html += '<div class="do-stat"><span class="do-stat-label">Hoogste</span><span class="do-stat-val">' + ex.highestIntake.value + ' kcal <small>' + formatDate(ex.highestIntake.date) + '</small></span></div>';
+      if (ex.lowestIntake) html += '<div class="do-stat"><span class="do-stat-label">Laagste</span><span class="do-stat-val">' + ex.lowestIntake.value + ' kcal <small>' + formatDate(ex.lowestIntake.date) + '</small></span></div>';
+      html += '</div></section>';
     }
-    if (ex.highestIntake) html += '<div class="do-stat"><span class="do-stat-label">Hoogste</span><span class="do-stat-val">' + ex.highestIntake.value + ' kcal <small>' + formatDate(ex.highestIntake.date) + '</small></span></div>';
-    if (ex.lowestIntake) html += '<div class="do-stat"><span class="do-stat-label">Laagste</span><span class="do-stat-val">' + ex.lowestIntake.value + ' kcal <small>' + formatDate(ex.lowestIntake.date) + '</small></span></div>';
-    html += '</div></section>';
 
     // Producten
-    if (hasTopData) {
+    if (visibleBlocks.products !== false && hasTopData) {
       html += '<section class="do-section">';
       html += sectionHead('🍽️ Producten', 'Meest bepalende items binnen deze periode', '');
       html += '<div class="do-products-3col">';
@@ -318,6 +372,16 @@ export async function renderDataOverzicht(numDays) {
     renderDOChart(a, document.getElementById('do-energy-chart'));
     renderDOMacroChart(a, document.getElementById('do-macro-chart'));
     renderMacroDonutChart(a, document.getElementById('do-macro-donut'));
+
+    contentEl.querySelectorAll('[data-do-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const nextVisibility = loadDataOverviewBlocks();
+        const id = btn.dataset.doToggle;
+        nextVisibility[id] = nextVisibility[id] === false;
+        saveDataOverviewBlocks(nextVisibility);
+        renderDataOverzicht(numDays);
+      });
+    });
 
     document.getElementById('do-export-csv')?.addEventListener('click', () => exportPeriodCSV(numDays));
     document.getElementById('do-export-print')?.addEventListener('click', () => exportWeekrapportPrint());

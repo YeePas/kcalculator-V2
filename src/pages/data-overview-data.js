@@ -52,6 +52,7 @@ export async function loadEnergyStatsRange(dateFrom, dateTo) {
 export function aggregatePeriod(entries, goalsObj, dayTotalsFn, energyMap) {
   const days = [];
   let totalKcal = 0, totalCarbs = 0, totalFat = 0, totalProt = 0, totalFiber = 0;
+  let totalKcalWithEnergy = 0;
   let totalActive = 0, totalResting = 0, totalTDEE = 0;
   let activeDays = 0, daysWithEnergy = 0, daysOnTarget = 0;
 
@@ -76,6 +77,7 @@ export function aggregatePeriod(entries, goalsObj, dayTotalsFn, energyMap) {
     }
     if (tdee > 0) {
       daysWithEnergy++;
+      totalKcalWithEnergy += intake;
       totalActive += energy.active_kcal || 0; totalResting += energy.resting_kcal || 0; totalTDEE += tdee;
     }
   }
@@ -84,13 +86,15 @@ export function aggregatePeriod(entries, goalsObj, dayTotalsFn, energyMap) {
   const div = d => activeDays ? Math.round(d / activeDays) : 0;
   const divE = d => daysWithEnergy ? Math.round(d / daysWithEnergy) : 0;
   const avgIntake = div(totalKcal);
+  const avgIntakeWithEnergy = divE(totalKcalWithEnergy);
   const avgTDEE = divE(totalTDEE);
-  const avgBalance = daysWithEnergy ? Math.round((totalKcal - totalTDEE) / daysWithEnergy) : null;
+  const avgBalance = daysWithEnergy ? Math.round((totalKcalWithEnergy - totalTDEE) / daysWithEnergy) : null;
 
   return {
     days, totalDays, activeDays, daysWithEnergy, daysOnTarget,
     avgIntake, avgCarbs: div(totalCarbs), avgFat: div(totalFat), avgProt: div(totalProt), avgFiber: div(totalFiber),
+    avgIntakeWithEnergy,
     avgTDEE, avgActive: divE(totalActive), avgResting: divE(totalResting),
-    avgBalance, cumulativeBalance: daysWithEnergy ? Math.round(totalKcal - totalTDEE) : null,
+    avgBalance, cumulativeBalance: daysWithEnergy ? Math.round(totalKcalWithEnergy - totalTDEE) : null,
   };
 }
