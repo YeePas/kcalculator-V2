@@ -1,10 +1,37 @@
 /* ── Supabase Authentication ───────────────────────────────── */
 
-import { cfg, authUser, setAuthUser as _setAuthUser, setLocalData } from '../state.js';
-import { LOCAL_KEY, FAV_KEY, GOALS_KEY, CUSTOM_KEY } from '../constants.js';
+import {
+  cfg, authUser, setAuthUser as _setAuthUser, setLocalData,
+  setGoals, setVis,
+} from '../state.js';
+import {
+  LOCAL_KEY, FAV_KEY, GOALS_KEY, CUSTOM_KEY, VIS_KEY, WEIGHT_KEY, ENERGY_LOCAL_KEY,
+  DEFAULT_GOALS,
+} from '../constants.js';
 import { getLocalStorage, getSessionStorage, safeParseFromStorage, safeRemove, safeSetJson } from '../storage.js';
 
 const AUTH_KEY = 'eetdagboek_auth_v1';
+
+export function clearUserScopedLocalState() {
+  const localStorageRef = getLocalStorage();
+  const sessionStorageRef = getSessionStorage();
+  [
+    LOCAL_KEY,
+    FAV_KEY,
+    GOALS_KEY,
+    CUSTOM_KEY,
+    VIS_KEY,
+    WEIGHT_KEY,
+    ENERGY_LOCAL_KEY,
+    'eetdagboek_energy_v1',
+  ].forEach(key => {
+    safeRemove(localStorageRef, key);
+    safeRemove(sessionStorageRef, key);
+  });
+  setLocalData({});
+  setGoals({ ...DEFAULT_GOALS });
+  setVis({ carbs: true, fat: true, prot: true, fiber: true, water: true });
+}
 
 function getDisplayInitials(name) {
   if (!name || typeof name !== 'string') return '';
@@ -133,12 +160,7 @@ export function setAuthUser(session) {
 
     // Clear local cache when switching users
     if (prevUserId && prevUserId !== authUser.id) {
-      const localStorageRef = getLocalStorage();
-      safeRemove(localStorageRef, LOCAL_KEY);
-      safeRemove(localStorageRef, FAV_KEY);
-      safeRemove(localStorageRef, GOALS_KEY);
-      safeRemove(localStorageRef, CUSTOM_KEY);
-      setLocalData({});
+      clearUserScopedLocalState();
     }
 
     safeSetJson(getLocalStorage() || getSessionStorage(), AUTH_KEY, authUser);
@@ -147,6 +169,7 @@ export function setAuthUser(session) {
     _setAuthUser(null);
     safeRemove(getLocalStorage(), AUTH_KEY);
     safeRemove(getSessionStorage(), AUTH_KEY);
+    clearUserScopedLocalState();
   }
 }
 

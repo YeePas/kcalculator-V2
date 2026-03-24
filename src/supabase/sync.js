@@ -126,16 +126,18 @@ export async function syncUserPrefs(immediate = false) {
   setPrefsSyncTimer(setTimeout(pushPrefs, 2500));
 }
 
-export function resolvePrefsArray(prefsValue, legacyValue, localValue) {
+export function resolvePrefsArray(prefsValue, legacyValue, localValue, options = {}) {
+  const { allowLocalFallback = true } = options;
   const prefsArray = Array.isArray(prefsValue) ? prefsValue : null;
   const legacyArray = Array.isArray(legacyValue) ? legacyValue : null;
   const localArray = Array.isArray(localValue) ? localValue : [];
 
   if (prefsArray?.length) return { value: prefsArray, source: 'prefs' };
   if (legacyArray?.length) return { value: legacyArray, source: 'legacy' };
-  if (localArray.length) return { value: localArray, source: 'local' };
+  if (allowLocalFallback && localArray.length) return { value: localArray, source: 'local' };
   if (prefsArray) return { value: prefsArray, source: 'prefs' };
   if (legacyArray) return { value: legacyArray, source: 'legacy' };
+  if (allowLocalFallback && localArray) return { value: localArray, source: 'local' };
   return { value: null, source: 'none' };
 }
 
@@ -153,9 +155,6 @@ export function resolvePrefsObject(prefsValue, localValue) {
 export async function loadUserPrefs() {
   if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) return;
   try {
-    const localFavs = loadFavs();
-    const localCustom = loadCustomProducts();
-
     // Try dedicated tables first to migrate older installs.
     const sbFavs = await fetchFavoritesFromSupabase();
     const sbCustom = await fetchCustomProductsFromSupabase();
@@ -165,19 +164,18 @@ export async function loadUserPrefs() {
       `${cfg.sbUrl}/rest/v1/eetdagboek?user_id=eq.${authUser.id}&date=eq.9999-01-01&select=data`,
       { headers: sbHeaders() }
     );
-    if (!r.ok) return;
-    const rows = await r.json();
+    const rows = r.ok ? await r.json() : [];
     const prefs = rows[0]?.data || {};
     let shouldBackfillPrefs = false;
 
-    const favsChoice = resolvePrefsArray(prefs.favs, sbFavs, localFavs);
-    if (favsChoice.value) saveFavs(favsChoice.value);
+    const favsChoice = resolvePrefsArray(prefs.favs, sbFavs, [], { allowLocalFallback: false });
+    saveFavs(favsChoice.value || []);
     if (favsChoice.source === 'legacy' || favsChoice.source === 'local') shouldBackfillPrefs = true;
 
     if (prefs.goals) saveGoals(prefs.goals);
 
-    const customChoice = resolvePrefsArray(prefs.custom, sbCustom, localCustom);
-    if (customChoice.value) saveCustomProducts(customChoice.value);
+    const customChoice = resolvePrefsArray(prefs.custom, sbCustom, [], { allowLocalFallback: false });
+    saveCustomProducts(customChoice.value || []);
     if (customChoice.source === 'legacy' || customChoice.source === 'local') shouldBackfillPrefs = true;
 
     if (prefs.vis) {

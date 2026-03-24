@@ -1028,7 +1028,12 @@ Vet: 3.3g"></textarea>
       <h2>🛠️ Admin</h2>
       <button class="do-back" id="admin-back-btn">← Terug</button>
     </div>
-    <div class="advies-page-toolbar">
+    <div class="admin-tabs" id="admin-tabs">
+      <button class="admin-tab active" type="button" data-admin-tab="issues">Issues</button>
+      <button class="admin-tab" type="button" data-admin-tab="testlab">Testlab</button>
+      <button class="admin-tab" type="button" data-admin-tab="products">Products.json</button>
+    </div>
+    <div class="advies-page-toolbar admin-toolbar" id="admin-toolbar">
       <select id="admin-status-filter" title="Status filter">
         <option value="all">Alle statussen</option>
         <option value="open">Open</option>

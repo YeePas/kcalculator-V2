@@ -30,7 +30,7 @@ import {
 import { sbHeaders } from './supabase/config.js';
 import {
   sbAuthRegister, sbAuthLogin, sbAuthRefresh,
-  setAuthUser, updateAccountUI, restoreAuth, updateAuthProfile,
+  setAuthUser, updateAccountUI, restoreAuth, updateAuthProfile, clearUserScopedLocalState,
 } from './supabase/auth.js';
 import { initSupabase, loadDay, saveDay } from './supabase/data.js';
 import {
@@ -1267,9 +1267,7 @@ function initEventListeners() {
     statusEl.textContent = 'Inloggen…'; statusEl.style.color = '';
     try {
       const session = await sbAuthLogin(email, pass);
-      localStorage.removeItem(LOCAL_KEY); localStorage.removeItem(FAV_KEY);
-      localStorage.removeItem(GOALS_KEY); localStorage.removeItem(CUSTOM_KEY); localStorage.removeItem(VIS_KEY);
-      setLocalData(null); setGoals({ ...DEFAULT_GOALS });
+      clearUserScopedLocalState();
       setAuthUser(session);
       setSyncStatus('synced', 'verbonden');
       statusEl.textContent = '✓ Ingelogd!'; statusEl.style.color = 'var(--green)';
@@ -1299,9 +1297,7 @@ function initEventListeners() {
     try {
       const result = await sbAuthRegister(email, pass);
       if (result.access_token) {
-        localStorage.removeItem(LOCAL_KEY); localStorage.removeItem(FAV_KEY);
-        localStorage.removeItem(GOALS_KEY); localStorage.removeItem(CUSTOM_KEY); localStorage.removeItem(VIS_KEY);
-        setLocalData(null); setGoals({ ...DEFAULT_GOALS });
+        clearUserScopedLocalState();
         setAuthUser(result); setSyncStatus('synced', 'verbonden');
         statusEl.textContent = '✓ Account aangemaakt!'; statusEl.style.color = 'var(--green)';
         setTimeout(async () => {
@@ -1351,9 +1347,6 @@ function initEventListeners() {
 
   document.getElementById('logout-settings-btn')?.addEventListener('click', () => {
     setAuthUser(null);
-    localStorage.removeItem(LOCAL_KEY); localStorage.removeItem(FAV_KEY);
-    localStorage.removeItem(GOALS_KEY); localStorage.removeItem(CUSTOM_KEY); localStorage.removeItem(VIS_KEY);
-    setLocalData(null); setGoals({ ...DEFAULT_GOALS });
     setSyncStatus('offline', 'uitgelogd');
     showSetup('auth');
   });
