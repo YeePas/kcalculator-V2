@@ -116,6 +116,17 @@
               <input type="text" id="setup-display-name" placeholder="Bijv. Joep Willemsen" autocomplete="name">
               <div class="setup-hint">Als je een naam invult, tonen we je initialen in de accountknop.</div>
             </div>
+            <div class="setup-field" style="margin-top:1rem">
+              <div class="settings-inline-title"><span class="settings-inline-icon">🎯</span><span>Doelen</span></div>
+              <div class="goal-field goal-field-compact"><label>Calorieën</label><input type="number" id="setup-goal-kcal" min="0" step="50" placeholder="2000"><div class="goal-unit">kcal / dag</div></div>
+              <div class="goal-field goal-field-compact"><label>Koolhydraten</label><input type="number" id="setup-goal-carbs" min="0" step="5" placeholder="250"><div class="goal-unit">gram / dag</div></div>
+              <div class="goal-field goal-field-compact"><label>Vetten</label><input type="number" id="setup-goal-fat" min="0" step="5" placeholder="70"><div class="goal-unit">gram / dag</div></div>
+              <div class="goal-field goal-field-compact"><label>Eiwitten</label><input type="number" id="setup-goal-prot" min="0" step="5" placeholder="80"><div class="goal-unit">gram / dag</div></div>
+              <div class="goal-field goal-field-compact"><label>Vezels</label><input type="number" id="setup-goal-fiber" min="0" step="2" placeholder="30"><div class="goal-unit">gram / dag</div></div>
+              <div class="goal-field goal-field-compact"><label>Drinken / water</label><input type="number" id="setup-goal-water" min="0" step="100" placeholder="2000"><div class="goal-unit">ml / dag</div></div>
+              <div class="setup-hint">Hulp nodig bij je macro's? Gebruik bijvoorbeeld de <a href="https://www.lotbeukers.nl/macro-calculator/" target="_blank" rel="noopener noreferrer">macro-calculator van Lot Beukers</a>.</div>
+              <div class="setup-hint">Let op: doelen stellen en goed begrijpen hoe je lichaamssamenstelling is, kan alleen echt vakkundig worden vastgesteld door een diëtist of andere gekwalificeerde professional.</div>
+            </div>
           </div>
 
           <!-- TAB: Supermarkten -->
@@ -212,7 +223,7 @@
           <!-- TAB: Data -->
           <div class="settings-tab" id="settings-tab-data">
             <h3 class="settings-tab-title">Data</h3>
-            <p class="settings-tab-sub">Beheer doelen, imports, exports en lokale caches.</p>
+            <p class="settings-tab-sub">Beheer imports, exports en lokale caches.</p>
             <div class="setup-field" style="margin-bottom:0.9rem">
               <label style="text-transform:none;letter-spacing:0;font-size:0.82rem;display:flex;align-items:flex-start;gap:0.55rem;cursor:pointer">
                 <input type="checkbox" id="settings-off-live-toggle" style="margin-top:0.22rem;width:16px;height:16px;accent-color:var(--accent)">
@@ -221,13 +232,11 @@
               <div class="setup-hint" style="margin-left:1.5rem">Uit = alleen lokale database. Aan = lokale database + live OpenFoodFacts.org resultaten.</div>
             </div>
             <div class="setup-action-grid">
-              <button class="btn-secondary setup-action-btn" id="settings-goals-btn">🎯 Doelen</button>
               <button class="btn-secondary setup-action-btn" id="settings-import-btn">📥 Apple Health</button>
               <button class="btn-secondary setup-action-btn" id="settings-manual-tdee-btn">🔥 Handmatige TDEE</button>
               <button class="btn-secondary setup-action-btn" id="settings-export-btn">📤 Exporteer data</button>
               <button class="btn-secondary setup-action-btn" id="open-data-mgmt-btn">🗑️ Data verwijderen</button>
             </div>
-            <div class="setup-hint" style="margin-top:0.55rem">Hulp nodig bij je macro's? Gebruik bijvoorbeeld de <a href="https://www.lotbeukers.nl/macro-calculator/" target="_blank" rel="noopener noreferrer">macro-calculator van Lot Beukers</a>.</div>
             <div class="setup-hint" style="margin-top:0.7rem">Geen activiteitsdata beschikbaar? Voeg handmatig een TDEE per dag toe als fallback voor je energiebalans. Meer uitleg: <a href="https://en.wikipedia.org/wiki/Energy_expenditure" target="_blank" rel="noopener noreferrer">Wikipedia over energy expenditure</a>.</div>
             <div class="setup-field setup-inline-action" style="margin-top:1rem">
               <label>Productdatabase</label>

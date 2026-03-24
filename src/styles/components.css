@@ -15,6 +15,10 @@
 .goal-field input { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.72rem 0.9rem; font-size: 0.92rem; font-family: var(--font-body); background: color-mix(in srgb, var(--surface-strong) 84%, var(--surface-soft)); color: var(--text); transition: border-color 0.15s, box-shadow 0.15s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); }
 .goal-field input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); box-shadow: 0 0 0 4px var(--accent-light); }
 .goal-unit { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+.goal-field-compact { margin-bottom: 0.62rem; }
+.goal-field-compact label { font-size: 0.68rem; margin-bottom: 0.22rem; letter-spacing: 0.07em; }
+.goal-field-compact input { padding: 0.58rem 0.76rem; font-size: 0.84rem; border-radius: 12px; }
+.goal-field-compact .goal-unit { font-size: 0.66rem; margin-top: 0.14rem; }
 #modal-overlay { align-items: flex-start; padding-top: calc(env(safe-area-inset-top, 0px) + 1.2rem); padding-bottom: 1rem; }
 .modal-btns { display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
 .modal-btns > * { min-width: 0; }

@@ -98,6 +98,8 @@ a { color: inherit; }
 .setup-field input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); box-shadow: 0 0 0 4px var(--accent-light), var(--shadow-sm); background: var(--surface-strong); transform: translateY(-1px); }
 .setup-hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; line-height: 1.5; }
 .setup-hint a { color: var(--accent); text-decoration: none; }
+.settings-inline-title { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.7rem; font-size: 0.95rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.settings-inline-icon { font-size: 1rem; line-height: 1; }
 .setup-action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
 .setup-action-btn { width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 0.38rem; font-size: 0.82rem; padding: 0.7rem 0.9rem; }
 .setup-inline-action { display: flex; flex-direction: column; align-items: flex-start; }

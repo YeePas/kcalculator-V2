@@ -745,6 +745,12 @@ function showSetup(panel) {
     const sessionAiKeys = loadSessionAiKeys();
     const hasLocalGeminiKey = isLocalDevHost() && Boolean(sessionAiKeys.gemini);
     document.getElementById('setup-display-name').value = authUser?.display_name || '';
+    document.getElementById('setup-goal-kcal').value = goals.kcal || '';
+    document.getElementById('setup-goal-carbs').value = goals.carbs || '';
+    document.getElementById('setup-goal-fat').value = goals.fat || '';
+    document.getElementById('setup-goal-prot').value = goals.prot || '';
+    document.getElementById('setup-goal-fiber').value = goals.fiber || '';
+    document.getElementById('setup-goal-water').value = goals.water || '';
     ['claude', 'gemini', 'openai'].forEach(provider => {
       const input = document.getElementById(`setup-key-${provider}`);
       if (input) {
@@ -1022,7 +1028,6 @@ function initEventListeners() {
 
   // Goals modal
   document.getElementById('summary-goals-btn')?.addEventListener('click', openGoalsModal);
-  document.getElementById('settings-goals-btn')?.addEventListener('click', openGoalsModal);
   document.getElementById('settings-import-btn')?.addEventListener('click', () => {
     hideSetup();
     importData();
@@ -1040,12 +1045,12 @@ function initEventListeners() {
   document.getElementById('modal-overlay')?.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open'); });
   document.getElementById('save-settings')?.addEventListener('click', () => {
     const newGoals = {
-      kcal: parseInt(document.getElementById('goal-kcal').value) || 0,
-      carbs: parseInt(document.getElementById('goal-carbs').value) || 0,
-      fat: parseInt(document.getElementById('goal-fat').value) || 0,
-      prot: parseInt(document.getElementById('goal-prot').value) || 0,
-      fiber: parseInt(document.getElementById('goal-fiber').value) || 0,
-      water: parseInt(document.getElementById('goal-water').value) || 0,
+      kcal: parseInt(document.getElementById('setup-goal-kcal')?.value) || 0,
+      carbs: parseInt(document.getElementById('setup-goal-carbs')?.value) || 0,
+      fat: parseInt(document.getElementById('setup-goal-fat')?.value) || 0,
+      prot: parseInt(document.getElementById('setup-goal-prot')?.value) || 0,
+      fiber: parseInt(document.getElementById('setup-goal-fiber')?.value) || 0,
+      water: parseInt(document.getElementById('setup-goal-water')?.value) || 0,
     };
     setGoals(newGoals);
     saveGoals(newGoals);
