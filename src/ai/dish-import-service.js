@@ -112,6 +112,39 @@ function squeezeSpaces(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+function normalizeRecipeLikeInput(input) {
+  const FRACTION_MAP = {
+    '¼': '1/4',
+    '½': '1/2',
+    '¾': '3/4',
+    '⅓': '1/3',
+    '⅔': '2/3',
+    '⅛': '1/8',
+    '⅜': '3/8',
+    '⅝': '5/8',
+    '⅞': '7/8',
+  };
+  const amountStart = '(?:\\d+\\s+\\d+/\\d+|\\d+/\\d+|\\d+(?:[.,]\\d+)?|een|twee|drie|vier|vijf|zes|zeven|acht|negen|tien|half|halve)';
+  const splitCombinedLinePattern = new RegExp(`\\s+\\+\\s+(?=(?:\\(?\\s*)?(?:${amountStart})\\b)`, 'i');
+  const normalizedLines = String(input || '')
+    .split(/\r?\n/)
+    .flatMap((rawLine) => {
+      let line = String(rawLine || '').trim();
+      if (!line) return [];
+      Object.entries(FRACTION_MAP).forEach(([char, replacement]) => {
+        line = line.replaceAll(char, ` ${replacement} `);
+      });
+      line = line
+        .replace(/\s+/g, ' ')
+        .replace(splitCombinedLinePattern, '\n')
+        .replace(/\s+\($/, '')
+        .replace(/\s+[+]+\s*$/, '')
+        .trim();
+      return line.split('\n').map(part => part.trim()).filter(Boolean);
+    });
+  return normalizedLines.join('\n');
+}
+
 function avgFromRange(raw) {
   const m = String(raw || '').match(/(\d+(?:[.,]\d+)?)\s*[–-]\s*(\d+(?:[.,]\d+)?)/);
   if (!m) return null;
@@ -519,34 +552,35 @@ function buildRecipeProposalFromAi(aiJson, input, provider) {
 }
 
 export async function analyzeDishNameWithAI(input) {
-  const directProposal = createProposalFromNutritionText(input);
+  const preparedInput = normalizeRecipeLikeInput(input);
+  const directProposal = createProposalFromNutritionText(preparedInput);
   if (directProposal) return directProposal;
 
-  const extractedDish = extractDishNameFromFreeText(input);
-  const normalized = normalizeDishName(extractedDish || input);
+  const extractedDish = extractDishNameFromFreeText(preparedInput);
+  const normalized = normalizeDishName(extractedDish || preparedInput);
   if (!normalized) throw new Error('Vul een gerechtnaam in');
-  const recipeLike = isRecipeLikeInput(input);
+  const recipeLike = isRecipeLikeInput(preparedInput);
   const systemPrompt = recipeLike
     ? `Je bent een Nederlandse voedingsanalist voor een eetdagboek.\nDe gebruiker geeft waarschijnlijk een ingrediëntenlijst of recept.\nGeef ALLEEN geldige JSON terug.\nGebruik exact deze structuur:\n{ "mode":"recipe", "recipeName":"...", "recognizedAs":"...", "confidence":"high|medium|low", "servings":1, "totalWeightGrams":0, "ingredients":[{"name":"...", "amount":"2", "unit":"stuks", "grams":0, "calories":0, "protein_g":0, "carbs_g":0, "fat_g":0, "fiber_g":0, "assumptions":["..."]}], "assumptions":["..."], "alternatives":[] }\nRegels:\n- Neem ALLE ingrediënten over.\n- Behoud expliciete hoeveelheden exact.\n- Schat grams waar nodig voor stuks, snuf, scheut, tl/el.\n- Geef voedingswaarden PER ingrediënt voor de gebruikte hoeveelheid, niet per 100g.\n- totalWeightGrams is het totale receptgewicht.\n- Gebruik altijd dubbele quotes voor alle JSON keys en stringwaarden.\n- Geen markdown, geen uitleg, geen code fences, geen tekst buiten het JSON object.`
     : `Je bent een Nederlandse voedingsanalist voor een eetdagboek.\nDoel: verwerk vrije gebruikersinvoer robuust, ook als dat een losse gerechtnaam, een vraag in gewone taal, een halve omschrijving of een combinatie daarvan is.\nGeef ALLEEN geldige JSON terug met exact deze velden:\ninput, recognizedDishName, recognizedAs, confidence(high|medium|low), portionSuggestion{label,grams}, nutrition{calories,protein_g,carbs_g,fat_g,fiber_g}, assumptions[], alternatives[].\nBelangrijke regels:\n- Kies altijd een concreet gerecht of product als recognizedDishName.\n- Geef altijd een bruikbare schatting per portie, ook als de invoer vaag is.\n- Voor simpele invoer zoals "pasta pesto" of "havermout met banaan" moet je alsnog een volledige voedingsinschatting geven.\n- Als details ontbreken, maak redelijke aannames en noem die expliciet.\n- Antwoord zonder markdown, zonder tabel, zonder extra tekst buiten JSON.`;
   const userPrompt = recipeLike
-    ? `Originele invoer:\n${String(input || '').trim()}\n\nInterpreteer dit als recept of ingrediëntenlijst en geef gestructureerde ingrediënten met hoeveelheden, gebruikte gram/ml-schatting per ingrediënt, voedingswaarden per gebruikte hoeveelheid en totaalgewicht van het recept.`
-    : `Originele invoer: "${String(input || '').trim()}".\nHerkende kern: "${normalized}".\n\nVoorbeelden van gewenst gedrag:\n- "ertesoep" -> erwtensoep\n- "mag ik de calorieen voor pasta alla norma met alle macro's" -> pasta alla norma\n- "pasta pesto" -> herken als pasta pesto en geef een normale portie met macro's\n- "caesar" -> caesar salad\nGeef een plausibele Nederlandse portie en voedingsinschatting voor direct gebruik in een eetdagboek.`;
+    ? `Originele invoer:\n${preparedInput}\n\nInterpreteer dit als recept of ingrediëntenlijst en geef gestructureerde ingrediënten met hoeveelheden, gebruikte gram/ml-schatting per ingrediënt, voedingswaarden per gebruikte hoeveelheid en totaalgewicht van het recept.\nAls een regel meerdere ingrediënten bevat, zoals "1/4 tl maizena + 1 tl water", splits die dan in losse ingrediënten.`
+    : `Originele invoer: "${preparedInput}".\nHerkende kern: "${normalized}".\n\nVoorbeelden van gewenst gedrag:\n- "ertesoep" -> erwtensoep\n- "mag ik de calorieen voor pasta alla norma met alle macro's" -> pasta alla norma\n- "pasta pesto" -> herken als pasta pesto en geef een normale portie met macro's\n- "caesar" -> caesar salad\nGeef een plausibele Nederlandse portie en voedingsinschatting voor direct gebruik in een eetdagboek.`;
 
   try {
     const { provider, text } = await callImportAI(systemPrompt, userPrompt);
     try {
       const aiJson = extractJsonObject(text);
       if (recipeLike || aiJson?.mode === 'recipe' || Array.isArray(aiJson?.ingredients)) {
-        const recipeProposal = buildRecipeProposalFromAi(aiJson, input, provider);
+        const recipeProposal = buildRecipeProposalFromAi(aiJson, preparedInput, provider);
         if (recipeProposal) return recipeProposal;
       }
-      return estimateDishFromAIResponse(aiJson, input, provider);
+      return estimateDishFromAIResponse(aiJson, preparedInput, provider);
     } catch {
       try {
-        return buildAiTextFallbackProposal(text, input, provider);
+        return buildAiTextFallbackProposal(text, preparedInput, provider);
       } catch {
-        return createUnparsedAiFallbackProposal(input, provider);
+        return createUnparsedAiFallbackProposal(preparedInput, provider);
       }
     }
   } catch (e) {

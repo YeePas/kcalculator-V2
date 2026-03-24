@@ -92,19 +92,30 @@ function parseFlexibleNumber(value) {
 }
 
 function normalizeUnit(unit) {
-  return String(unit || '')
+  const normalized = String(unit || '')
     .toLowerCase()
     .replace(/[.'’]/g, '')
-    .replace(/en$/, '')
     .trim();
+  if (!normalized) return normalized;
+  if (PORTION_ALIASES[normalized]) return normalized;
+  if (normalized.endsWith('en')) {
+    const singular = normalized.slice(0, -2);
+    if (PORTION_ALIASES[singular]) return singular;
+  }
+  return normalized;
 }
 
 function cleanFoodName(name) {
   return String(name || '')
     .replace(/^optioneel\s*:\s*/i, '')
     .replace(/\((?:of|optioneel)[^)]+\)/gi, ' ')
+    .replace(/[+]+$/g, ' ')
+    .replace(/[\[(]+$/g, ' ')
+    .replace(/^[^0-9\p{L}]+/gu, '')
+    .replace(/[^0-9\p{L})\]]+$/gu, ' ')
     .replace(/\s+/g, ' ')
     .replace(/^(een|het|de|wat|enkele)\s+/i, '')
+    .replace(/^(?:klein(?:e)?|groot(?:e)?|middelgroot(?:e)?|middel(?:grote)?|vers(?:e|geraspte)?|geraspte)\s+/i, '')
     .trim();
 }
 
