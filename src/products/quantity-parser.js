@@ -43,9 +43,52 @@ const NUMBER_WORDS = {
 
 const MASS_UNITS = new Set(['kg', 'gram', 'gr', 'g']);
 const VOLUME_UNITS = new Set(['ml', 'cl', 'dl', 'l', 'liter']);
+const FRACTION_CHARS = {
+  '¼': '1/4',
+  '½': '1/2',
+  '¾': '3/4',
+  '⅓': '1/3',
+  '⅔': '2/3',
+  '⅛': '1/8',
+  '⅜': '3/8',
+  '⅝': '5/8',
+  '⅞': '7/8',
+};
+const SIZE_WORDS = '(?:klein(?:e)?|groot(?:e)?|middelgroot(?:e)?|middel(?:grote)?|vers(?:e|geraspte)?|geraspte)';
+const AMOUNT_TOKEN = '(?:\\d+\\s+\\d+\\/\\d+|\\d+\\/\\d+|\\d+(?:[.,]\\d+)?)';
 
 function toNumber(value) {
   return parseFloat(String(value).replace(',', '.'));
+}
+
+function normalizeFractionText(value) {
+  let text = String(value || '').trim();
+  Object.entries(FRACTION_CHARS).forEach(([char, replacement]) => {
+    text = text.replaceAll(char, ` ${replacement} `);
+  });
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+function parseFlexibleNumber(value) {
+  const raw = normalizeFractionText(value);
+  if (!raw) return NaN;
+
+  const mixed = raw.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if (mixed) {
+    const whole = Number(mixed[1]);
+    const numerator = Number(mixed[2]);
+    const denominator = Number(mixed[3]);
+    if (denominator) return whole + (numerator / denominator);
+  }
+
+  const fraction = raw.match(/^(\d+)\/(\d+)$/);
+  if (fraction) {
+    const numerator = Number(fraction[1]);
+    const denominator = Number(fraction[2]);
+    if (denominator) return numerator / denominator;
+  }
+
+  return toNumber(raw);
 }
 
 function normalizeUnit(unit) {
@@ -58,30 +101,37 @@ function normalizeUnit(unit) {
 
 function cleanFoodName(name) {
   return String(name || '')
+    .replace(/^optioneel\s*:\s*/i, '')
+    .replace(/\((?:of|optioneel)[^)]+\)/gi, ' ')
     .replace(/\s+/g, ' ')
     .replace(/^(een|het|de|wat|enkele)\s+/i, '')
     .trim();
 }
 
 export function parseQuantity(query) {
-  const q = String(query || '').toLowerCase().trim();
+  const q = normalizeFractionText(
+    String(query || '')
+      .toLowerCase()
+      .replace(/^optioneel\s*:\s*/i, '')
+      .trim()
+  );
   let count = 1;
   let unit = null;
   let rest = q;
 
-  const numericPrefix = q.match(/^(\d+(?:[.,]\d+)?)\s*(kg|gram|gr|g|ml|cl|dl|l|liter)\b\s+(.+)/i);
+  const numericPrefix = q.match(new RegExp(`^(${AMOUNT_TOKEN})\\s*(kg|gram|gr|g|ml|cl|dl|l|liter)\\b\\s+(.+)`, 'i'));
   if (numericPrefix) {
-    count = toNumber(numericPrefix[1]);
+    count = parseFlexibleNumber(numericPrefix[1]);
     unit = normalizeUnit(numericPrefix[2]);
     rest = numericPrefix[3];
   } else {
-    const numAndUnit = q.match(/^(\d+(?:[.,]\d+)?)\s*x?\s*([a-zA-Z]+)\s+(.+)/i);
+    const numAndUnit = q.match(new RegExp(`^(${AMOUNT_TOKEN})\\s*x?\\s*(?:${SIZE_WORDS}\\s+)?([a-zA-Z]+)\\s+(.+)`, 'i'));
     if (numAndUnit) {
-      count = toNumber(numAndUnit[1]);
+      count = parseFlexibleNumber(numAndUnit[1]);
       unit = normalizeUnit(numAndUnit[2]);
       rest = numAndUnit[3];
     } else {
-      const wordAndUnit = q.match(/^([a-zA-Zé]+)\s+([a-zA-Z]+)\s+(.+)/i);
+      const wordAndUnit = q.match(new RegExp(`^([a-zA-Zé]+)\\s+(?:${SIZE_WORDS}\\s+)?([a-zA-Z]+)\\s+(.+)`, 'i'));
       if (wordAndUnit && NUMBER_WORDS[wordAndUnit[1]]) {
         count = NUMBER_WORDS[wordAndUnit[1]];
         unit = normalizeUnit(wordAndUnit[2]);
@@ -91,6 +141,12 @@ export function parseQuantity(query) {
         if (wordOnly && NUMBER_WORDS[wordOnly[1]]) {
           count = NUMBER_WORDS[wordOnly[1]];
           rest = wordOnly[2];
+        } else if (wordOnly) {
+          const maybeUnit = normalizeUnit(wordOnly[1]);
+          if (PORTION_ALIASES[maybeUnit]) {
+            unit = maybeUnit;
+            rest = wordOnly[2];
+          }
         }
       }
     }
@@ -127,9 +183,9 @@ export function parsePortionTextPart(part) {
   }
 
   if (!gram) {
-    const numberOnly = q.match(/^(\d+(?:[.,]\d+)?)\s+(.+)/i);
+    const numberOnly = q.match(new RegExp(`^(${AMOUNT_TOKEN})\\s+(.+)`, 'i'));
     if (numberOnly) {
-      const num = toNumber(numberOnly[1]);
+      const num = parseFlexibleNumber(numberOnly[1]);
       foodName = numberOnly[2].trim();
       if (num >= 20) {
         gram = num;

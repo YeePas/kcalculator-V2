@@ -134,6 +134,9 @@ body.dark .provider-btn.active { background: color-mix(in srgb, var(--accent-lig
 .ai-provider-name { font-size: 0.9rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
 .ai-provider-sub { font-size: 0.72rem; color: var(--muted); }
 .ai-provider-sub strong { color: var(--green); }
+.ai-provider-links { margin-top: 0.2rem; font-size: 0.7rem; line-height: 1.35; }
+.ai-provider-links a { color: var(--accent); text-decoration: none; }
+.ai-provider-links a:hover { text-decoration: underline; }
 .ai-provider-key-input { width: min(100%, 170px); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.56rem 0.64rem; font-family: var(--font-body); font-size: 0.83rem; background: color-mix(in srgb, var(--surface-strong) 82%, var(--surface-soft)); color: var(--text); box-shadow: inset 0 1px 0 rgba(255,255,255,0.65); }
 .ai-provider-key-input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); box-shadow: 0 0 0 4px var(--accent-light); background: var(--surface-strong); }
 .ai-provider-test-btn { min-width: 68px; justify-content: center; white-space: nowrap; padding: 0.48rem 0.68rem; font-size: 0.76rem; }

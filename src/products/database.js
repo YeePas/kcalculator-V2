@@ -3,7 +3,7 @@
 import {
   nevoData, nevoReady, offData, offReady,
   setNevoData, setNevoReady, setOffData, setOffReady,
-  cfg,
+  cfg, authUser,
 } from '../state.js';
 import { loadCustomProducts } from '../storage.js';
 import { parseQuantity } from './portions.js';
@@ -13,6 +13,9 @@ const PRODUCTS_CACHE_KEY = 'kcalculator_products_v5';
 const LEGACY_PRODUCTS_CACHE_KEYS = ['kcalculator_products_v4', 'kcalculator_products_v3', 'kcalculator_products_v2', 'kcalculator_products_v1'];
 const OFF_SEARCH_CACHE_KEY = 'kcalculator_off_search_v1';
 const OFF_SEARCH_TTL_MS = 1000 * 60 * 60 * 12;
+const PRODUCT_CHOICE_HISTORY_KEY = 'kcalculator_product_choice_history_v1';
+const PRODUCT_CHOICE_MAX_PRODUCTS = 500;
+const PRODUCT_CHOICE_MAX_TERMS_PER_PRODUCT = 24;
 const SEARCH_SYNONYMS = {
   boterham: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
   boterhammen: ['volkoren brood', 'bruin brood', 'wit brood', 'zuurdesem brood', 'tarwebrood volkoren', 'tarwebrood bruin', 'tarwebrood wit'],
@@ -52,6 +55,125 @@ function normalizeSearchText(value) {
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function getChoiceHistoryScope() {
+  if (authUser?.id) return `user:${authUser.id}`;
+  if (authUser?.email) return `email:${String(authUser.email).toLowerCase()}`;
+  return 'guest';
+}
+
+function getProductChoiceKey(item) {
+  return [
+    normalizeSearchText(item?.n),
+    normalizeSearchText(item?.b),
+    normalizeSearchText(item?.src || 'unknown'),
+  ].join('|');
+}
+
+function readProductChoiceHistory() {
+  try {
+    const raw = localStorage.getItem(PRODUCT_CHOICE_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeProductChoiceHistory(history) {
+  try {
+    localStorage.setItem(PRODUCT_CHOICE_HISTORY_KEY, JSON.stringify(history));
+  } catch {}
+}
+
+function clampMapEntries(map, maxEntries, scoreFn) {
+  const entries = Object.entries(map || {});
+  if (entries.length <= maxEntries) return Object.fromEntries(entries);
+  return Object.fromEntries(
+    entries
+      .sort((a, b) => scoreFn(b[1], b[0]) - scoreFn(a[1], a[0]))
+      .slice(0, maxEntries)
+  );
+}
+
+function getChoiceStatsForItem(item, query) {
+  const history = readProductChoiceHistory();
+  const scoped = history[getChoiceHistoryScope()] || {};
+  const record = scoped[getProductChoiceKey(item)];
+  if (!record) return null;
+  const normalizedQuery = normalizeSearchText(query);
+  const termCount = normalizedQuery ? Number(record.terms?.[normalizedQuery] || 0) : 0;
+  return {
+    totalCount: Number(record.totalCount || 0),
+    termCount,
+    lastSelectedAt: Number(record.lastSelectedAt || 0),
+  };
+}
+
+function applyProductChoiceBoost(item, query) {
+  const stats = getChoiceStatsForItem(item, query);
+  if (!stats) return item;
+
+  const ageMs = Math.max(0, Date.now() - stats.lastSelectedAt);
+  const recencyDays = ageMs / (1000 * 60 * 60 * 24);
+  const recencyBoost = stats.lastSelectedAt
+    ? Math.max(0, 26 - Math.min(26, recencyDays * 2.2))
+    : 0;
+  const exactQueryBoost = Math.min(240, stats.termCount * 48);
+  const totalBoost = Math.min(120, stats.totalCount * 12);
+  const choiceBoost = exactQueryBoost + totalBoost + recencyBoost;
+
+  return {
+    ...item,
+    _choiceStats: stats,
+    _score: (item._score || 0) + choiceBoost,
+  };
+}
+
+function applyChoiceRanking(results, query) {
+  if (!Array.isArray(results) || !results.length) return results;
+  return results
+    .map(item => applyProductChoiceBoost(item, query))
+    .sort((a, b) => {
+      const scoreDiff = (b._score || 0) - (a._score || 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return Number(b._choiceStats?.lastSelectedAt || 0) - Number(a._choiceStats?.lastSelectedAt || 0);
+    });
+}
+
+export function recordProductSearchChoice(item, query) {
+  if (!item?.n) return;
+
+  const history = readProductChoiceHistory();
+  const scope = getChoiceHistoryScope();
+  const scoped = history[scope] && typeof history[scope] === 'object' ? history[scope] : {};
+  const key = getProductChoiceKey(item);
+  const normalizedQuery = normalizeSearchText(query);
+  const current = scoped[key] && typeof scoped[key] === 'object'
+    ? scoped[key]
+    : { totalCount: 0, lastSelectedAt: 0, terms: {} };
+
+  current.totalCount = Number(current.totalCount || 0) + 1;
+  current.lastSelectedAt = Date.now();
+  current.lastQuery = normalizedQuery || '';
+  if (!current.terms || typeof current.terms !== 'object') current.terms = {};
+  if (normalizedQuery) {
+    current.terms[normalizedQuery] = Number(current.terms[normalizedQuery] || 0) + 1;
+    current.terms = clampMapEntries(
+      current.terms,
+      PRODUCT_CHOICE_MAX_TERMS_PER_PRODUCT,
+      value => Number(value || 0)
+    );
+  }
+
+  scoped[key] = current;
+  history[scope] = clampMapEntries(
+    scoped,
+    PRODUCT_CHOICE_MAX_PRODUCTS,
+    value => Number(value?.lastSelectedAt || 0) + (Number(value?.totalCount || 0) * 1000)
+  );
+  writeProductChoiceHistory(history);
 }
 
 function toSingularSearchTerm(term) {
@@ -391,8 +513,11 @@ export function searchNevo(query) {
     }
   }
 
-  results.sort((a, b) => b._score - a._score);
-  return applyEggPriority(applyBreadPriority(results, query), query).slice(0, 8);
+  const ranked = applyChoiceRanking(
+    applyEggPriority(applyBreadPriority(results, query), query),
+    query
+  );
+  return ranked.slice(0, 8);
 }
 
 export async function searchNevoHybrid(query, limit = 8) {
@@ -404,7 +529,7 @@ export async function searchNevoHybrid(query, limit = 8) {
   const terms = normalizedQuery.split(/\s+/).filter(t => t.length >= 2);
   if (!terms.length) return localResults.slice(0, limit);
 
-  const liveOff = await searchOffLive(query, terms, limit * 2);
+  const liveOff = applyChoiceRanking(await searchOffLive(query, terms, limit * 2), query);
   if (!liveOff.length) return localResults.slice(0, limit);
 
   // Keep local results leading, but reserve a few slots so live OFF matches are visible.

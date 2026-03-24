@@ -3,7 +3,7 @@
 import { selMeal, acSelectedItem, acSelectedIdx, acResults, setAcSelectedItem, setAcSelectedIdx, setAcResults } from '../state.js';
 import { MEAL_NAMES } from '../constants.js';
 import { esc, highlightMatches, emptyDay } from '../utils.js';
-import { searchNevo, searchNevoHybrid } from '../products/database.js';
+import { searchNevo, searchNevoHybrid, recordProductSearchChoice } from '../products/database.js';
 import { findPortie } from '../products/portions.js';
 import { buildMealItem } from '../products/matcher.js';
 import { isLiquidLike } from '../products/density.js';
@@ -107,6 +107,8 @@ export function renderAcDropdown(results, query, isLoading = false) {
 export function selectAcItem(idx) {
   const item = acResults[idx];
   if (!item) return;
+  const query = document.getElementById('food-input')?.value?.trim() || item.n || '';
+  if (!item._favorite) recordProductSearchChoice(item, query);
   setAcSelectedItem(item);
   if (item._favorite) {
     const dd = document.getElementById('ac-dropdown');

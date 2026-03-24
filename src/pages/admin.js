@@ -175,12 +175,14 @@ function renderAdminToolbar() {
         <option value="triaged" ${adminIssuesFilter === 'triaged' ? 'selected' : ''}>Triaged</option>
         <option value="resolved" ${adminIssuesFilter === 'resolved' ? 'selected' : ''}>Resolved</option>
       </select>
+      <button class="btn-secondary" data-admin-action="report-test-bug">🐞 Rapporteer testbug</button>
       <button class="btn-primary" id="admin-refresh-btn">🔄 Vernieuwen</button>
     `;
     return;
   }
   if (activeAdminTab === 'testlab') {
     toolbar.innerHTML = `
+      <button class="btn-secondary" data-admin-action="report-test-bug">🐞 Rapporteer testbug</button>
       <button class="btn-primary" id="admin-refresh-btn">🔄 Vernieuwen</button>
     `;
     return;
@@ -201,6 +203,14 @@ function renderAdminTabs() {
 function renderTestlab() {
   return `
     <div class="admin-grid">
+      <section class="admin-card">
+        <h3>Bug rapporteren</h3>
+        <p>Gebruik deze knop om vanaf de adminpagina zelf een testmelding in te sturen. Daarna kun je in het tabblad <strong>Issues</strong> controleren of hij goed is binnengekomen.</p>
+        <div class="admin-card-actions">
+          <button class="btn-primary" data-admin-action="report-test-bug">🐞 Rapporteer testbug</button>
+          <button class="btn-secondary" data-admin-action="open-issues-tab">Bekijk issues</button>
+        </div>
+      </section>
       <section class="admin-card">
         <h3>Bug & feedback modal</h3>
         <p>Open hier snel de bestaande feedbackflow met test-contexten, zonder eerst door de hele app te navigeren.</p>
@@ -585,7 +595,14 @@ export function initAdminListeners() {
 
     try {
       const action = btn.dataset.adminAction;
-      if (action === 'test-bug') {
+      if (action === 'report-test-bug') {
+        openGeneralFeedback('admin-report-test', {
+          source: 'admin-page',
+          email: authUser?.email || null,
+          timestamp: new Date().toISOString(),
+          note: 'Handmatige testbug vanaf adminpagina',
+        });
+      } else if (action === 'test-bug') {
         const context = String(btn.dataset.context || 'admin-test');
         openGeneralFeedback(context, {
           source: 'admin-testlab',
