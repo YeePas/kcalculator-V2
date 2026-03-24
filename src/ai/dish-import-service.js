@@ -131,6 +131,7 @@ function normalizeRecipeLikeInput(input) {
     .flatMap((rawLine) => {
       let line = String(rawLine || '').trim();
       if (!line) return [];
+      if (/^[A-ZÄËÏÖÜÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛ\s-]{3,}$/u.test(line) && !/\d/.test(line)) return [];
       Object.entries(FRACTION_MAP).forEach(([char, replacement]) => {
         line = line.replaceAll(char, ` ${replacement} `);
       });

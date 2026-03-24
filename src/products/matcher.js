@@ -54,19 +54,7 @@ export function parseTextToItems(text) {
   return parts.map(part => parsePortionTextPart(part));
 }
 
-// ── Match item to NEVO database ───────────────────────────
-let _customCache = null;
-let _customCacheTime = 0;
-
-export function matchItemToNevo(parsedItem) {
-  const name = parsedItem.foodName.toLowerCase().trim();
-  const cleanName = name
-    .replace(/\b\d+\s*(gram|gr|g|ml|liter|l|cl|dl|kg|stuks?|st)\b/gi, '')
-    .replace(/\b(een|twee|drie|vier|vijf|halve?|half)\b/gi, '')
-    .trim();
-
-  if (!cleanName || cleanName.length < 2) return null;
-
+function buildSearchTerms(cleanName) {
   let searchTerms = [];
   let hasSynonym = false;
   for (const [synonym, nevoTerms] of Object.entries(FOOD_SYNONYMS)) {
@@ -83,15 +71,13 @@ export function matchItemToNevo(parsedItem) {
 
   const words = cleanName.split(/\s+/).filter(w => w.length >= 3);
   if (words.length > 1 && !hasSynonym) searchTerms.push(...words);
+  return searchTerms;
+}
 
+function scoreBestMatchForName(cleanName, allItems) {
+  const searchTerms = buildSearchTerms(cleanName);
   let bestMatch = null;
   let bestScore = -999;
-
-  if (!_customCache || _customCacheTime < Date.now() - 2000) {
-    _customCache = loadCustomProducts().map(c => ({...c, _custom: true}));
-    _customCacheTime = Date.now();
-  }
-  const allItems = [...(nevoReady && nevoData ? nevoData.items : []), ..._customCache];
 
   for (const term of searchTerms) {
     const termWords = term.toLowerCase().split(/\s+/).filter(w => w.length >= 2);
@@ -127,11 +113,53 @@ export function matchItemToNevo(parsedItem) {
 
       if (cleanName.length <= 5 && !itemName.startsWith(cleanName)) score -= 10;
 
-      if (score > bestScore) { bestScore = score; bestMatch = item; }
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = item;
+      }
     }
   }
 
-  return bestMatch;
+  return { bestMatch, bestScore };
+}
+
+// ── Match item to NEVO database ───────────────────────────
+let _customCache = null;
+let _customCacheTime = 0;
+
+export function matchItemToNevo(parsedItem) {
+  const rawCandidates = [
+    parsedItem.foodName,
+    ...(Array.isArray(parsedItem.alternatives) ? parsedItem.alternatives : []),
+  ];
+  const candidates = rawCandidates
+    .map(name => String(name || '').toLowerCase().trim()
+      .replace(/\b\d+\s*(gram|gr|g|ml|liter|l|cl|dl|kg|stuks?|st)\b/gi, '')
+      .replace(/\b(een|twee|drie|vier|vijf|halve?|half)\b/gi, '')
+      .trim())
+    .filter(name => name && name.length >= 2)
+    .filter((name, idx, list) => list.indexOf(name) === idx);
+
+  if (!candidates.length) return null;
+
+  if (!_customCache || _customCacheTime < Date.now() - 2000) {
+    _customCache = loadCustomProducts().map(c => ({...c, _custom: true}));
+    _customCacheTime = Date.now();
+  }
+  const allItems = [...(nevoReady && nevoData ? nevoData.items : []), ..._customCache];
+  let bestOverall = null;
+  let bestOverallScore = -999;
+
+  candidates.forEach((candidate, idx) => {
+    const { bestMatch, bestScore } = scoreBestMatchForName(candidate, allItems);
+    const adjustedScore = bestScore - (idx * 0.5);
+    if (bestMatch && adjustedScore > bestOverallScore) {
+      bestOverall = bestMatch;
+      bestOverallScore = adjustedScore;
+    }
+  });
+
+  return bestOverall;
 }
 
 // ── Resolve gram amount ───────────────────────────────────

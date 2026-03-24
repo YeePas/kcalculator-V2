@@ -16,8 +16,8 @@ export const PORTION_ALIASES = {
   stuk: 100, stuks: 100,
   hand: 50, handje: 50, handjes: 50, handvol: 50,
   ei: 60, eitje: 60, eieren: 60,
-  teen: 3, teentje: 3,
-  takje: 2,
+  teen: 3, teentje: 3, teentjes: 3, tenen: 3,
+  takje: 2, takjes: 2,
   scheut: 30, scheutje: 15,
   snuf: 1, snufje: 1, mespuntje: 1,
   ml: 1, gram: 1, gr: 1, g: 1, cl: 10, dl: 100, liter: 1000, l: 1000, kg: 1000,
@@ -109,6 +109,8 @@ function cleanFoodName(name) {
   return String(name || '')
     .replace(/^optioneel\s*:\s*/i, '')
     .replace(/\((?:of|optioneel)[^)]+\)/gi, ' ')
+    .replace(/,\s*.+$/i, ' ')
+    .replace(/\s+of\s+.+$/i, ' ')
     .replace(/[+]+$/g, ' ')
     .replace(/[\[(]+$/g, ' ')
     .replace(/^[^0-9\p{L}]+/gu, '')
@@ -117,6 +119,30 @@ function cleanFoodName(name) {
     .replace(/^(een|het|de|wat|enkele)\s+/i, '')
     .replace(/^(?:klein(?:e)?|groot(?:e)?|middelgroot(?:e)?|middel(?:grote)?|vers(?:e|geraspte)?|geraspte)\s+/i, '')
     .trim();
+}
+
+function extractAlternativeNames(name) {
+  const raw = String(name || '')
+    .replace(/^optioneel\s*:\s*/i, '')
+    .replace(/\((?:of|optioneel)[^)]+\)/gi, ' ')
+    .replace(/,\s*.+$/i, ' ')
+    .replace(/[+]+$/g, ' ')
+    .replace(/[\[(]+$/g, ' ')
+    .trim();
+
+  if (!raw) return [];
+
+  return raw
+    .split(/\s+of\s+/i)
+    .map((part) => {
+      const parsedAlt = parseQuantity(String(part || '').toLowerCase());
+      const cleanedPart = String(parsedAlt.query || part)
+        .replace(new RegExp(`^${AMOUNT_TOKEN}\\s+`, 'i'), '')
+        .replace(/^(een|twee|drie|vier|vijf|zes|zeven|acht|negen|tien|half|halve)\s+/i, '');
+      return cleanFoodName(cleanedPart);
+    })
+    .filter(Boolean)
+    .filter((part, idx, list) => list.indexOf(part) === idx);
 }
 
 export function parseQuantity(query) {
@@ -208,9 +234,11 @@ export function parsePortionTextPart(part) {
   }
 
   const cleanName = cleanFoodName(foodName);
+  const alternatives = extractAlternativeNames(foodName);
   return {
     original: raw,
     foodName: cleanName,
+    alternatives,
     gram,
     ml,
     count,
