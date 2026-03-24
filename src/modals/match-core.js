@@ -44,12 +44,18 @@ export function renderMatchList() {
     const matched = ms.nevoMatch !== null && !ms.manualMode;
     const nevo = ms.nevoMatch;
     const factor = ms.gram / 100;
+    const selectQuery = nevo?._aiResult ? (nevo.n || ms.parsed.foodName) : ms.parsed.foodName;
 
     let altOptions = '';
-    if (searchNevo(ms.parsed.foodName).length > 0) {
-      const alts = searchNevo(ms.parsed.foodName);
+    const alts = searchNevo(selectQuery);
+    if (alts.length > 0 || nevo?._aiResult) {
+      const exactAiIdx = nevo?._aiResult
+        ? alts.findIndex(a => String(a.n || '').toLowerCase() === String(nevo.n || '').toLowerCase())
+        : -1;
       altOptions = `<select class="match-db-select" onchange="updateMatchNevo(${i}, this.value)">
-        ${nevo ? '' : '<option value="">— Kies een product —</option>'}
+        ${nevo?._aiResult
+          ? `<option value="" ${exactAiIdx < 0 ? 'selected' : ''}>— AI herkend: ${esc(nevo.n || 'onbekend')} —</option>`
+          : (nevo ? '' : '<option value="">— Kies een product —</option>')}
         ${alts.map((a, j) => {
           const sel = nevo && a.n === nevo.n ? 'selected' : '';
           return `<option value="${j}" ${sel}>${esc(a.n)} (${a.k}kcal/100g) — ${esc(a._group)}${a._custom ? ' ★' : ''}</option>`;
@@ -113,11 +119,17 @@ export function renderMatchList() {
 }
 
 export function updateMatchNevo(idx, optionIdx) {
-  const alts = searchNevo(matchState[idx].parsed.foodName);
+  const ms = matchState[idx];
+  if (optionIdx === '') {
+    renderMatchList();
+    return;
+  }
+  const query = ms.nevoMatch?._aiResult ? (ms.nevoMatch.n || ms.parsed.foodName) : ms.parsed.foodName;
+  const alts = searchNevo(query);
   const selected = alts[parseInt(optionIdx)];
   if (selected) {
-    matchState[idx].nevoMatch = selected;
-    matchState[idx].manualMode = false;
+    ms.nevoMatch = selected;
+    ms.manualMode = false;
   }
   renderMatchList();
 }

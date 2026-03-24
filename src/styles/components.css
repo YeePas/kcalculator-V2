@@ -243,9 +243,9 @@
   justify-content: center;
   min-height: 0;
   height: 100%;
-  padding: 0.72rem 0.9rem;
-  font-size: 0.82rem;
-  line-height: 1.25;
+  padding: 0.56rem 0.78rem;
+  font-size: 0.76rem;
+  line-height: 1.18;
   text-align: center;
 }
 .match-intro { font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.5; }
@@ -292,12 +292,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
+  min-height: 30px;
   background: none;
   border: 1px dashed var(--border);
   border-radius: 999px;
-  padding: 0.22rem 0.68rem;
-  font-size: 0.73rem;
+  padding: 0.16rem 0.56rem;
+  font-size: 0.69rem;
   line-height: 1.2;
   color: var(--accent);
   cursor: pointer;
@@ -311,10 +311,10 @@
   background: color-mix(in srgb, var(--surface-strong) 88%, var(--surface-soft));
   color: var(--danger);
   cursor: pointer;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   line-height: 1;
-  padding: 0.18rem 0.42rem;
-  margin-left: 0.35rem;
+  padding: 0.14rem 0.34rem;
+  margin-left: 0.2rem;
   vertical-align: middle;
 }
 .beta-bug-btn:hover {
@@ -467,8 +467,10 @@
 
   #match-modal .modal-btns .btn-primary,
   #match-modal .modal-btns .btn-secondary {
-    min-height: 44px;
-    font-size: 0.8rem;
+    min-height: 38px;
+    padding: 0.5rem 0.72rem;
+    font-size: 0.74rem;
+    line-height: 1.15;
   }
 
   .match-item {
