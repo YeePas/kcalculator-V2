@@ -211,7 +211,10 @@ export function renderItem(item, meal, idx) {
 function renderMealRecipeActions(meal, selectedCount) {
   const isRecipeSelectionActive = recipeSelectionMeal === meal;
   if (!isRecipeSelectionActive) {
-    return `<button class="save-recipe-btn" onclick="startMealRecipeSelection('${meal}')">🍽️ Kies items voor gerecht</button>`;
+    return `<div class="save-recipe-entry">
+      <button class="save-recipe-btn" onclick="startMealRecipeSelection('${meal}')">🍽️ Kies items voor gerecht</button>
+      <a class="save-recipe-help-link" href="handleiding.html#meal-to-recipe" target="_blank" rel="noopener noreferrer">Handleiding: items als gerecht opslaan</a>
+    </div>`;
   }
   return `<div class="save-recipe-actions">
     <div class="save-recipe-meta">${selectedCount >= 2 ? `${selectedCount} items geselecteerd` : 'Selecteer minimaal 2 items'}</div>

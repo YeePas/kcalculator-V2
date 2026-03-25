@@ -75,8 +75,12 @@
 .fav-item-sub  { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
 .fav-item-del  { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 0.2rem 0.4rem; border-radius: 4px; flex-shrink: 0; }
 .fav-item-del:hover { color: var(--danger); }
+.save-recipe-entry { margin-top: 0.6rem; }
 .save-recipe-btn { display: block; width: 100%; margin-top: 0.6rem; padding: 0.68rem; background: transparent; border: 1px dashed var(--border-strong); border-radius: calc(var(--radius-md) + 2px); font-size: 0.78rem; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: var(--font-body); }
 .save-recipe-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--surface-soft); }
+.save-recipe-entry .save-recipe-btn { margin-top: 0; }
+.save-recipe-help-link { display: inline-block; margin-top: 0.38rem; font-size: 0.74rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+.save-recipe-help-link:hover { text-decoration: underline; }
 .save-recipe-btn.primary {
   border-style: solid;
   border-color: transparent;
@@ -512,6 +516,9 @@
 .import-date-input { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.7rem 0.8rem; font-size: 0.88rem; font-family: var(--font-body); background: color-mix(in srgb, var(--surface-strong) 84%, var(--surface-soft)); color: var(--text); transition: border-color 0.15s; }
 .import-date-input:focus { outline: none; border-color: var(--accent); }
 .import-hint { font-size: 0.72rem; color: var(--tertiary); margin-top: 0.3rem; }
+.import-doc-link-wrap { margin: -0.35rem 0 1rem; }
+.import-doc-link { font-size: 0.78rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+.import-doc-link:hover { text-decoration: underline; }
 #import-progress { margin-top: 1rem; display: none; }
 #import-progress.active { display: block; }
 .import-progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 0.5rem; }
