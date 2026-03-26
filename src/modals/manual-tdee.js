@@ -1,23 +1,13 @@
 /* ── Manual TDEE Entry Modal ───────────────────────────────── */
 
 import { cfg, authUser, currentDate, _doCurrentDays } from '../state.js';
-import { ENERGY_LOCAL_KEY } from '../constants.js';
-import { safeParse } from '../storage.js';
 import { sbHeaders } from '../supabase/config.js';
 import { renderDataOverzicht } from '../pages/data-overview.js';
-
-function loadEnergyLocal() {
-  return safeParse(ENERGY_LOCAL_KEY, safeParse('eetdagboek_energy_v1', {}));
-}
-
-function saveEnergyLocal(data) {
-  try {
-    localStorage.setItem(ENERGY_LOCAL_KEY, JSON.stringify(data));
-    localStorage.setItem('eetdagboek_energy_v1', JSON.stringify(data));
-  } catch {
-    /* ignore */
-  }
-}
+import {
+  loadEnergyLocal,
+  cacheEnergyRecord,
+  markEnergyRecordSynced,
+} from '../pages/data-overview-data.js';
 
 function openManualTdeeModal() {
   const modal = document.getElementById('manual-tdee-modal');
@@ -72,11 +62,14 @@ async function saveManualTdee() {
     source: 'apple_health',
   };
 
+  const shouldSync = Boolean(cfg.sbUrl && cfg.sbKey && authUser?.id);
+  cacheEnergyRecord(date, record, { dirty: shouldSync, synced: !shouldSync });
+
   status.textContent = 'Opslaan…';
   status.className = 'setup-status';
 
   try {
-    if (cfg.sbUrl && cfg.sbKey && authUser?.id) {
+    if (shouldSync) {
       await fetch(
         `${cfg.sbUrl}/rest/v1/daily_energy_stats?user_id=eq.${authUser.id}&date=eq.${date}`,
         { method: 'DELETE', headers: sbHeaders(true) }
@@ -97,10 +90,9 @@ async function saveManualTdee() {
         const body = await response.text();
         throw new Error(body || `HTTP ${response.status}`);
       }
+      markEnergyRecordSynced(date);
     }
 
-    localEnergy[date] = record;
-    saveEnergyLocal(localEnergy);
     status.textContent = 'TDEE opgeslagen.';
     status.className = 'setup-status ok';
 
@@ -110,7 +102,12 @@ async function saveManualTdee() {
 
     setTimeout(() => closeManualTdeeModal(), 250);
   } catch (error) {
-    status.textContent = error instanceof Error ? error.message : 'Opslaan mislukt.';
+    if (document.getElementById('do-content')) {
+      renderDataOverzicht(_doCurrentDays);
+    }
+    status.textContent = shouldSync
+      ? `Lokaal opgeslagen, sync mislukt: ${error instanceof Error ? error.message : 'onbekende fout'}`
+      : 'TDEE lokaal opgeslagen.';
     status.className = 'setup-status err';
   }
 }

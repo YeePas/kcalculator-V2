@@ -2,9 +2,11 @@
 
 import {
   CFG_KEY, CFG_SESSION_KEY, GOALS_KEY, FAV_KEY, VIS_KEY, CUSTOM_KEY, WEIGHT_KEY,
-  DEFAULT_GOALS, SUPABASE_URL, SUPABASE_ANON_KEY,
+  DEFAULT_GOALS, SUPABASE_URL, SUPABASE_ANON_KEY, PREFS_SYNC_META_KEY,
 } from './constants.js';
 import { normalizeSupermarketFilters } from './products/supermarket-filter.js';
+
+const PREF_SYNC_CATEGORIES = ['cfg', 'goals', 'favs', 'custom', 'vis', 'weight'];
 
 function cleanString(value) {
   if (typeof value !== 'string') return '';
@@ -104,6 +106,88 @@ export function saveSessionAiKey(provider, value) {
   return safeSetJson(storage, CFG_SESSION_KEY, { keys });
 }
 
+function normalizeSyncMetaEntry(value) {
+  return {
+    dirty: value?.dirty === true,
+    updatedAt: Number(value?.updatedAt || 0),
+    lastSyncedAt: Number(value?.lastSyncedAt || 0),
+    lastRemoteAt: Number(value?.lastRemoteAt || 0),
+  };
+}
+
+export function loadPrefsSyncMeta() {
+  const raw = safeParse(PREFS_SYNC_META_KEY, {});
+  return Object.fromEntries(
+    PREF_SYNC_CATEGORIES.map(category => [category, normalizeSyncMetaEntry(raw[category])])
+  );
+}
+
+export function savePrefsSyncMeta(meta) {
+  const next = Object.fromEntries(
+    PREF_SYNC_CATEGORIES.map(category => [category, normalizeSyncMetaEntry(meta?.[category])])
+  );
+  safeSetJson(getLocalStorage(), PREFS_SYNC_META_KEY, next);
+}
+
+export function getPrefSyncMetaEntry(category) {
+  return loadPrefsSyncMeta()[category] || normalizeSyncMetaEntry(null);
+}
+
+export function markPrefCategoryDirty(category) {
+  if (!PREF_SYNC_CATEGORIES.includes(category)) return;
+  const meta = loadPrefsSyncMeta();
+  meta[category] = {
+    ...normalizeSyncMetaEntry(meta[category]),
+    dirty: true,
+    updatedAt: Date.now(),
+  };
+  savePrefsSyncMeta(meta);
+}
+
+export function markPrefCategoriesSynced(categories) {
+  const now = Date.now();
+  const meta = loadPrefsSyncMeta();
+  categories.forEach(category => {
+    if (!PREF_SYNC_CATEGORIES.includes(category)) return;
+    meta[category] = {
+      ...normalizeSyncMetaEntry(meta[category]),
+      dirty: false,
+      lastSyncedAt: now,
+      lastRemoteAt: now,
+    };
+  });
+  savePrefsSyncMeta(meta);
+}
+
+export function applyRemotePrefsSyncMeta(remoteMeta = {}) {
+  const now = Date.now();
+  const meta = loadPrefsSyncMeta();
+  PREF_SYNC_CATEGORIES.forEach(category => {
+    const remoteUpdatedAt = Number(remoteMeta?.[category]?.updatedAt || 0);
+    if (!remoteUpdatedAt) return;
+    meta[category] = {
+      ...normalizeSyncMetaEntry(meta[category]),
+      dirty: false,
+      updatedAt: Math.max(Number(meta[category]?.updatedAt || 0), remoteUpdatedAt),
+      lastSyncedAt: now,
+      lastRemoteAt: now,
+    };
+  });
+  savePrefsSyncMeta(meta);
+}
+
+export function buildPrefsSyncMetaPayload(categories = PREF_SYNC_CATEGORIES) {
+  const meta = loadPrefsSyncMeta();
+  const now = Date.now();
+  return Object.fromEntries(
+    categories
+      .filter(category => PREF_SYNC_CATEGORIES.includes(category))
+      .map(category => [category, {
+        updatedAt: Number(meta[category]?.updatedAt || now),
+      }])
+  );
+}
+
 // ── Config ────────────────────────────────────────────────
 export function normalizeStoredAiModel(model) {
   const value = cleanString(model);
@@ -142,11 +226,12 @@ export function loadCfg() {
   };
 }
 
-export function saveCfg(cfg) {
+export function saveCfg(cfg, options = {}) {
   const persisted = { ...cfg };
   delete persisted.claudeKey;
   delete persisted.keys;
   safeSetJson(getLocalStorage(), CFG_KEY, persisted);
+  if (!options.skipSyncMeta) markPrefCategoryDirty('cfg');
 }
 
 // ── Goals ─────────────────────────────────────────────────
@@ -154,8 +239,9 @@ export function loadGoals() {
   return safeParse(GOALS_KEY, { ...DEFAULT_GOALS });
 }
 
-export function saveGoals(g) {
+export function saveGoals(g, options = {}) {
   safeSetJson(getLocalStorage(), GOALS_KEY, g);
+  if (!options.skipSyncMeta) markPrefCategoryDirty('goals');
 }
 
 // ── Favourites ────────────────────────────────────────────
@@ -163,8 +249,9 @@ export function loadFavs() {
   return safeParse(FAV_KEY, []);
 }
 
-export function saveFavs(favs) {
+export function saveFavs(favs, options = {}) {
   safeSetJson(getLocalStorage(), FAV_KEY, favs);
+  if (!options.skipSyncMeta) markPrefCategoryDirty('favs');
 }
 
 // ── Visibility prefs ──────────────────────────────────────
@@ -172,13 +259,19 @@ export function loadVis() {
   return safeParse(VIS_KEY, { carbs: true, fat: true, prot: true, fiber: true, water: true });
 }
 
+export function saveVis(vis, options = {}) {
+  safeSetJson(getLocalStorage(), VIS_KEY, vis);
+  if (!options.skipSyncMeta) markPrefCategoryDirty('vis');
+}
+
 // ── Custom Products ───────────────────────────────────────
 export function loadCustomProducts() {
   return safeParse(CUSTOM_KEY, []);
 }
 
-export function saveCustomProducts(products) {
+export function saveCustomProducts(products, options = {}) {
   safeSetJson(getLocalStorage(), CUSTOM_KEY, products);
+  if (!options.skipSyncMeta) markPrefCategoryDirty('custom');
 }
 
 // ── Body Weight ──────────────────────────────────────────
@@ -186,6 +279,7 @@ export function loadWeight() {
   return safeParse(WEIGHT_KEY, {});
 }
 
-export function saveWeight(data) {
+export function saveWeight(data, options = {}) {
   safeSetJson(getLocalStorage(), WEIGHT_KEY, data);
+  if (!options.skipSyncMeta) markPrefCategoryDirty('weight');
 }

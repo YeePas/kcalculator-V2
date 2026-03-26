@@ -1,32 +1,171 @@
 /* ── Supabase Sync (Favourites, Custom Products, Prefs) ───── */
 
 import {
-  cfg, authUser, goals, vis, showDrinks, localData,
+  cfg, authUser, showDrinks,
   setCfg, setVis,
   favoritesSyncTimer, setFavoritesSyncTimer,
   customProductsSyncTimer, setCustomProductsSyncTimer,
   prefsSyncTimer, setPrefsSyncTimer,
 } from '../state.js';
-import { VIS_KEY } from '../constants.js';
 import {
-  getLocalStorage,
   loadFavs,
   saveFavs,
   loadGoals,
   saveGoals,
+  loadVis,
+  saveVis,
   loadCustomProducts,
   saveCustomProducts,
   saveCfg,
-  safeSetJson,
   loadWeight,
   saveWeight,
   normalizeStoredAiModel,
+  getPrefSyncMetaEntry,
+  applyRemotePrefsSyncMeta,
+  buildPrefsSyncMetaPayload,
 } from '../storage.js';
 import { sbHeaders } from './config.js';
 import {
   mapFavoriteRowToLocal,
   mapCustomRowToLocal,
 } from './mappers.js';
+
+const SYNCABLE_PREF_CATEGORIES = ['favs', 'goals', 'custom', 'cfg', 'vis', 'weight'];
+
+function buildCfgPrefsValue(sourceCfg = cfg) {
+  return {
+    provider: sourceCfg.provider || '',
+    model: sourceCfg.model || '',
+    adviesProvider: sourceCfg.adviesProvider || '',
+    adviesModel: sourceCfg.adviesModel || '',
+    importProvider: sourceCfg.importProvider || '',
+    importModel: sourceCfg.importModel || '',
+    openFoodFactsLiveSearch: sourceCfg.openFoodFactsLiveSearch !== false,
+    supermarketExclusions: Array.isArray(sourceCfg.supermarketExclusions) ? sourceCfg.supermarketExclusions : [],
+  };
+}
+
+function extractRemoteCfgPrefsValue(prefs = {}) {
+  if (!prefs || typeof prefs !== 'object') return undefined;
+  const hasCfgData = [
+    'provider',
+    'model',
+    'adviesProvider',
+    'adviesModel',
+    'importProvider',
+    'importModel',
+    'openFoodFactsLiveSearch',
+    'supermarketExclusions',
+  ].some(key => Object.prototype.hasOwnProperty.call(prefs, key));
+  if (!hasCfgData) return undefined;
+  return {
+    provider: prefs.provider || '',
+    model: normalizeStoredAiModel(prefs.model || ''),
+    adviesProvider: prefs.adviesProvider || '',
+    adviesModel: normalizeStoredAiModel(prefs.adviesModel || ''),
+    importProvider: prefs.importProvider || '',
+    importModel: normalizeStoredAiModel(prefs.importModel || ''),
+    openFoodFactsLiveSearch: prefs.openFoodFactsLiveSearch !== false,
+    supermarketExclusions: Array.isArray(prefs.supermarketExclusions) ? prefs.supermarketExclusions : [],
+  };
+}
+
+async function fetchPrefsRowFromSupabase() {
+  if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) return {};
+  const r = await fetch(
+    `${cfg.sbUrl}/rest/v1/eetdagboek?user_id=eq.${authUser.id}&date=eq.9999-01-01&select=data`,
+    { headers: sbHeaders() }
+  );
+  const rows = r.ok ? await r.json() : [];
+  return rows[0]?.data || {};
+}
+
+function hasMeaningfulArray(value) {
+  return Array.isArray(value) && value.length > 0;
+}
+
+function hasMeaningfulObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length > 0;
+}
+
+function applySyncedCfgValue(cfgValue) {
+  if (!cfgValue) return;
+  const nextCfg = { ...cfg, ...cfgValue };
+  setCfg(nextCfg);
+  saveCfg(nextCfg, { skipSyncMeta: true });
+}
+
+function applySyncedCategoryValue(category, value) {
+  switch (category) {
+    case 'favs':
+      saveFavs(Array.isArray(value) ? value : [], { skipSyncMeta: true });
+      break;
+    case 'goals':
+      if (value) saveGoals(value, { skipSyncMeta: true });
+      break;
+    case 'custom':
+      saveCustomProducts(Array.isArray(value) ? value : [], { skipSyncMeta: true });
+      break;
+    case 'cfg':
+      applySyncedCfgValue(value);
+      break;
+    case 'vis':
+      if (value) {
+        setVis(value);
+        saveVis(value, { skipSyncMeta: true });
+      }
+      break;
+    case 'weight':
+      if (value) saveWeight(value, { skipSyncMeta: true });
+      break;
+    default:
+      break;
+  }
+}
+
+function buildMergedPrefsPayload(remotePrefs = {}) {
+  const remoteMeta = remotePrefs._meta && typeof remotePrefs._meta === 'object' ? remotePrefs._meta : {};
+  const localCfgValue = buildCfgPrefsValue();
+  const remoteCfgValue = extractRemoteCfgPrefsValue(remotePrefs);
+  const mergedMeta = {};
+  const appliedRemoteMeta = {};
+
+  const selectCategoryValue = (category, localValue, remoteValue) => {
+    const remoteMetaEntry = remoteMeta[category];
+    const useRemote = remoteValue !== undefined && shouldUseRemoteCategory(category, remoteMetaEntry);
+    const value = useRemote ? remoteValue : localValue;
+    const updatedAt = useRemote
+      ? Number(remoteMetaEntry?.updatedAt || getPrefSyncMetaEntry(category).updatedAt || Date.now())
+      : Number(getPrefSyncMetaEntry(category).updatedAt || Date.now());
+    mergedMeta[category] = { updatedAt };
+    if (useRemote && remoteMetaEntry?.updatedAt) {
+      appliedRemoteMeta[category] = remoteMetaEntry;
+      applySyncedCategoryValue(category, remoteValue);
+    }
+    return value;
+  };
+
+  const favsValue = selectCategoryValue('favs', loadFavs(), Array.isArray(remotePrefs.favs) ? remotePrefs.favs : undefined);
+  const goalsValue = selectCategoryValue('goals', loadGoals(), hasMeaningfulObject(remotePrefs.goals) ? remotePrefs.goals : undefined);
+  const customValue = selectCategoryValue('custom', loadCustomProducts(), Array.isArray(remotePrefs.custom) ? remotePrefs.custom : undefined);
+  const cfgValue = selectCategoryValue('cfg', localCfgValue, remoteCfgValue);
+  const visValue = selectCategoryValue('vis', loadVis(), hasMeaningfulObject(remotePrefs.vis) ? remotePrefs.vis : undefined);
+  const weightValue = selectCategoryValue('weight', loadWeight(), hasMeaningfulObject(remotePrefs.weight) ? remotePrefs.weight : undefined);
+
+  return {
+    data: {
+      favs: favsValue,
+      goals: goalsValue,
+      custom: customValue,
+      ...cfgValue,
+      vis: visValue,
+      showDrinks: typeof remotePrefs.showDrinks === 'boolean' ? remotePrefs.showDrinks : showDrinks,
+      weight: weightValue,
+      _meta: mergedMeta,
+    },
+    appliedRemoteMeta,
+  };
+}
 
 // ── Fetch & Push functions ────────────────────────────────
 
@@ -91,30 +230,31 @@ export async function syncUserPrefs(immediate = false) {
   clearTimeout(prefsSyncTimer);
   const pushPrefs = async () => {
     try {
+      let remotePrefs = {};
+      try {
+        remotePrefs = await fetchPrefsRowFromSupabase();
+      } catch (e) {
+        console.warn('[SyncPrefs] remote merge skipped:', e);
+      }
+
+      const mergedPrefs = buildMergedPrefsPayload(remotePrefs);
       const prefsRecord = {
         user_id: authUser.id,
         date: '9999-01-01',
-        data: {
-          favs: loadFavs(),
-          goals: loadGoals(),
-          custom: loadCustomProducts(),
-          provider: cfg.provider || '',
-          adviesProvider: cfg.adviesProvider || '',
-          adviesModel: cfg.adviesModel || '',
-          importProvider: cfg.importProvider || '',
-          importModel: cfg.importModel || '',
-          openFoodFactsLiveSearch: cfg.openFoodFactsLiveSearch !== false,
-          supermarketExclusions: cfg.supermarketExclusions || [],
-          vis,
-          showDrinks,
-          weight: loadWeight(),
-        },
+        data: mergedPrefs.data,
       };
-      await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
+      const response = await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
         method: 'POST',
         headers: { ...sbHeaders(true), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
         body: JSON.stringify(prefsRecord),
       });
+      if (response.ok) {
+        applyRemotePrefsSyncMeta({
+          ...buildPrefsSyncMetaPayload(SYNCABLE_PREF_CATEGORIES),
+          ...mergedPrefs.data._meta,
+          ...mergedPrefs.appliedRemoteMeta,
+        });
+      }
     } catch (e) { console.error('[SyncPrefs]', e); }
   };
 
@@ -152,6 +292,46 @@ export function resolvePrefsObject(prefsValue, localValue) {
   return { value: null, source: 'none' };
 }
 
+function getRemoteCategoryUpdatedAt(remoteMetaEntry) {
+  return Number(remoteMetaEntry?.updatedAt || 0);
+}
+
+function shouldUseRemoteCategory(category, remoteMetaEntry) {
+  const localMeta = getPrefSyncMetaEntry(category);
+  if (localMeta.dirty) return false;
+  const remoteUpdatedAt = getRemoteCategoryUpdatedAt(remoteMetaEntry);
+  return remoteUpdatedAt >= localMeta.updatedAt || localMeta.updatedAt === 0;
+}
+
+function resolveSyncedPrefsArray(category, prefsValue, legacyValue, localValue, remoteMetaEntry, options = {}) {
+  const localMeta = getPrefSyncMetaEntry(category);
+  const localArray = Array.isArray(localValue) ? localValue : [];
+  if (localMeta.dirty) return { value: localArray, source: 'local-dirty' };
+
+  const base = resolvePrefsArray(prefsValue, legacyValue, localArray, options);
+  if (base.source === 'prefs') {
+    return shouldUseRemoteCategory(category, remoteMetaEntry)
+      ? base
+      : { value: localArray, source: 'local' };
+  }
+  return base;
+}
+
+function resolveSyncedPrefsObject(category, prefsValue, localValue, remoteMetaEntry) {
+  const localMeta = getPrefSyncMetaEntry(category);
+  if (localMeta.dirty) {
+    return { value: localValue, source: 'local-dirty' };
+  }
+
+  const base = resolvePrefsObject(prefsValue, localValue);
+  if (base.source === 'prefs') {
+    return shouldUseRemoteCategory(category, remoteMetaEntry)
+      ? base
+      : { value: localValue, source: 'local' };
+  }
+  return base;
+}
+
 export async function loadUserPrefs() {
   if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) return;
   try {
@@ -160,36 +340,48 @@ export async function loadUserPrefs() {
     const sbCustom = await fetchCustomProductsFromSupabase();
 
     // The prefs row is the authoritative source for settings/favorites/customs.
-    const r = await fetch(
-      `${cfg.sbUrl}/rest/v1/eetdagboek?user_id=eq.${authUser.id}&date=eq.9999-01-01&select=data`,
-      { headers: sbHeaders() }
-    );
-    const rows = r.ok ? await r.json() : [];
-    const prefs = rows[0]?.data || {};
+    const prefs = await fetchPrefsRowFromSupabase();
+    const remoteMeta = prefs._meta && typeof prefs._meta === 'object' ? prefs._meta : {};
     let shouldBackfillPrefs = false;
+    const appliedRemoteMeta = {};
 
-    const favsChoice = resolvePrefsArray(prefs.favs, sbFavs, [], { allowLocalFallback: false });
-    saveFavs(favsChoice.value || []);
-    if (favsChoice.source === 'legacy' || favsChoice.source === 'local') shouldBackfillPrefs = true;
+    const localFavs = loadFavs();
+    const localGoals = loadGoals();
+    const localCustom = loadCustomProducts();
+    const localVis = loadVis();
+    const localWeight = loadWeight();
 
-    if (prefs.goals) saveGoals(prefs.goals);
+    const favsChoice = resolveSyncedPrefsArray('favs', prefs.favs, sbFavs, localFavs, remoteMeta.favs, { allowLocalFallback: false });
+    saveFavs(favsChoice.value || [], { skipSyncMeta: true });
+    if (favsChoice.source === 'prefs') appliedRemoteMeta.favs = remoteMeta.favs;
+    if ((favsChoice.source === 'legacy' || favsChoice.source === 'local') && hasMeaningfulArray(favsChoice.value)) shouldBackfillPrefs = true;
 
-    const customChoice = resolvePrefsArray(prefs.custom, sbCustom, [], { allowLocalFallback: false });
-    saveCustomProducts(customChoice.value || []);
-    if (customChoice.source === 'legacy' || customChoice.source === 'local') shouldBackfillPrefs = true;
-
-    if (prefs.vis) {
-      setVis(prefs.vis);
-      safeSetJson(getLocalStorage(), VIS_KEY, prefs.vis);
+    const goalsChoice = resolveSyncedPrefsObject('goals', prefs.goals, localGoals, remoteMeta.goals);
+    if (goalsChoice.value) {
+      saveGoals(goalsChoice.value, { skipSyncMeta: true });
+      if (goalsChoice.source === 'prefs') appliedRemoteMeta.goals = remoteMeta.goals;
     }
 
-    if (prefs.weight && typeof prefs.weight === 'object') {
-      const localWeight = loadWeight();
-      const merged = { ...prefs.weight, ...localWeight };
-      saveWeight(merged);
+    const customChoice = resolveSyncedPrefsArray('custom', prefs.custom, sbCustom, localCustom, remoteMeta.custom, { allowLocalFallback: false });
+    saveCustomProducts(customChoice.value || [], { skipSyncMeta: true });
+    if (customChoice.source === 'prefs') appliedRemoteMeta.custom = remoteMeta.custom;
+    if ((customChoice.source === 'legacy' || customChoice.source === 'local') && hasMeaningfulArray(customChoice.value)) shouldBackfillPrefs = true;
+
+    const visChoice = resolveSyncedPrefsObject('vis', prefs.vis, localVis, remoteMeta.vis);
+    if (visChoice.value) {
+      setVis(visChoice.value);
+      saveVis(visChoice.value, { skipSyncMeta: true });
+      if (visChoice.source === 'prefs') appliedRemoteMeta.vis = remoteMeta.vis;
     }
 
-    const nextCfg = {
+    const weightChoice = resolveSyncedPrefsObject('weight', prefs.weight, localWeight, remoteMeta.weight);
+    if (weightChoice.value) {
+      saveWeight(weightChoice.value, { skipSyncMeta: true });
+      if (weightChoice.source === 'prefs') appliedRemoteMeta.weight = remoteMeta.weight;
+    }
+
+    const useRemoteCfg = shouldUseRemoteCategory('cfg', remoteMeta.cfg);
+    const nextCfg = useRemoteCfg ? {
       ...cfg,
       provider: prefs.provider || cfg.provider || '',
       model: normalizeStoredAiModel(prefs.model || cfg.model || ''),
@@ -199,9 +391,12 @@ export async function loadUserPrefs() {
       importModel: normalizeStoredAiModel(prefs.importModel || cfg.importModel || ''),
       openFoodFactsLiveSearch: prefs.openFoodFactsLiveSearch !== false,
       supermarketExclusions: Array.isArray(prefs.supermarketExclusions) ? prefs.supermarketExclusions : (cfg.supermarketExclusions || []),
-    };
+    } : cfg;
     setCfg(nextCfg);
-    saveCfg(nextCfg);
+    saveCfg(nextCfg, { skipSyncMeta: true });
+    if (useRemoteCfg) appliedRemoteMeta.cfg = remoteMeta.cfg;
+
+    applyRemotePrefsSyncMeta(appliedRemoteMeta);
 
     if (shouldBackfillPrefs) await syncUserPrefs(true);
   } catch (e) { console.error('[LoadPrefs]', e); }

@@ -10,8 +10,8 @@ import {
 import {
   dateKey, formatDate, emptyDay, normalizeDayData, esc, dayTotals, r1,
 } from '../utils.js';
-import { safeParse, loadFavs, loadGoals, loadCustomProducts } from '../storage.js';
-import { loadDay, saveDay, loadAllDates } from '../supabase/data.js';
+import { safeParse, loadFavs, loadGoals, loadCustomProducts, saveVis } from '../storage.js';
+import { loadDay, saveDay, getCachedDateKeys, refreshAllDates } from '../supabase/data.js';
 import { renderMeals, _renderDayUI } from './render.js';
 import { renderDataOverzicht } from '../pages/data-overview.js';
 import { updateAdviesModelSelect, showAdviesContent } from '../pages/advies.js';
@@ -22,20 +22,32 @@ import { renderAdminPage } from '../pages/admin.js';
 export async function renderHistory() {
   const list = document.getElementById('history-list');
   if (!list) return;
-  const dates = await loadAllDates();
-  const days = dates.sort().reverse().slice(0, 7);
-  if (!days.length) {
-    list.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);font-style:italic">Nog geen history</div>';
-    return;
+
+  const paint = (dates) => {
+    const days = [...dates].sort().reverse().slice(0, 7);
+    if (!days.length) {
+      list.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);font-style:italic">Nog geen history</div>';
+      return;
+    }
+    list.innerHTML = days.map(day => {
+      const cached = localData[day];
+      const cals = cached ? Math.round(dayTotals(cached).cals) : null;
+      return `<div class="history-day" onclick="goToDay('${day}')">
+        <span>${formatDate(day)}</span>
+        <span class="history-day-cals">${cals !== null && cals > 0 ? cals + ' kcal' : '—'}</span>
+      </div>`;
+    }).join('');
+  };
+
+  const cachedDates = getCachedDateKeys(60);
+  paint(cachedDates);
+
+  try {
+    const { changed, dates } = await refreshAllDates(60);
+    if (changed || !cachedDates.length) paint(dates);
+  } catch {
+    if (!cachedDates.length) paint([]);
   }
-  list.innerHTML = days.map(day => {
-    const cached = localData[day];
-    const cals = cached ? Math.round(dayTotals(cached).cals) : null;
-    return `<div class="history-day" onclick="goToDay('${day}')">
-      <span>${formatDate(day)}</span>
-      <span class="history-day-cals">${cals !== null && cals > 0 ? cals + ' kcal' : '—'}</span>
-    </div>`;
-  }).join('');
 }
 
 /* ── Quick favourites (chips) ────────────────────────────── */
@@ -89,7 +101,7 @@ export function applyDark(on) {
 }
 
 /* ── Macro visibility toggles ────────────────────────────── */
-export function applyVis() {
+export function applyVis(persist = true) {
   const fiberRow = document.getElementById('row-fiber');
   Object.keys(vis).forEach(key => {
     if (key === 'fiber' || key === 'water') return;
@@ -104,7 +116,7 @@ export function applyVis() {
   const waterRow = document.getElementById('row-water');
   if (waterRow) waterRow.style.display = '';
   vis.water = true;
-  localStorage.setItem(VIS_KEY, JSON.stringify(vis));
+  if (persist) saveVis(vis);
 }
 
 /* ── Delete item / recipe group ──────────────────────────── */

@@ -8,7 +8,7 @@ import {
   dateKey, emptyDay, normalizeDayData, dayTotals, r1,
 } from '../utils.js';
 import { safeParse } from '../storage.js';
-import { sbHeaders } from '../supabase/config.js';
+import { refreshDayRange } from '../supabase/data.js';
 
 /* ── Macro Donut ──────────────────────────────────────────── */
 export function renderMacroDonut(carbs, fat, prot) {
@@ -58,7 +58,8 @@ export function renderMacroDonut(carbs, fat, prot) {
 }
 
 /* ── Week Sparkline ──────────────────────────────────────── */
-export async function renderWeekSpark() {
+export async function renderWeekSpark(options = {}) {
+  const { backgroundRefresh = true } = options;
   const container = document.getElementById('week-spark');
   if (!container) return;
 
@@ -85,30 +86,7 @@ export async function renderWeekSpark() {
     });
   };
 
-  let values = [];
-
-  if (cfg.sbUrl && cfg.sbKey && authUser?.id) {
-    try {
-      const r = await fetch(
-        cfg.sbUrl + '/rest/v1/eetdagboek?date=gte.' + dateFrom + '&date=lte.' + dateTo + '&select=date,data',
-        { headers: sbHeaders() }
-      );
-      if (r.ok) {
-        const rows = await r.json();
-        const dbMap = {};
-        rows.forEach(row => { dbMap[row.date] = { ...emptyDay(), ...row.data }; });
-        values = last7.map(d => {
-          const raw = dbMap[d];
-          const day = raw ? normalizeDayData(raw) : null;
-          return day ? dayTotals(day).cals : 0;
-        });
-      } else {
-        values = getLocalValues();
-      }
-    } catch { values = getLocalValues(); }
-  } else {
-    values = getLocalValues();
-  }
+  const values = getLocalValues();
 
   const hasData = values.some(v => v > 0);
   const maxVal = Math.max(...values, goals.kcal || 2000, 100);
@@ -169,6 +147,15 @@ export async function renderWeekSpark() {
     <div class="week-spark-labels">${labels.map(l => `<span>${l}</span>`).join('')}</div>
     ${hasData ? `<div class="week-spark-avg">Gemiddeld: <strong>${Math.round(values.filter(v => v > 0).reduce((a, b) => a + b, 0) / Math.max(values.filter(v => v > 0).length, 1))} kcal/dag</strong></div>` : '<div class="week-spark-avg" style="color:var(--tertiary);font-style:italic">Nog geen data deze week</div>'}
   `;
+
+  if (backgroundRefresh && cfg.sbUrl && cfg.sbKey && authUser?.id) {
+    try {
+      const { changed } = await refreshDayRange(dateFrom, dateTo);
+      if (changed) await renderWeekSpark({ backgroundRefresh: false });
+    } catch {
+      /* ignore background refresh errors */
+    }
+  }
 }
 
 /* ── Dashboard (Week modal chart) ────────────────────────── */

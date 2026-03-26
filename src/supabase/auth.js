@@ -6,7 +6,7 @@ import {
 } from '../state.js';
 import {
   LOCAL_KEY, FAV_KEY, GOALS_KEY, CUSTOM_KEY, VIS_KEY, WEIGHT_KEY, ENERGY_LOCAL_KEY,
-  DEFAULT_GOALS,
+  DEFAULT_GOALS, PREFS_SYNC_META_KEY,
 } from '../constants.js';
 import { getLocalStorage, getSessionStorage, safeParseFromStorage, safeRemove, safeSetJson } from '../storage.js';
 
@@ -23,6 +23,7 @@ export function clearUserScopedLocalState() {
     VIS_KEY,
     WEIGHT_KEY,
     ENERGY_LOCAL_KEY,
+    PREFS_SYNC_META_KEY,
     'eetdagboek_energy_v1',
   ].forEach(key => {
     safeRemove(localStorageRef, key);

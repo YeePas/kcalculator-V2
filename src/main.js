@@ -1525,8 +1525,9 @@ function autoSelectMealByTime() {
   try {
     console.log('[Boot] Starting...');
     applyDark(localStorage.getItem(DARK_KEY) === '1');
-    applyVis();
+    applyVis(false);
     setCfg(loadCfg());
+    setGoals(loadGoals());
     initNumericInputModes();
     initEventListeners();
     autoSelectMealByTime();
@@ -1539,8 +1540,10 @@ function autoSelectMealByTime() {
       try { await restoreAuth(); } catch (e) { console.error('[Boot] restoreAuth error:', e); }
     }
     updateAccountUI();
+    renderQuickFavs();
 
     if (handledRedirect || authUser) {
+      await renderMeals();
       if (cfg.sbUrl && cfg.sbKey) await initSupabase();
       await loadUserPrefs();
       setGoals(loadGoals());
@@ -1552,7 +1555,6 @@ function autoSelectMealByTime() {
     } else {
       showSetup('auth');
       setSyncStatus('offline', 'lokaal');
-      renderQuickFavs();
       await renderMeals();
     }
     console.log('[Boot] Done ✓');

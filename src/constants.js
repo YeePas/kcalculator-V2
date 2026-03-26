@@ -5,13 +5,16 @@ export const CFG_KEY = 'eetdagboek_cfg_v1';
 export const CFG_SESSION_KEY = 'eetdagboek_cfg_session_v1';
 export const GOALS_KEY = 'eetdagboek_goals_v1';
 export const LOCAL_KEY = 'eetdagboek_local_v1';
+export const LOCAL_META_KEY = 'eetdagboek_local_meta_v1';
 export const VIS_KEY = 'eetdagboek_vis_v1';
 export const FAV_KEY = 'eetdagboek_fav_v1';
 export const DARK_KEY = 'eetdagboek_dark_v1';
 export const DRINKS_KEY = 'eetdagboek_drinks_v1';
 export const CUSTOM_KEY = 'eetdagboek_custom_v1';
 export const ENERGY_LOCAL_KEY = 'eetdagboek_energy_local_v1';
+export const ENERGY_META_KEY = 'eetdagboek_energy_meta_v1';
 export const WEIGHT_KEY = 'eetdagboek_weight_v1';
+export const PREFS_SYNC_META_KEY = 'eetdagboek_prefs_sync_meta_v1';
 export const ENABLE_BETA_BUG_REPORT = false;
 // Hardcoded Supabase fallback (from .env at build time)
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
