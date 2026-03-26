@@ -4,7 +4,7 @@ import './styles/index.css';
 // ── State & Constants ────────────────────────────────────────
 import {
   cfg, goals, localData, currentDate, selMeal, vis, authUser,
-  activeAdviesTab, setActiveAdviesTab, showDrinks,
+  activeAdviesTab, setActiveAdviesTab, showDrinks, _doCurrentDays,
   nevoData, nevoReady, setNevoReady,
   acSelectedIdx, acSelectedItem, setAcResults,
   setLocalData, setGoals, setSelMeal, setCfg,
@@ -32,7 +32,10 @@ import {
   sbAuthRegister, sbAuthLogin, sbAuthRefresh,
   setAuthUser, updateAccountUI, restoreAuth, updateAuthProfile, clearUserScopedLocalState,
 } from './supabase/auth.js';
-import { initSupabase, loadDay, saveDay } from './supabase/data.js';
+import {
+  initSupabase, loadDay, saveDay,
+  getCachedDay, refreshAllServerDays, syncDirtyDays,
+} from './supabase/data.js';
 import {
   syncFavoritesToSupabase,
   syncCustomProductsToSupabase,
@@ -40,6 +43,7 @@ import {
   loadUserPrefs,
 } from './supabase/sync.js';
 import { fetchUserAiKeyStatuses, saveUserAiKey } from './supabase/user-ai-keys.js';
+import { refreshAllEnergyStats, syncDirtyEnergyRecords } from './pages/data-overview-data.js';
 
 // ── Products ─────────────────────────────────────────────────
 import { clearProductCache, loadNevo, searchNevo } from './products/database.js';
@@ -909,38 +913,24 @@ async function manualSync() {
       if (session && session.access_token) { setAuthUser(session); }
       else { setSyncStatus('error', 'sessie verlopen'); alert('Sessie verlopen. Log opnieuw in.'); return; }
     }
-    const day = localData[currentDate] || emptyDay();
-    await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
-      method: 'POST', headers: { ...sbHeaders(true), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ user_id: authUser.id, date: currentDate, data: day }),
-    });
-    const prefsRecord = {
-      user_id: authUser.id, date: '9999-01-01',
-      data: {
-        favs: loadFavs(),
-        goals: loadGoals(),
-        custom: loadCustomProducts(),
-        provider: cfg.provider || '',
-        adviesProvider: cfg.adviesProvider || '',
-        adviesModel: cfg.adviesModel || '',
-        importProvider: cfg.importProvider || '',
-        importModel: cfg.importModel || '',
-        openFoodFactsLiveSearch: cfg.openFoodFactsLiveSearch !== false,
-        supermarketExclusions: cfg.supermarketExclusions || [],
-        vis,
-        showDrinks,
-      },
-    };
-    await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
-      method: 'POST', headers: { ...sbHeaders(true), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify(prefsRecord),
-    });
+
+    setSyncStatus('syncing', 'uploaden…');
+    await syncDirtyDays();
+    await syncDirtyEnergyRecords();
+    await syncUserPrefs(true);
+
+    setSyncStatus('syncing', 'server verversen…');
     await loadUserPrefs();
     setGoals(loadGoals());
+    await refreshAllServerDays();
+    await refreshAllEnergyStats();
     renderQuickFavs();
-    const fresh = await loadDay(currentDate);
+    const fresh = normalizeDayData(getCachedDay(currentDate) || await loadDay(currentDate) || emptyDay());
     setLocalData(currentDate, fresh);
     _renderDayUI(fresh);
+    if (document.getElementById('do-content')) {
+      await renderDataOverzicht(_doCurrentDays, { backgroundRefresh: false });
+    }
     setSyncStatus('synced', 'gesynchroniseerd ✓');
   } catch (e) {
     console.error('[ManualSync] Error:', e);

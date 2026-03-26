@@ -260,6 +260,33 @@ export async function refreshAllDates(limit = 60) {
   return { changed, dates: Array.from(new Set([...dates, ...cached])).sort().reverse().slice(0, limit) };
 }
 
+export async function refreshAllServerDays() {
+  const cached = getCachedDateKeys(Infinity);
+  if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) {
+    return { changed: false, dates: cached };
+  }
+
+  const r = await fetch(
+    `${cfg.sbUrl}/rest/v1/eetdagboek?user_id=eq.${authUser.id}&date=neq.9999-01-01&select=date,data&order=date.asc`,
+    { headers: sbHeaders(), cache: 'no-store' }
+  );
+  if (!r.ok) throw new Error('Fetch failed');
+  const rows = await r.json();
+  const rowMap = Object.fromEntries(rows.map(row => [row.date, row.data || null]));
+  const allDates = Array.from(new Set([...cached, ...Object.keys(rowMap)])).sort();
+
+  let changed = false;
+  for (const date of allDates) {
+    const result = applyRemoteDayToLocalCache(date, rowMap[date] || null, { allowDelete: true });
+    if (result.applied) changed = true;
+  }
+
+  return {
+    changed,
+    dates: Array.from(new Set([...Object.keys(rowMap), ...getCachedDateKeys(Infinity)])).sort().reverse(),
+  };
+}
+
 export async function initSupabase() {
   if (!cfg.sbUrl || !cfg.sbKey) return false;
   try {
@@ -312,6 +339,29 @@ export function saveDay(dateStr, day) {
       setSyncStatus('error', 'sync mislukt');
     }
   }, 1200));
+}
+
+export async function syncDirtyDays() {
+  if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) return 0;
+
+  const meta = loadLocalDayMeta();
+  const dirtyDates = Object.entries(meta)
+    .filter(([date, entry]) => date !== '9999-01-01' && entry?.dirty)
+    .map(([date]) => date)
+    .sort();
+
+  for (const date of dirtyDates) {
+    const day = normalizeDayData(getCachedDay(date) || emptyDay());
+    const r = await fetch(cfg.sbUrl + '/rest/v1/eetdagboek?on_conflict=user_id,date', {
+      method: 'POST',
+      headers: { ...sbHeaders(true), Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ user_id: authUser.id, date, data: day }),
+    });
+    if (!r.ok) throw new Error(`Dag sync mislukt voor ${date}`);
+    markDaySynced(date);
+  }
+
+  return dirtyDates.length;
 }
 
 export async function loadAllDates() {

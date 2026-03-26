@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 function createStorageMock() {
   const store = new Map();
@@ -128,5 +128,57 @@ describe('cache-first sync guards', () => {
     expect(range['2026-03-24']).toBeUndefined();
     expect(loadEnergyMeta()['2026-03-23'].dirty).toBe(true);
     expect(loadEnergyMeta()['2026-03-24'].dirty).toBe(false);
+  });
+
+  it('syncs all dirty local day entries during a manual full sync', async () => {
+    const state = await import('../../src/state.js');
+    state.setAuthUser({ id: 'user-1', access_token: 'token', refresh_token: 'refresh' });
+
+    const {
+      cacheDayLocally,
+      syncDirtyDays,
+      loadLocalDayMeta,
+    } = await import('../../src/supabase/data.js');
+
+    cacheDayLocally('2026-03-22', makeDay('Lokale syncdag', 610), { dirty: true });
+
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchMock;
+
+    const count = await syncDirtyDays();
+
+    expect(count).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(loadLocalDayMeta()['2026-03-22'].dirty).toBe(false);
+  });
+
+  it('syncs dirty local energy entries and marks them clean afterwards', async () => {
+    const state = await import('../../src/state.js');
+    state.setAuthUser({ id: 'user-1', access_token: 'token', refresh_token: 'refresh' });
+
+    const {
+      cacheEnergyRecord,
+      syncDirtyEnergyRecords,
+      loadEnergyMeta,
+    } = await import('../../src/pages/data-overview-data.js');
+
+    cacheEnergyRecord('2026-03-21', {
+      date: '2026-03-21',
+      active_kcal: 120,
+      resting_kcal: 1750,
+      tdee_kcal: 1870,
+      source: 'apple_health',
+    }, { dirty: true });
+
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true });
+    globalThis.fetch = fetchMock;
+
+    const count = await syncDirtyEnergyRecords();
+
+    expect(count).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(loadEnergyMeta()['2026-03-21'].dirty).toBe(false);
   });
 });

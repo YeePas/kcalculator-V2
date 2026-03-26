@@ -60,6 +60,26 @@ function getEnergyMeta(dateStr) {
   return { meta, entry: normalizeEnergyMetaEntry(meta[dateStr]) };
 }
 
+function buildEnergyRowMap(rows) {
+  const rowMap = {};
+  (rows || []).forEach(row => {
+    if (!rowMap[row.date]) {
+      rowMap[row.date] = {
+        date: row.date,
+        active_kcal: 0,
+        resting_kcal: 0,
+        tdee_kcal: 0,
+        source: row.source || '',
+      };
+    }
+    rowMap[row.date].active_kcal += row.active_kcal || 0;
+    rowMap[row.date].resting_kcal += row.resting_kcal || 0;
+    rowMap[row.date].tdee_kcal += row.tdee_kcal || 0;
+    if (row.source) rowMap[row.date].source = row.source;
+  });
+  return rowMap;
+}
+
 export function filterEnergyRange(map, dateFrom, dateTo) {
   const result = {};
   for (const [key, value] of Object.entries(map || {})) {
@@ -109,25 +129,9 @@ export function applyRemoteEnergyRange(dateFrom, dateTo, rows) {
   const local = loadEnergyLocal();
   const meta = loadEnergyMeta();
   const result = {};
-  const rowMap = {};
+  const rowMap = buildEnergyRowMap(rows);
   const now = Date.now();
   let changed = false;
-
-  (rows || []).forEach(row => {
-    if (!rowMap[row.date]) {
-      rowMap[row.date] = {
-        date: row.date,
-        active_kcal: 0,
-        resting_kcal: 0,
-        tdee_kcal: 0,
-        source: row.source || '',
-      };
-    }
-    rowMap[row.date].active_kcal += row.active_kcal || 0;
-    rowMap[row.date].resting_kcal += row.resting_kcal || 0;
-    rowMap[row.date].tdee_kcal += row.tdee_kcal || 0;
-    if (row.source) rowMap[row.date].source = row.source;
-  });
 
   const allDates = new Set([
     ...Object.keys(filterEnergyRange(local, dateFrom, dateTo)),
@@ -174,6 +178,54 @@ export function applyRemoteEnergyRange(dateFrom, dateTo, rows) {
   return { changed, result: filterEnergyRange(local, dateFrom, dateTo) };
 }
 
+export function applyRemoteEnergySnapshot(rows) {
+  const local = loadEnergyLocal();
+  const meta = loadEnergyMeta();
+  const rowMap = buildEnergyRowMap(rows);
+  const now = Date.now();
+  let changed = false;
+
+  const allDates = new Set([
+    ...Object.keys(local),
+    ...Object.keys(rowMap),
+  ]);
+
+  for (const date of allDates) {
+    const entry = normalizeEnergyMetaEntry(meta[date]);
+    if (entry.dirty) continue;
+
+    const remote = rowMap[date] || null;
+    if (!remote) {
+      if (local[date]) {
+        delete local[date];
+        changed = true;
+      }
+      meta[date] = {
+        ...entry,
+        dirty: false,
+        lastSyncedAt: now,
+        lastRemoteAt: now,
+      };
+      continue;
+    }
+
+    const before = local[date] ? JSON.stringify(local[date]) : '';
+    const after = JSON.stringify(remote);
+    if (before !== after) changed = true;
+    local[date] = remote;
+    meta[date] = {
+      ...entry,
+      dirty: false,
+      lastSyncedAt: now,
+      lastRemoteAt: now,
+    };
+  }
+
+  saveEnergyLocal(local);
+  saveEnergyMeta(meta);
+  return { changed, result: local };
+}
+
 export async function refreshEnergyStatsRange(dateFrom, dateTo) {
   const cached = getCachedEnergyStatsRange(dateFrom, dateTo);
   if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) {
@@ -192,6 +244,66 @@ export async function refreshEnergyStatsRange(dateFrom, dateTo) {
   } catch {
     return { changed: false, result: cached };
   }
+}
+
+export async function refreshAllEnergyStats() {
+  const cached = loadEnergyLocal();
+  if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) {
+    return { changed: false, result: cached };
+  }
+
+  try {
+    const r = await fetch(
+      cfg.sbUrl + '/rest/v1/daily_energy_stats?user_id=eq.' + authUser.id +
+      '&select=date,active_kcal,resting_kcal,tdee_kcal,source&order=date.asc',
+      { headers: sbHeaders(), cache: 'no-store' }
+    );
+    if (!r.ok) return { changed: false, result: cached };
+    const rows = await r.json();
+    return applyRemoteEnergySnapshot(rows);
+  } catch {
+    return { changed: false, result: cached };
+  }
+}
+
+export async function syncDirtyEnergyRecords() {
+  if (!cfg.sbUrl || !cfg.sbKey || !authUser?.id) return 0;
+
+  const meta = loadEnergyMeta();
+  const local = loadEnergyLocal();
+  const dirtyDates = Object.entries(meta)
+    .filter(([date, entry]) => entry?.dirty && date)
+    .map(([date]) => date)
+    .sort();
+
+  for (const date of dirtyDates) {
+    const record = local[date] || null;
+
+    const clearResponse = await fetch(
+      `${cfg.sbUrl}/rest/v1/daily_energy_stats?user_id=eq.${authUser.id}&date=eq.${date}`,
+      { method: 'DELETE', headers: sbHeaders(true) }
+    );
+    if (!clearResponse.ok) throw new Error(`Energy sync mislukt voor ${date}`);
+
+    if (record) {
+      const response = await fetch(`${cfg.sbUrl}/rest/v1/daily_energy_stats`, {
+        method: 'POST',
+        headers: { ...sbHeaders(true), Prefer: 'return=minimal' },
+        body: JSON.stringify([{
+          user_id: authUser.id,
+          date,
+          active_kcal: Math.round(record.active_kcal || 0),
+          resting_kcal: Math.round(record.resting_kcal || 0),
+          source: record.source || 'apple_health',
+        }]),
+      });
+      if (!response.ok) throw new Error(`Energy sync mislukt voor ${date}`);
+    }
+
+    markEnergyRecordSynced(date);
+  }
+
+  return dirtyDates.length;
 }
 
 export async function loadEnergyStatsRange(dateFrom, dateTo, options = {}) {
