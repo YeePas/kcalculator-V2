@@ -529,6 +529,13 @@ function cloneDayData(day) {
   return normalizeDayData(JSON.parse(JSON.stringify(day || emptyDay())));
 }
 
+async function syncSingleDayOverviewIfOpen() {
+  const layout = document.querySelector('.layout');
+  const dataOverviewOpen = layout?.classList.contains('show-data') || layout?.classList.contains('mobile-view-data');
+  if (!dataOverviewOpen || _doCurrentDays !== 1) return;
+  await renderDataOverzicht(1, { backgroundRefresh: false });
+}
+
 function openCopyDayModal() {
   const modal = document.getElementById('copy-day-modal');
   const input = document.getElementById('copy-day-source-input');
@@ -1067,16 +1074,22 @@ function initEventListeners() {
   });
 
   // Day navigation
-  document.getElementById('prev-day')?.addEventListener('click', () => {
+  document.getElementById('prev-day')?.addEventListener('click', async () => {
     const d = new Date(currentDate + 'T12:00:00'); d.setDate(d.getDate() - 1);
-    setCurrentDate(dateKey(d)); renderMeals();
+    setCurrentDate(dateKey(d));
+    await renderMeals();
+    await syncSingleDayOverviewIfOpen();
   });
-  document.getElementById('next-day')?.addEventListener('click', () => {
+  document.getElementById('next-day')?.addEventListener('click', async () => {
     const d = new Date(currentDate + 'T12:00:00'); d.setDate(d.getDate() + 1);
-    setCurrentDate(dateKey(d)); renderMeals();
+    setCurrentDate(dateKey(d));
+    await renderMeals();
+    await syncSingleDayOverviewIfOpen();
   });
-  document.getElementById('today-btn')?.addEventListener('click', () => {
-    setCurrentDate(dateKey(new Date())); renderMeals();
+  document.getElementById('today-btn')?.addEventListener('click', async () => {
+    setCurrentDate(dateKey(new Date()));
+    await renderMeals();
+    await syncSingleDayOverviewIfOpen();
   });
   document.getElementById('copy-day-btn')?.addEventListener('click', openCopyDayModal);
   document.getElementById('copy-day-cancel-btn')?.addEventListener('click', closeCopyDayModal);

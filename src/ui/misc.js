@@ -162,6 +162,11 @@ export function moveRecipeGroupToMeal(fromMeal, groupId, toMeal) {
 export async function goToDay(key) {
   setCurrentDate(key);
   await renderMeals();
+  const layout = document.querySelector('.layout');
+  const dataOverviewOpen = layout?.classList.contains('show-data') || layout?.classList.contains('mobile-view-data');
+  if (dataOverviewOpen && _doCurrentDays === 1) {
+    renderDataOverzicht(1, { backgroundRefresh: false });
+  }
 }
 
 /* ── Mobile view switching ───────────────────────────────── */

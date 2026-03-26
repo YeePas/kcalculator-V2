@@ -98,7 +98,15 @@
 .do-meal-pct { font-size: 1.35rem; font-weight: 700; font-family: var(--font-display); color: var(--accent); line-height: 1; letter-spacing: -0.04em; }
 .do-meal-detail { font-size: 0.83rem; color: var(--text); font-weight: 600; }
 .do-meal-macros { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+.do-meal-macro-stack { display: flex; width: 100%; height: 10px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--surface-soft) 82%, var(--surface-strong)); border: 1px solid var(--border); margin-top: 0.6rem; }
+.do-meal-macro-segment { display: block; height: 100%; }
+.do-meal-macro-segment.carbs { background: var(--blue); }
+.do-meal-macro-segment.fat { background: var(--danger); }
+.do-meal-macro-segment.prot { background: var(--green); }
+.do-meal-macro-split { display: flex; justify-content: space-between; gap: 0.45rem; margin-top: 0.38rem; font-size: 0.7rem; color: var(--muted); }
+.do-meal-note { font-size: 0.7rem; color: var(--muted); margin-top: 0.45rem; }
 .do-meal-warn { font-size: 0.72rem; color: var(--danger); margin-top: 0.45rem; }
+.do-legend-tight { margin-top: 0.8rem; }
 
 /* ── Data overview layout utilities ────────────────────── */
 .do-grid-2,

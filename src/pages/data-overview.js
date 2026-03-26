@@ -11,6 +11,7 @@ import { refreshDayRange } from '../supabase/data.js';
 import { switchMobileView } from '../ui/misc.js';
 import { loadEnergyStatsRange, refreshEnergyStatsRange, aggregatePeriod } from './data-overview-data.js';
 import { generateInsights } from './data-overview-insights.js';
+import { analyzeMealMoments } from './data-overview-meals.js';
 import { kpiCard, renderDOChart, renderDOMacroChart, renderMacroDonutChart } from './data-overview-charts.js';
 import { exportPeriodCSV, exportWeekrapportPrint } from './export.js';
 import { renderWeightChart } from './weight.js';
@@ -123,12 +124,50 @@ export function switchDOPeriod(days, btn) {
 /* ── Main Render ─────────────────────────────────────────── */
 function buildDateKeys(numDays) {
   const dateKeys = [];
+  const anchorKey = numDays === 1 ? currentDate : dateKey(new Date());
+  const anchorDate = new Date(anchorKey + 'T12:00:00');
   for (let i = numDays - 1; i >= 0; i--) {
-    const d = new Date();
+    const d = new Date(anchorDate);
     d.setDate(d.getDate() - i);
     dateKeys.push(dateKey(d));
   }
   return dateKeys;
+}
+
+function getPeriodLabel(numDays, dateKeys) {
+  if (numDays === 1) return formatDate(dateKeys[0]);
+  if (numDays === 7) return 'deze week';
+  if (numDays === 30) return 'deze maand';
+  if (numDays === 365) return 'dit jaar';
+  return dateKeys.length + ' dagen';
+}
+
+function getOverviewTitle(numDays) {
+  if (numDays === 1) return 'Dagoverzicht';
+  if (numDays === 7) return 'Weekoverzicht';
+  if (numDays === 30) return 'Maandoverzicht';
+  if (numDays === 365) return 'Jaaroverzicht';
+  return 'Overzicht';
+}
+
+function renderMealMacroBar(meal) {
+  const split = meal.macroSplit || { carbs: 0, fat: 0, prot: 0 };
+  if ((split.carbs + split.fat + split.prot) <= 0) {
+    return '<div class="do-meal-macros">Geen macroverdeling beschikbaar</div>';
+  }
+
+  return (
+    '<div class="do-meal-macro-stack" aria-hidden="true">' +
+      (split.carbs > 0 ? '<span class="do-meal-macro-segment carbs" style="width:' + split.carbs + '%"></span>' : '') +
+      (split.fat > 0 ? '<span class="do-meal-macro-segment fat" style="width:' + split.fat + '%"></span>' : '') +
+      (split.prot > 0 ? '<span class="do-meal-macro-segment prot" style="width:' + split.prot + '%"></span>' : '') +
+    '</div>' +
+    '<div class="do-meal-macro-split">' +
+      '<span>Kh ' + split.carbs + '%</span>' +
+      '<span>Vet ' + split.fat + '%</span>' +
+      '<span>Eiwit ' + split.prot + '%</span>' +
+    '</div>'
+  );
 }
 
 function buildEntries(dateKeys) {
@@ -164,9 +203,10 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
     }
   });
 
-  const { insights, consistency, weekdayWeekend, mealAnalysis, topFoods, extremes } = generateInsights(a, goals);
-  const periodLabel = numDays === 7 ? 'deze week' : numDays === 30 ? 'deze maand' : numDays === 365 ? 'dit jaar' : a.totalDays + ' dagen';
+  const { insights, consistency, weekdayWeekend, topFoods, extremes } = generateInsights(a, goals);
+  const periodLabel = getPeriodLabel(numDays, dateKeys);
   const visibleBlocks = loadDataOverviewBlocks();
+  const mealMomentAnalysis = analyzeMealMoments(entries);
 
   if (a.activeDays === 0) {
     contentEl.innerHTML = '<div class="do-empty">Geen data gevonden voor deze periode.<br>Voeg eerst maaltijden toe!</div>';
@@ -190,8 +230,10 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
     html += '<section class="do-overview-hero">';
     html += '<div class="do-overview-copy">';
     html += '<span class="do-eyebrow">Data dashboard</span>';
-    html += '<h3>' + (numDays === 7 ? 'Weekoverzicht' : numDays === 30 ? 'Maandoverzicht' : numDays === 365 ? 'Jaaroverzicht' : 'Overzicht') + '</h3>';
-    html += '<p>' + a.activeDays + ' actieve dagen binnen ' + periodLabel + '. Focus op intake, ritme en producten die je patroon bepalen.</p>';
+    html += '<h3>' + getOverviewTitle(numDays) + '</h3>';
+    html += '<p>' + (numDays === 1
+      ? 'Detailweergave van ' + periodLabel + '. Focus op intake, macroverdeling en maaltijdopbouw van deze dag.'
+      : a.activeDays + ' actieve dagen binnen ' + periodLabel + '. Focus op intake, ritme en producten die je patroon bepalen.') + '</p>';
     html += '</div>';
     html += '<div class="do-kpi-grid">';
     html += kpiCard(a.avgIntake, 'kcal/dag', 'var(--accent)');
@@ -209,7 +251,7 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
     html += '<section class="do-section do-feature-card">';
     html += sectionHead(
       '📈 Intake' + (a.daysWithEnergy > 0 ? ' vs verbruik' : ''),
-      'Dagelijks verloop over ' + periodLabel,
+      numDays === 1 ? 'Intake en verbruik op ' + periodLabel : 'Dagelijks verloop over ' + periodLabel,
       goals.kcal ? 'Doel ' + goals.kcal + ' kcal' : ''
     );
     html += '<div class="do-chart" id="do-energy-chart"></div>';
@@ -226,7 +268,11 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
 
   if (visibleBlocks.macros !== false) {
     html += '<section class="do-section">';
-    html += sectionHead('🥗 Macro-verdeling', 'Per dag gestapeld en als totale verhouding', Math.round(a.avgCarbs + a.avgFat + a.avgProt) + 'g gemiddeld');
+    html += sectionHead(
+      '🥗 Macro-verdeling',
+      numDays === 1 ? 'Macroverdeling van deze dag' : 'Per dag gestapeld en als totale verhouding',
+      Math.round(a.avgCarbs + a.avgFat + a.avgProt) + 'g gemiddeld'
+    );
     html += '<div class="do-split-card do-split-card-macros">';
     html += '<div class="do-split-pane do-split-pane-wide"><div class="do-chart" id="do-macro-chart"></div>';
     html += '<div class="do-legend"><span><span class="do-legend-dot" style="background:var(--blue)"></span>Kh</span><span><span class="do-legend-dot" style="background:var(--danger)"></span>Vet</span><span><span class="do-legend-dot" style="background:var(--green)"></span>Eiwit</span></div></div>';
@@ -234,7 +280,7 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
     html += '</div></section>';
   }
 
-  const mealEntries = Object.entries(mealAnalysis.meals).filter(([_, meal]) => meal.daysWithMeal > 0);
+  const mealEntries = mealMomentAnalysis.sortedMeals;
   const allPeriodItemsForMicro = entries.flatMap(({ day }) => {
     if (!day) return [];
     return MEAL_NAMES.flatMap(meal => (day[meal] || []));
@@ -247,14 +293,34 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
 
     if (visibleBlocks.meals !== false && hasMeals) {
       html += '<section class="do-section">';
-      html += sectionHead('🍽️ Maaltijdanalyse', 'Hoeveel elke maaltijd bijdraagt aan je totale intake', mealEntries.length + ' eetmomenten');
+      html += sectionHead(
+        '🍽️ Maaltijdanalyse',
+        numDays === 1
+          ? 'Macroverdeling per eetmoment op ' + periodLabel
+          : 'Macroverdeling en bijdrage per eetmoment over ' + periodLabel,
+        mealEntries.length + ' eetmomenten'
+      );
       html += '<div class="do-meal-grid">';
       for (const [key, meal] of mealEntries.sort((aLeft, bLeft) => bLeft[1].contributionPct - aLeft[1].contributionPct)) {
-        html += '<div class="do-meal-card"><div class="do-meal-card-top"><div class="do-meal-title">' + esc(meal.label) + '</div><span class="do-meal-pct">' + meal.contributionPct + '%</span></div><div class="do-meal-detail">' + meal.avgKcal + ' kcal/dag</div>';
-        if (meal.excessDays > 0) html += '<div class="do-meal-warn">⚠️ ' + meal.excessDays + '× >50%</div>';
+        const macroLine = numDays === 1
+          ? `${r1(meal.totalCarbs)}g kh · ${r1(meal.totalFat)}g vet · ${r1(meal.totalProt)}g eiwit`
+          : `${meal.avgCarbs}g kh · ${meal.avgFat}g vet · ${meal.avgProt}g eiwit gemiddeld`;
+        const kcalLine = numDays === 1
+          ? Math.round(meal.totalKcal) + ' kcal'
+          : meal.avgKcal + ' kcal per eetmoment';
+        const warnText = numDays === 1
+          ? 'neemt >50% van je intake in'
+          : meal.excessDays + '× >50% van dagintake';
+        html += '<div class="do-meal-card"><div class="do-meal-card-top"><div class="do-meal-title">' + esc(meal.label) + '</div><span class="do-meal-pct">' + meal.contributionPct + '%</span></div><div class="do-meal-detail">' + kcalLine + '</div>';
+        html += '<div class="do-meal-macros">' + esc(macroLine) + '</div>';
+        html += renderMealMacroBar(meal);
+        if (numDays > 1) html += '<div class="do-meal-note">' + meal.daysWithMeal + ' dagen met dit eetmoment</div>';
+        if (meal.excessDays > 0) html += '<div class="do-meal-warn">⚠️ ' + warnText + '</div>';
         html += '</div>';
       }
-      html += '</div></section>';
+      html += '</div>';
+      html += '<div class="do-legend do-legend-tight"><span><span class="do-legend-dot" style="background:var(--blue)"></span>Koolhydraten</span><span><span class="do-legend-dot" style="background:var(--danger)"></span>Vet</span><span><span class="do-legend-dot" style="background:var(--green)"></span>Eiwit</span></div>';
+      html += '</section>';
     }
 
     if (visibleBlocks.micros !== false && hasMicro) {
