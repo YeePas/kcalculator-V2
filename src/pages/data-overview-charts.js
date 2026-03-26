@@ -30,7 +30,7 @@ export function renderDOChart(a, container) {
   if (!container) return;
   const days = a.days, n = days.length;
   if (n === 0) { container.innerHTML = ''; return; }
-  const W = 600, H = 200, padL = 40, padR = 10, padT = 15, padB = 28;
+  const W = 600, H = 200, padL = 40, padR = 10, padT = 24, padB = 28;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const MIN_SEGMENT_LABEL_H = 16;
   let maxVal = 100;
@@ -59,14 +59,13 @@ export function renderDOChart(a, container) {
       const fill = intakeBarColor(d.intake, goals.kcal);
       const remainingToTdee = Math.max((d.tdee_kcal || 0) - d.intake, 0);
       const intakeLabel = String(Math.round(d.intake));
+      const hasTdee = (d.tdee_kcal || 0) > 0;
+      const balance = hasTdee ? Math.round(d.intake - d.tdee_kcal) : null;
       if (remainingToTdee > 0) {
         const stackTopY = toY(d.tdee_kcal || 0);
         const stackH = Math.max(y - stackTopY, 0);
         if (stackH > 0) {
           svg += `<rect x="${x}" y="${stackTopY}" width="${barW}" height="${stackH}" rx="2" fill="var(--tdee-line)" opacity="0.22"><title>${d.date}: nog ${Math.round(remainingToTdee)} kcal tot TDEE</title></rect>`;
-          if (stackH >= MIN_SEGMENT_LABEL_H) {
-            svg += `<text x="${x + barW / 2}" y="${stackTopY + stackH / 2}" text-anchor="middle" dominant-baseline="central" fill="var(--muted)" font-size="7.2" font-weight="700" font-family="var(--font-body)">+${Math.round(remainingToTdee)}</text>`;
-          }
         }
       }
       svg += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="2" fill="${fill}" opacity="0.75"><title>${d.date}: ${d.intake} kcal</title></rect>`;
@@ -75,6 +74,13 @@ export function renderDOChart(a, container) {
       } else {
         const labelY = Math.max(y - 6, padT + 8);
         svg += `<text x="${x + barW / 2}" y="${labelY}" text-anchor="middle" fill="var(--text)" font-size="7.5" font-weight="700" font-family="var(--font-body)">${intakeLabel}</text>`;
+      }
+      if (balance !== null) {
+        const topValue = Math.max(d.intake, d.tdee_kcal || 0);
+        const balanceLabelY = Math.max(toY(topValue) - 6, 8);
+        const balanceFill = balance > 0 ? 'var(--danger)' : 'var(--text)';
+        const balanceLabel = `${balance > 0 ? '+' : ''}${balance}`;
+        svg += `<text x="${x + barW / 2}" y="${balanceLabelY}" text-anchor="middle" fill="${balanceFill}" font-size="7.2" font-weight="700" font-family="var(--font-body)">${balanceLabel}</text>`;
       }
     }
   }
