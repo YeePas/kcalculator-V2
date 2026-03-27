@@ -2,7 +2,7 @@
 
 import {
   localData, currentDate, goals, authUser, cfg,
-  vis, showDrinks, setCurrentDate, _doCurrentDays,
+  vis, showDrinks, setCurrentDate,
 } from '../state.js';
 import {
   MEAL_NAMES, MEAL_LABELS, LOCAL_KEY, DARK_KEY, VIS_KEY,
@@ -13,7 +13,6 @@ import {
 import { safeParse, loadFavs, loadGoals, loadCustomProducts, saveVis } from '../storage.js';
 import { loadDay, saveDay, getCachedDateKeys, refreshAllDates } from '../supabase/data.js';
 import { renderMeals, _renderDayUI } from './render.js';
-import { renderDataOverzicht } from '../pages/data-overview.js';
 import { updateAdviesModelSelect, showAdviesContent } from '../pages/advies.js';
 import { openSmartImportPage } from '../pages/smart-import.js';
 import { renderAdminPage } from '../pages/admin.js';
@@ -162,11 +161,6 @@ export function moveRecipeGroupToMeal(fromMeal, groupId, toMeal) {
 export async function goToDay(key) {
   setCurrentDate(key);
   await renderMeals();
-  const layout = document.querySelector('.layout');
-  const dataOverviewOpen = layout?.classList.contains('show-data') || layout?.classList.contains('mobile-view-data');
-  if (dataOverviewOpen && _doCurrentDays === 1) {
-    renderDataOverzicht(1, { backgroundRefresh: false });
-  }
 }
 
 /* ── Mobile view switching ───────────────────────────────── */

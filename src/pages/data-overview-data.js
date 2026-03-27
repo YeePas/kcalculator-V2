@@ -2,7 +2,7 @@
 
 import { cfg, authUser } from '../state.js';
 import { ENERGY_LOCAL_KEY, ENERGY_META_KEY } from '../constants.js';
-import { r1 } from '../utils.js';
+import { r1, dateKey } from '../utils.js';
 import { safeParse } from '../storage.js';
 import { sbHeaders } from '../supabase/config.js';
 
@@ -319,6 +319,7 @@ export function aggregatePeriod(entries, goalsObj, dayTotalsFn, energyMap) {
   let totalKcalWithEnergy = 0;
   let totalActive = 0, totalResting = 0, totalTDEE = 0;
   let activeDays = 0, daysWithEnergy = 0, daysOnTarget = 0;
+  const todayKey = dateKey(new Date());
 
   for (const { key, day } of entries) {
     const t = day ? dayTotalsFn(day) : { cals: 0, carbs: 0, fat: 0, prot: 0, fiber: 0 };
@@ -339,7 +340,7 @@ export function aggregatePeriod(entries, goalsObj, dayTotalsFn, energyMap) {
       totalKcal += intake; totalCarbs += t.carbs; totalFat += t.fat; totalProt += t.prot; totalFiber += t.fiber;
       if (goalsObj.kcal && Math.abs(intake - goalsObj.kcal) <= goalsObj.kcal * 0.1) daysOnTarget++;
     }
-    if (tdee > 0) {
+    if (tdee > 0 && key !== todayKey) {
       daysWithEnergy++;
       totalKcalWithEnergy += intake;
       totalActive += energy.active_kcal || 0; totalResting += energy.resting_kcal || 0; totalTDEE += tdee;

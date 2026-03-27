@@ -5,7 +5,7 @@ import {
   _doCurrentDays, setDoCurrentDays,
 } from '../state.js';
 import { MEAL_NAMES, LOCAL_KEY } from '../constants.js';
-import { dateKey, emptyDay, normalizeDayData, esc, formatDate, dayTotals } from '../utils.js';
+import { dateKey, normalizeDayData, esc, formatDate, dayTotals } from '../utils.js';
 import { safeParse } from '../storage.js';
 import { refreshDayRange } from '../supabase/data.js';
 import { switchMobileView } from '../ui/misc.js';
@@ -16,7 +16,6 @@ import { kpiCard, renderDOChart, renderDOMacroChart, renderMacroDonutChart } fro
 import { exportPeriodCSV, exportWeekrapportPrint } from './export.js';
 import { renderWeightChart } from './weight.js';
 import { loadWeight } from '../storage.js';
-import { estimateMicroHeuristic, renderMicroDashboard, RDA } from './micronutrients.js';
 
 const DATA_OVERVIEW_BLOCKS_KEY = 'kcalculator_data_overview_blocks_v1';
 const DATA_OVERVIEW_BLOCKS = [
@@ -25,7 +24,6 @@ const DATA_OVERVIEW_BLOCKS = [
   { id: 'intake', label: 'Intake' },
   { id: 'macros', label: 'Macro\'s' },
   { id: 'meals', label: 'Maaltijden' },
-  { id: 'micros', label: 'Micronutriënten' },
   { id: 'balance', label: 'Energiebalans' },
   { id: 'weight', label: 'Gewicht' },
   { id: 'stats', label: 'Statistieken' },
@@ -281,53 +279,40 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
   }
 
   const mealEntries = mealMomentAnalysis.sortedMeals;
-  const allPeriodItemsForMicro = entries.flatMap(({ day }) => {
-    if (!day) return [];
-    return MEAL_NAMES.flatMap(meal => (day[meal] || []));
-  });
   const hasMeals = mealEntries.length > 0;
-  const hasMicro = allPeriodItemsForMicro.length > 0;
 
-  if ((visibleBlocks.meals !== false && hasMeals) || (visibleBlocks.micros !== false && hasMicro)) {
+  if (visibleBlocks.meals !== false && hasMeals) {
     html += '<div class="do-grid-2">';
 
-    if (visibleBlocks.meals !== false && hasMeals) {
-      html += '<section class="do-section">';
-      html += sectionHead(
-        '🍽️ Maaltijdanalyse',
-        numDays === 1
-          ? 'Macroverdeling per eetmoment op ' + periodLabel
-          : 'Macroverdeling en bijdrage per eetmoment over ' + periodLabel,
-        mealEntries.length + ' eetmomenten'
-      );
-      html += '<div class="do-meal-grid">';
-      for (const [key, meal] of mealEntries.sort((aLeft, bLeft) => bLeft[1].contributionPct - aLeft[1].contributionPct)) {
-        const macroLine = numDays === 1
-          ? `${r1(meal.totalCarbs)}g kh · ${r1(meal.totalFat)}g vet · ${r1(meal.totalProt)}g eiwit`
-          : `${meal.avgCarbs}g kh · ${meal.avgFat}g vet · ${meal.avgProt}g eiwit gemiddeld`;
-        const kcalLine = numDays === 1
-          ? Math.round(meal.totalKcal) + ' kcal'
-          : meal.avgKcal + ' kcal per eetmoment';
-        const warnText = numDays === 1
-          ? 'neemt >50% van je intake in'
-          : meal.excessDays + '× >50% van dagintake';
-        html += '<div class="do-meal-card"><div class="do-meal-card-top"><div class="do-meal-title">' + esc(meal.label) + '</div><span class="do-meal-pct">' + meal.contributionPct + '%</span></div><div class="do-meal-detail">' + kcalLine + '</div>';
-        html += '<div class="do-meal-macros">' + esc(macroLine) + '</div>';
-        html += renderMealMacroBar(meal);
-        if (numDays > 1) html += '<div class="do-meal-note">' + meal.daysWithMeal + ' dagen met dit eetmoment</div>';
-        if (meal.excessDays > 0) html += '<div class="do-meal-warn">⚠️ ' + warnText + '</div>';
-        html += '</div>';
-      }
+    html += '<section class="do-section">';
+    html += sectionHead(
+      '🍽️ Maaltijdanalyse',
+      numDays === 1
+        ? 'Macroverdeling per eetmoment op ' + periodLabel
+        : 'Macroverdeling en bijdrage per eetmoment over ' + periodLabel,
+      mealEntries.length + ' eetmomenten'
+    );
+    html += '<div class="do-meal-grid">';
+    for (const [key, meal] of mealEntries.sort((aLeft, bLeft) => bLeft[1].contributionPct - aLeft[1].contributionPct)) {
+      const macroLine = numDays === 1
+        ? `${r1(meal.totalCarbs)}g kh · ${r1(meal.totalFat)}g vet · ${r1(meal.totalProt)}g eiwit`
+        : `${meal.avgCarbs}g kh · ${meal.avgFat}g vet · ${meal.avgProt}g eiwit gemiddeld`;
+      const kcalLine = numDays === 1
+        ? Math.round(meal.totalKcal) + ' kcal'
+        : meal.avgKcal + ' kcal per eetmoment';
+      const warnText = numDays === 1
+        ? 'neemt >50% van je intake in'
+        : meal.excessDays + '× >50% van dagintake';
+      html += '<div class="do-meal-card"><div class="do-meal-card-top"><div class="do-meal-title">' + esc(meal.label) + '</div><span class="do-meal-pct">' + meal.contributionPct + '%</span></div><div class="do-meal-detail">' + kcalLine + '</div>';
+      html += '<div class="do-meal-macros">' + esc(macroLine) + '</div>';
+      html += renderMealMacroBar(meal);
+      if (numDays > 1) html += '<div class="do-meal-note">' + meal.daysWithMeal + ' dagen met dit eetmoment</div>';
+      if (meal.excessDays > 0) html += '<div class="do-meal-warn">⚠️ ' + warnText + '</div>';
       html += '</div>';
-      html += '<div class="do-legend do-legend-tight"><span><span class="do-legend-dot" style="background:var(--blue)"></span>Koolhydraten</span><span><span class="do-legend-dot" style="background:var(--danger)"></span>Vet</span><span><span class="do-legend-dot" style="background:var(--green)"></span>Eiwit</span></div>';
-      html += '</section>';
     }
-
-    if (visibleBlocks.micros !== false && hasMicro) {
-      html += '<section class="do-section">';
-      html += sectionHead('💊 Micronutriënten', 'Gem./dag · ' + a.activeDays + ' dagen · 💡 = bronnen bij tekort', '(schatting)');
-      html += '<div id="do-micro-chart"></div></section>';
-    }
+    html += '</div>';
+    html += '<div class="do-legend do-legend-tight"><span><span class="do-legend-dot" style="background:var(--blue)"></span>Koolhydraten</span><span><span class="do-legend-dot" style="background:var(--danger)"></span>Vet</span><span><span class="do-legend-dot" style="background:var(--green)"></span>Eiwit</span></div>';
+    html += '</section>';
 
     html += '</div>';
   }
@@ -426,16 +411,6 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
   document.getElementById('do-export-csv')?.addEventListener('click', () => exportPeriodCSV(numDays));
   document.getElementById('do-export-print')?.addEventListener('click', () => exportWeekrapportPrint());
   renderWeightChart(document.getElementById('do-weight-chart'), numDays);
-
-  const microEl = document.getElementById('do-micro-chart');
-  if (microEl && allPeriodItemsForMicro.length > 0) {
-    const microTotals = estimateMicroHeuristic(allPeriodItemsForMicro);
-    const microAvg = {};
-    for (const key of Object.keys(RDA)) {
-      microAvg[key] = Math.round((microTotals[key] / Math.max(a.activeDays, 1)) * 10) / 10;
-    }
-    renderMicroDashboard(microEl, microAvg, 'Schatting gem./dag', true);
-  }
 
   return true;
 }
