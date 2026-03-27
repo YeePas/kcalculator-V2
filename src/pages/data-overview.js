@@ -85,6 +85,16 @@ function sectionHead(title, sub, meta) {
   );
 }
 
+function statLabel(label, infoText = '') {
+  if (!infoText) return '<span class="do-stat-label">' + esc(label) + '</span>';
+  return (
+    '<span class="do-stat-label-wrap">' +
+      '<span class="do-stat-label">' + esc(label) + '</span>' +
+      '<button class="do-info-btn" type="button" aria-label="Uitleg over ' + esc(label) + '" data-info="' + esc(infoText) + '">i</button>' +
+    '</span>'
+  );
+}
+
 /* ── Navigation ──────────────────────────────────────────── */
 export function openWeekModal() {
   const layout = document.querySelector('.layout');
@@ -347,8 +357,8 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
     html += '<section class="do-section">';
     html += sectionHead('📊 Statistieken', 'Variatie, ritme en uitschieters', a.totalDays + ' dagen');
     html += '<div class="do-stat-grid">';
-    html += '<div class="do-stat"><span class="do-stat-label">Consistentie</span><span class="do-stat-val" style="color:' + (cs.score >= 70 ? 'var(--green)' : cs.score >= 40 ? '#e67e22' : 'var(--danger)') + '">' + cs.score + '%</span></div>';
-    html += '<div class="do-stat"><span class="do-stat-label">Spreiding</span><span class="do-stat-val">' + cs.intakeStdDev + ' kcal σ</span></div>';
+    html += '<div class="do-stat do-stat-info"><div class="do-stat-main">' + statLabel('Consistentie', 'Consistentie is een score van 0-100 voor hoe stabiel je calorie-inname is over de periode. Hoger = regelmatiger. De score daalt bij grote dagelijkse schommelingen en bij dagen die meer dan ongeveer 300 kcal afwijken van je gemiddelde.') + '<span class="do-stat-val" style="color:' + (cs.score >= 70 ? 'var(--green)' : cs.score >= 40 ? '#e67e22' : 'var(--danger)') + '">' + cs.score + '%</span></div></div>';
+    html += '<div class="do-stat do-stat-info"><div class="do-stat-main">' + statLabel('Spreiding', 'Spreiding is de standaarddeviatie van je dagelijkse calorie-inname. Lager betekent dat je dagen dichter bij elkaar liggen. Hoger betekent grotere verschillen tussen dagen.') + '<span class="do-stat-val">' + cs.intakeStdDev + ' kcal σ</span></div></div>';
     if (ww.weekday.days > 0 && ww.weekend.days > 0) {
       const diff = ww.differences.intakeDiff;
       html += '<div class="do-stat"><span class="do-stat-label">Weekdag</span><span class="do-stat-val">' + ww.weekday.avgIntake + ' kcal</span></div>';
@@ -402,6 +412,32 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
       saveDataOverviewBlocks(nextVisibility);
       renderDataOverzicht(numDays);
     });
+  });
+
+  contentEl.querySelectorAll('.do-info-btn').forEach(btn => {
+    btn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const stat = btn.closest('.do-stat');
+      if (!stat) return;
+      const isOpen = stat.classList.contains('show-info');
+      contentEl.querySelectorAll('.do-stat.show-info').forEach(openStat => {
+        if (openStat !== stat) openStat.classList.remove('show-info');
+      });
+      stat.classList.toggle('show-info', !isOpen);
+    });
+  });
+
+  contentEl.querySelectorAll('.do-stat-info').forEach(stat => {
+    const btn = stat.querySelector('.do-info-btn');
+    if (!btn) return;
+    let info = stat.querySelector('.do-stat-info-text');
+    if (!info) {
+      info = document.createElement('div');
+      info.className = 'do-stat-info-text';
+      info.textContent = btn.dataset.info || '';
+      stat.appendChild(info);
+    }
   });
 
   document.getElementById('do-export-csv')?.addEventListener('click', () => exportPeriodCSV(numDays));
