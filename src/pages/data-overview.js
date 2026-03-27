@@ -282,8 +282,6 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
   const hasMeals = mealEntries.length > 0;
 
   if (visibleBlocks.meals !== false && hasMeals) {
-    html += '<div class="do-grid-2">';
-
     html += '<section class="do-section">';
     html += sectionHead(
       '🍽️ Maaltijdanalyse',
@@ -313,8 +311,6 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
     html += '</div>';
     html += '<div class="do-legend do-legend-tight"><span><span class="do-legend-dot" style="background:var(--blue)"></span>Koolhydraten</span><span><span class="do-legend-dot" style="background:var(--danger)"></span>Vet</span><span><span class="do-legend-dot" style="background:var(--green)"></span>Eiwit</span></div>';
     html += '</section>';
-
-    html += '</div>';
   }
 
   if (visibleBlocks.balance !== false && a.daysWithEnergy > 0) {

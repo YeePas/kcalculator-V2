@@ -1,7 +1,7 @@
 /* ── Data-Overzicht: Chart Rendering ────────────────────── */
 
 import { goals } from '../state.js';
-import { esc } from '../utils.js';
+import { esc, dateKey } from '../utils.js';
 
 export function kpiCard(value, label, color) {
   return '<div class="do-kpi"><div class="do-kpi-val" style="color:' + color + '">' + value + '</div><div class="do-kpi-label">' + esc(label) + '</div></div>';
@@ -30,6 +30,7 @@ export function renderDOChart(a, container) {
   if (!container) return;
   const days = a.days, n = days.length;
   if (n === 0) { container.innerHTML = ''; return; }
+  const todayKey = dateKey(new Date());
   const W = 600, H = 200, padL = 40, padR = 10, padT = 24, padB = 28;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const MIN_SEGMENT_LABEL_H = 16;
@@ -54,13 +55,13 @@ export function renderDOChart(a, container) {
   for (let i = 0; i < n; i++) {
     const d = days[i], x = padL + i * gap + (gap - barW) / 2;
     if (d.intake > 0) {
-      const filledIntake = Math.min(d.intake, d.tdee_kcal || d.intake);
+      const hasComparableTdee = (d.tdee_kcal || 0) > 0 && d.date !== todayKey;
+      const filledIntake = Math.min(d.intake, hasComparableTdee ? d.tdee_kcal : d.intake);
       const h = (filledIntake / maxVal) * plotH, y = padT + plotH - h;
       const fill = intakeBarColor(d.intake, goals.kcal);
-      const remainingToTdee = Math.max((d.tdee_kcal || 0) - d.intake, 0);
+      const remainingToTdee = hasComparableTdee ? Math.max((d.tdee_kcal || 0) - d.intake, 0) : 0;
       const intakeLabel = String(Math.round(d.intake));
-      const hasTdee = (d.tdee_kcal || 0) > 0;
-      const balance = hasTdee ? Math.round(d.intake - d.tdee_kcal) : null;
+      const balance = hasComparableTdee ? Math.round(d.intake - d.tdee_kcal) : null;
       if (remainingToTdee > 0) {
         const stackTopY = toY(d.tdee_kcal || 0);
         const stackH = Math.max(y - stackTopY, 0);
@@ -86,7 +87,9 @@ export function renderDOChart(a, container) {
   }
   if (a.daysWithEnergy > 0) {
     const pts = [];
-    for (let i = 0; i < n; i++) { if (days[i].tdee_kcal > 0) pts.push({ x: toX(i), y: toY(days[i].tdee_kcal) }); }
+    for (let i = 0; i < n; i++) {
+      if (days[i].tdee_kcal > 0 && days[i].date !== todayKey) pts.push({ x: toX(i), y: toY(days[i].tdee_kcal) });
+    }
     if (pts.length > 1) {
       let path = 'M ' + pts[0].x + ' ' + pts[0].y;
       for (let i = 1; i < pts.length; i++) { const cpx = (pts[i-1].x + pts[i].x) / 2; path += ' C ' + cpx + ' ' + pts[i-1].y + ', ' + cpx + ' ' + pts[i].y + ', ' + pts[i].x + ' ' + pts[i].y; }
