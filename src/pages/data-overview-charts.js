@@ -18,6 +18,12 @@ function getRoundedAxis(maxVal, steps) {
   return { axisMax: stepSize * steps, stepSize };
 }
 
+export function getIntakeChartAxisMax(days, goal) {
+  const maxIntake = days.reduce((highest, day) => Math.max(highest, day.intake || 0), 0);
+  const paddedMax = maxIntake > 0 ? maxIntake + 300 : 100;
+  return Math.max(paddedMax, goal || 0, 100);
+}
+
 function intakeBarColor(intake, goal) {
   if (!goal || intake <= goal) return 'var(--accent)';
   const surplus = intake - goal;
@@ -34,9 +40,7 @@ export function renderDOChart(a, container) {
   const W = 600, H = 200, padL = 40, padR = 10, padT = 24, padB = 28;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const MIN_SEGMENT_LABEL_H = 16;
-  let maxVal = 100;
-  for (const d of days) maxVal = Math.max(maxVal, d.intake, d.tdee_kcal || 0);
-  if (goals.kcal) maxVal = Math.max(maxVal, goals.kcal);
+  let maxVal = getIntakeChartAxisMax(days, goals.kcal);
   const { axisMax, stepSize } = getRoundedAxis(maxVal, 4);
   maxVal = axisMax;
   const toY = v => padT + plotH - (v / maxVal) * plotH;
