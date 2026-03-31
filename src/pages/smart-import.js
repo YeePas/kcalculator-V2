@@ -129,6 +129,42 @@ function getRecipeIngredientResolution(ingredient, servings = 1) {
   };
 }
 
+function roundRecipeMetric(value, decimals = 1) {
+  return Number((Number(value || 0)).toFixed(decimals));
+}
+
+function recalculateIngredientNutrition(ingredient, nextGrams) {
+  const grams = Math.max(0, Math.round(Number(nextGrams || 0)));
+  const match = ingredient.manualMatch || null;
+
+  if (match) {
+    const factor = grams / 100;
+    return {
+      ...ingredient,
+      grams,
+      displayAmount: grams ? `${grams} g` : '',
+      calories: Math.round((match.k || 0) * factor),
+      protein_g: roundRecipeMetric((match.e || 0) * factor),
+      carbs_g: roundRecipeMetric((match.kh || 0) * factor),
+      fat_g: roundRecipeMetric((match.v || 0) * factor),
+      fiber_g: roundRecipeMetric((match.vz || 0) * factor),
+    };
+  }
+
+  const currentGrams = Math.max(0, Number(ingredient.grams || 0));
+  const scale = currentGrams > 0 ? (grams / currentGrams) : 0;
+  return {
+    ...ingredient,
+    grams,
+    displayAmount: grams ? `${grams} g` : '',
+    calories: currentGrams > 0 ? Math.round((ingredient.calories || 0) * scale) : Math.round(ingredient.calories || 0),
+    protein_g: currentGrams > 0 ? roundRecipeMetric((ingredient.protein_g || 0) * scale) : roundRecipeMetric(ingredient.protein_g || 0),
+    carbs_g: currentGrams > 0 ? roundRecipeMetric((ingredient.carbs_g || 0) * scale) : roundRecipeMetric(ingredient.carbs_g || 0),
+    fat_g: currentGrams > 0 ? roundRecipeMetric((ingredient.fat_g || 0) * scale) : roundRecipeMetric(ingredient.fat_g || 0),
+    fiber_g: currentGrams > 0 ? roundRecipeMetric((ingredient.fiber_g || 0) * scale) : roundRecipeMetric(ingredient.fiber_g || 0),
+  };
+}
+
 function getRecipeIngredientResolutions(proposal) {
   const servings = proposal?.recipe?.servings || 1;
   return (proposal?.recipe?.ingredients || []).map(ingredient => getRecipeIngredientResolution(ingredient, servings));
@@ -315,7 +351,7 @@ function renderRecipeProposalCard(targetId, proposal) {
           + buildIngredientMatchResults(targetId, proposal, idx)
           + '</div></div>'
         : '')
-      + '</div><span>' + esc(ingredient.displayAmount || (ingredient.grams ? `${ingredient.grams} g` : '')) + '</span><small>'
+      + '</div><label class="smart-recipe-grams-field"><span>Hoeveelheid</span><input type="number" min="0" step="1" inputmode="numeric" class="smart-recipe-grams-input" data-target="' + targetId + '" data-ingredient-grams="' + idx + '" value="' + Math.round(ingredient.grams || 0) + '"><small>gram</small></label><small>'
       + Math.round(matchedItem?.kcal || ingredient.calories || 0) + ' kcal · ' + esc(String(scaledGrams ? Math.round(scaledGrams) + 'g per portie' : '')) + '</small><button type="button" class="smart-recipe-inline-remove" data-action="remove-recipe-ingredient" data-target="' + targetId + '" data-ingredient-idx="' + idx + '" aria-label="Verwijder ingrediënt">✕</button></div>'
     ).join('')
     + '<button type="button" class="btn-secondary smart-recipe-inline-add smart-recipe-inline-add-bottom" data-action="add-recipe-ingredient" data-target="' + targetId + '">+ Ingrediënt</button>'
@@ -606,6 +642,22 @@ function mutateRecipeIngredientInDataset(targetId, ingredientIdx, updater) {
   ));
   resultEl.dataset.proposal = JSON.stringify(proposal);
   return proposal;
+}
+
+function commitRecipeIngredientGramsInput(gramsInput) {
+  if (!gramsInput) return;
+  const resultEl = document.getElementById(gramsInput.dataset.target);
+  if (!resultEl?.dataset?.proposal) return;
+  const proposal = JSON.parse(resultEl.dataset.proposal);
+  const ingredientIdx = Number(gramsInput.dataset.ingredientGrams);
+  const ingredient = proposal?.recipe?.ingredients?.[ingredientIdx];
+  if (!ingredient) return;
+  const parsed = Number(String(gramsInput.value || '').replace(',', '.'));
+  const safeGrams = Math.max(0, Number.isFinite(parsed) ? parsed : (ingredient.grams || 0));
+  const nextIngredients = proposal.recipe.ingredients.map((entry, idx) => (
+    idx === ingredientIdx ? recalculateIngredientNutrition(entry, safeGrams) : entry
+  ));
+  renderProposalCard(gramsInput.dataset.target, rebuildRecipeProposalWithIngredients(proposal, nextIngredients));
 }
 
 function commitRecipeServingsInput(servingsInput) {
@@ -939,13 +991,13 @@ export function initSmartImportListeners() {
         ...(proposal.recipe?.ingredients || []),
         {
           name: 'Nieuw ingrediënt',
-          grams: 0,
+          grams: 100,
           calories: 0,
           protein_g: 0,
           carbs_g: 0,
           fat_g: 0,
           fiber_g: 0,
-          displayAmount: '',
+          displayAmount: '100 g',
           editingMatch: true,
           matchQuery: '',
           matchResults: [],
@@ -984,14 +1036,14 @@ export function initSmartImportListeners() {
         const picked = (ingredient.matchResults || []).find(item => item.n === matchName)
           || searchNevo(matchName)[0]
           || matchItemToNevo({ foodName: matchName, gram: ingredient.grams || 0 });
-        return {
+        return recalculateIngredientNutrition({
           ...ingredient,
           manualMatch: picked || null,
           matchQuery: picked?.n || matchName || ingredient.name,
           editingMatch: false,
           matchResults: [],
           matchLoading: false,
-        };
+        }, ingredient.grams || 100);
       });
     }
     if (btn.dataset.action === 'search-match') {
@@ -1004,12 +1056,15 @@ export function initSmartImportListeners() {
         return;
       }
       updateRecipeIngredient(btn.dataset.target, ingredientIdx, ingredient => ({
-        ...ingredient,
+        ...recalculateIngredientNutrition({
+          ...ingredient,
+          manualMatch: picked,
+          matchQuery: picked.n || ingredient.matchQuery || ingredient.name,
+          editingMatch: false,
+          matchResults: [],
+          matchLoading: false,
+        }, ingredient.grams || 100),
         manualMatch: picked,
-        matchQuery: picked.n || ingredient.matchQuery || ingredient.name,
-        editingMatch: false,
-        matchResults: [],
-        matchLoading: false,
       }));
       clearIngredientSearchState(btn.dataset.target, ingredientIdx);
     }
@@ -1080,18 +1135,35 @@ export function initSmartImportListeners() {
   });
 
   document.getElementById('smart-import-body')?.addEventListener('change', e => {
+    const gramsInput = e.target.closest('.smart-recipe-grams-input');
+    if (gramsInput) {
+      commitRecipeIngredientGramsInput(gramsInput);
+      return;
+    }
     const servingsInput = e.target.closest('.smart-recipe-servings');
     if (!servingsInput) return;
     commitRecipeServingsInput(servingsInput);
   });
 
   document.getElementById('smart-import-body')?.addEventListener('focusout', e => {
+    const gramsInput = e.target.closest('.smart-recipe-grams-input');
+    if (gramsInput) {
+      commitRecipeIngredientGramsInput(gramsInput);
+      return;
+    }
     const servingsInput = e.target.closest('.smart-recipe-servings');
     if (!servingsInput) return;
     commitRecipeServingsInput(servingsInput);
   });
 
   document.getElementById('smart-import-body')?.addEventListener('keydown', e => {
+    const gramsInput = e.target.closest('.smart-recipe-grams-input');
+    if (gramsInput && e.key === 'Enter') {
+      e.preventDefault();
+      commitRecipeIngredientGramsInput(gramsInput);
+      gramsInput.blur();
+      return;
+    }
     const servingsInput = e.target.closest('.smart-recipe-servings');
     if (servingsInput && e.key === 'Enter') {
       e.preventDefault();

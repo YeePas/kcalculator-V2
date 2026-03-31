@@ -248,7 +248,11 @@
 .smart-recipe-ingredient strong { font-size: 0.98rem; letter-spacing: -0.03em; line-height: 1.15; display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .smart-recipe-ingredient span,
 .smart-recipe-ingredient small { color: var(--muted); font-size: 0.76rem; white-space: nowrap; align-self: center; }
-.smart-recipe-ingredient > span { grid-area: amount; font-size: 0.84rem; font-weight: 700; color: var(--text); background: color-mix(in srgb, var(--surface-strong) 92%, transparent); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 0.38rem 0.9rem; justify-self: center; align-self: center; display: inline-flex; align-items: center; justify-content: center; line-height: 1.1; min-height: 40px; min-width: 108px; text-align: center; }
+.smart-recipe-grams-field { grid-area: amount; display: flex; flex-direction: column; gap: 0.24rem; justify-self: start; align-self: center; min-width: 124px; }
+.smart-recipe-grams-field > span { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.smart-recipe-grams-field > small { font-size: 0.72rem; color: var(--muted); align-self: flex-end; margin-top: -1.9rem; margin-right: 0.8rem; pointer-events: none; }
+.smart-recipe-grams-input { width: 100%; border: 1px solid var(--border-subtle); border-radius: 999px; padding: 0.62rem 2rem 0.62rem 0.9rem; background: color-mix(in srgb, var(--surface-strong) 92%, transparent); color: var(--text); font-family: var(--font-body); font-size: 0.92rem; font-weight: 700; line-height: 1.1; min-height: 42px; text-align: right; }
+.smart-recipe-grams-input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 42%, var(--border)); box-shadow: 0 0 0 4px var(--accent-light); }
 .smart-recipe-ingredient > small { grid-area: meta; justify-self: start; align-self: center; display: block; }
 .smart-recipe-inline-remove { grid-area: remove; border: 1px solid var(--border); background: color-mix(in srgb, var(--surface-strong) 86%, var(--surface-soft)); color: var(--muted); border-radius: 999px; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; cursor: pointer; justify-self: end; box-shadow: inset 0 1px 0 rgba(255,255,255,0.72); }
 .smart-recipe-inline-remove:hover { border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); color: var(--danger); background: rgba(220, 76, 70, 0.08); }
@@ -290,7 +294,7 @@
 .smart-recipe-match-live { color: var(--green); }
 .smart-recipe-ingredient.is-editing { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main remove"; align-items: start; }
 .smart-recipe-ingredient.is-editing > div { grid-column: auto; grid-row: auto; }
-.smart-recipe-ingredient.is-editing > span,
+.smart-recipe-ingredient.is-editing .smart-recipe-grams-field,
 .smart-recipe-ingredient.is-editing > small { display: none; }
 .smart-recipe-ingredient.is-editing .smart-recipe-match-editor { width: 100%; }
 .smart-recipe-ingredient.is-editing .smart-recipe-match-searchbar,
@@ -307,7 +311,7 @@
     justify-content: center;
     padding-right: 0.25rem;
   }
-  .smart-recipe-ingredient > span {
+  .smart-recipe-grams-field {
     justify-self: start;
     align-self: end;
   }
@@ -322,7 +326,7 @@
 }
 @media (max-width: 900px) {
   .smart-recipe-ingredient { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main remove" "amount amount" "meta meta"; }
-  .smart-recipe-ingredient > span { justify-self: start; min-width: 0; }
+  .smart-recipe-grams-field { justify-self: start; min-width: 0; }
   .smart-recipe-ingredient > small { justify-self: start; }
 }
 .smart-confidence { font-size: 0.72rem; border-radius: 999px; padding: 0.3rem 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; border: 1px solid transparent; white-space: nowrap; }
