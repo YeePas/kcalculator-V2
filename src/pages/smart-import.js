@@ -36,12 +36,20 @@ function getApplyButtonLabel() {
   return 'Voeg toe aan ' + (MEAL_LABELS[meal] || meal);
 }
 
+function getApplyAndFavoriteButtonLabel() {
+  const meal = getTargetMeal();
+  return 'Voeg toe aan ' + (MEAL_LABELS[meal] || meal) + ' en sla op als favoriet';
+}
+
 function updateVisibleApplyButtons() {
   document.querySelectorAll('button[data-action="apply"]').forEach(btn => {
     const targetId = btn.dataset.target;
     const resultEl = targetId ? document.getElementById(targetId) : null;
     const proposal = resultEl?.dataset?.proposal ? JSON.parse(resultEl.dataset.proposal) : null;
     btn.textContent = proposal?.recipe?.ingredients?.length ? getRecipeApplyButtonLabel() : getApplyButtonLabel();
+  });
+  document.querySelectorAll('button[data-action="apply-and-favorite"]').forEach(btn => {
+    btn.textContent = getApplyAndFavoriteButtonLabel();
   });
 }
 
@@ -78,7 +86,9 @@ function renderManualProposalCard(targetId, proposal) {
     + feedback
     + assumes
     + '<div class="smart-actions">'
-    + '<button class="btn-primary" data-action="favorite" data-target="' + targetId + '">⭐ Opslaan bij favoriete gerechten</button>'
+    + '<button class="btn-secondary" data-action="apply" data-target="' + targetId + '">' + getApplyButtonLabel() + '</button>'
+    + '<button class="btn-primary" data-action="apply-and-favorite" data-target="' + targetId + '">' + getApplyAndFavoriteButtonLabel() + '</button>'
+    + '<button class="btn-secondary" data-action="favorite" data-target="' + targetId + '">⭐ Opslaan bij favoriete gerechten</button>'
     + '</div></div>';
   el.dataset.proposal = JSON.stringify(proposal);
 }
@@ -463,7 +473,9 @@ function renderProposalCard(targetId, proposal) {
     + '<div><span>Vezel</span><strong>' + proposal.fiber_g + 'g</strong></div></div>'
     + assumes
     + '<div class="smart-actions">'
-    + '<button class="btn-primary" data-action="favorite" data-target="' + targetId + '">⭐ Opslaan bij favoriete gerechten</button>'
+    + '<button class="btn-secondary" data-action="apply" data-target="' + targetId + '">' + getApplyButtonLabel() + '</button>'
+    + '<button class="btn-primary" data-action="apply-and-favorite" data-target="' + targetId + '">' + getApplyAndFavoriteButtonLabel() + '</button>'
+    + '<button class="btn-secondary" data-action="favorite" data-target="' + targetId + '">⭐ Opslaan bij favoriete gerechten</button>'
     + '</div></div>';
   el.dataset.proposal = JSON.stringify(proposal);
 }
@@ -911,6 +923,11 @@ export function initSmartImportListeners() {
     if (btn.dataset.action === 'apply') applyProposalToDay(proposal, btn);
     if (btn.dataset.action === 'apply-dish') applyProposalAsDishToDay(proposal, btn);
     if (btn.dataset.action === 'favorite') saveProposalAsFavorite(proposal, btn);
+    if (btn.dataset.action === 'apply-and-favorite') {
+      applyProposalToDay(proposal, btn);
+      saveProposalAsFavorite(proposal, btn, { silent: true });
+      feedbackNear(btn, '\u2713 ' + proposal.title + ' toegevoegd en opgeslagen als favoriet', 'ok');
+    }
     if (btn.dataset.action === 'save-dish') saveProposalAsFavorite(proposal, btn);
     if (btn.dataset.action === 'apply-and-save-dish') {
       applyProposalAsDishToDay(proposal, btn);
