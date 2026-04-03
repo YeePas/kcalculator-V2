@@ -14,6 +14,7 @@ export const PORTION_ALIASES = SHARED_PORTION_ALIASES;
 // ── Food Synonyms ─────────────────────────────────────────
 export const FOOD_SYNONYMS = {
   'kipfilet':['kipfilet'],'kip':['kip','kipfilet'],'kippenbouten':['kip bout'],
+  'bloem':['bloem tarwe-','tarwebloem','patentbloem'],
   'bloemkool':['kool bloem'],'broccoli':['kool broccoli'],'boerenkool':['kool boeren'],
   'spruitjes':['kool spruit'],'rode kool':['kool rode'],'witte kool':['kool witte'],
   'sla':['sla krop','sla ijsberg'],'spinazie':['spinazie'],'wortels':['wortel'],
@@ -30,6 +31,10 @@ export const FOOD_SYNONYMS = {
   'kaas':['kaas goudse 48+'],'pindakaas':['pindakaas'],
   'ei':['ei kippen'],'eieren':['ei kippen'],
   'boter':['boter ongezouten'],'margarine':['margarine'],
+  'basterdsuiker':['suiker basterd- bruine','suiker basterd- witte','lichte basterdsuiker'],
+  'bruine basterdsuiker':['suiker basterd- bruine'],
+  'witte basterdsuiker':['suiker basterd- witte'],
+  'lichte basterdsuiker':['lichte basterdsuiker'],
   'banaan':['banaan'],'sinaasappel':['sinaasappel'],
   'tomaat':['tomaat'],'tomaten':['tomaat'],'komkommer':['komkommer'],
   'ui':['ui gewone'],'paprika':['paprika'],
@@ -43,13 +48,21 @@ export const FOOD_SYNONYMS = {
 
 // ── Parse free text to item list ──────────────────────────
 export function parseTextToItems(text) {
-  const parts = text
-    .replace(/\ben\b/gi, ',')
-    .replace(/\bmet\b/gi, ',')
-    .replace(/\+/g, ',')
-    .split(',')
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
+  const normalized = String(text || '').replace(/\r\n?/g, '\n').trim();
+  if (!normalized) return [];
+
+  const parts = normalized.includes('\n')
+    ? normalized
+      .split('\n')
+      .map(line => line.replace(/^\s*[-*•]+\s*/, '').trim())
+      .filter(line => line.length > 0)
+    : normalized
+      .replace(/\ben\b/gi, ',')
+      .replace(/\bmet\b/gi, ',')
+      .replace(/\+/g, ',')
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
 
   return parts.map(part => parsePortionTextPart(part));
 }
@@ -123,6 +136,15 @@ function scoreBestMatchForName(cleanName, allItems) {
   return { bestMatch, bestScore };
 }
 
+function normalizeCandidateName(name) {
+  return String(name || '').toLowerCase().trim()
+    .replace(/\b\d+\s*(gram|gr|g|ml|liter|l|cl|dl|kg|stuks?|st)\b/gi, '')
+    .replace(/\b(een|twee|drie|vier|vijf|halve?|half)\b/gi, '')
+    .replace(/,\s*.+$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // ── Match item to NEVO database ───────────────────────────
 let _customCache = null;
 let _customCacheTime = 0;
@@ -133,10 +155,7 @@ export function matchItemToNevo(parsedItem) {
     ...(Array.isArray(parsedItem.alternatives) ? parsedItem.alternatives : []),
   ];
   const candidates = rawCandidates
-    .map(name => String(name || '').toLowerCase().trim()
-      .replace(/\b\d+\s*(gram|gr|g|ml|liter|l|cl|dl|kg|stuks?|st)\b/gi, '')
-      .replace(/\b(een|twee|drie|vier|vijf|halve?|half)\b/gi, '')
-      .trim())
+    .map(name => normalizeCandidateName(name))
     .filter(name => name && name.length >= 2)
     .filter((name, idx, list) => list.indexOf(name) === idx);
 

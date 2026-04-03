@@ -1,7 +1,7 @@
 /* ── Data-Overzicht Page ──────────────────────────────────── */
 
 import {
-  localData, cfg, goals, authUser,
+  localData, cfg, goals, authUser, currentDate,
   _doCurrentDays, setDoCurrentDays,
 } from '../state.js';
 import { MEAL_NAMES, LOCAL_KEY } from '../constants.js';
@@ -130,9 +130,9 @@ export function switchDOPeriod(days, btn) {
 }
 
 /* ── Main Render ─────────────────────────────────────────── */
-function buildDateKeys(numDays) {
+export function buildDateKeys(numDays) {
   const dateKeys = [];
-  const anchorKey = numDays === 1 ? currentDate : dateKey(new Date());
+  const anchorKey = currentDate || dateKey(new Date());
   const anchorDate = new Date(anchorKey + 'T12:00:00');
   for (let i = numDays - 1; i >= 0; i--) {
     const d = new Date(anchorDate);

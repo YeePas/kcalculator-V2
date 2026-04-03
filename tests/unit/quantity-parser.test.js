@@ -54,4 +54,11 @@ describe('parseTextToItems integration', () => {
     expect(items[1].foodName).toBe('soep');
     expect(items[1].gram).toBe(250);
   });
+
+  it('keeps comma descriptors inside recipe lines together', () => {
+    const items = parseTextToItems('bloem, gezeefd\nboter, koude blokjes');
+    expect(items).toHaveLength(2);
+    expect(items[0].foodName).toBe('bloem');
+    expect(items[1].foodName).toBe('boter');
+  });
 });

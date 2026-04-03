@@ -25,6 +25,8 @@ import { openEditFavModal } from '../modals/favourites.js';
 
 let activeTab = 'dish_name';
 const ingredientMatchSearchState = new Map();
+const INGREDIENT_LOCAL_SEARCH_DEBOUNCE_MS = 70;
+const INGREDIENT_HYBRID_SEARCH_DEBOUNCE_MS = 220;
 const DEFAULT_PROVIDER_MODEL = {
   claude: 'claude-haiku-4-5-20251001',
   gemini: 'gemini-2.5-flash',
@@ -249,24 +251,29 @@ function scoreIngredientMatchResult(result, query, ingredientName) {
   return score;
 }
 
-function getIngredientMatchResults(proposal, ingredientIdx) {
-  const ingredient = proposal?.recipe?.ingredients?.[ingredientIdx];
-  if (!ingredient) return [];
-  if (Array.isArray(ingredient.matchResults) && ingredient.matchResults.length) return ingredient.matchResults;
-  const query = String(ingredient.matchQuery || ingredient.name || '').trim();
-  if (query.length < 2) return [];
+function findIngredientMatchResults(query, ingredientName) {
+  const trimmedQuery = String(query || '').trim();
+  if (trimmedQuery.length < 2) return [];
   const merged = new Map();
-  for (const variant of buildIngredientSearchQueries(query, ingredient.name)) {
+  for (const variant of buildIngredientSearchQueries(trimmedQuery, ingredientName)) {
     for (const result of searchNevo(variant)) {
       const key = `${String(result.n || '').toLowerCase()}|${String(result.b || '').toLowerCase()}`;
       if (!merged.has(key)) merged.set(key, result);
     }
   }
   return Array.from(merged.values())
-    .map(result => ({ result, score: scoreIngredientMatchResult(result, query, ingredient.name) }))
+    .map(result => ({ result, score: scoreIngredientMatchResult(result, trimmedQuery, ingredientName) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 8)
     .map(entry => entry.result);
+}
+
+function getIngredientMatchResults(proposal, ingredientIdx) {
+  const ingredient = proposal?.recipe?.ingredients?.[ingredientIdx];
+  if (!ingredient) return [];
+  if (Array.isArray(ingredient.matchResults) && ingredient.matchResults.length) return ingredient.matchResults;
+  const query = String(ingredient.matchQuery || ingredient.name || '').trim();
+  return findIngredientMatchResults(query, ingredient.name);
 }
 
 function getIngredientSearchStateKey(targetId, ingredientIdx) {
@@ -274,41 +281,77 @@ function getIngredientSearchStateKey(targetId, ingredientIdx) {
 }
 
 function clearIngredientSearchState(targetId, ingredientIdx) {
-  ingredientMatchSearchState.delete(getIngredientSearchStateKey(targetId, ingredientIdx));
+  const key = getIngredientSearchStateKey(targetId, ingredientIdx);
+  const prev = ingredientMatchSearchState.get(key);
+  if (prev?.localTimer) clearTimeout(prev.localTimer);
+  if (prev?.hybridTimer) clearTimeout(prev.hybridTimer);
+  ingredientMatchSearchState.delete(key);
 }
 
-function queueIngredientHybridSearch(targetId, ingredientIdx, query) {
+function queueIngredientSearch(targetId, ingredientIdx, query) {
   const trimmed = String(query || '').trim();
   const key = getIngredientSearchStateKey(targetId, ingredientIdx);
   const prev = ingredientMatchSearchState.get(key);
-  if (prev?.timer) clearTimeout(prev.timer);
+  if (prev?.localTimer) clearTimeout(prev.localTimer);
+  if (prev?.hybridTimer) clearTimeout(prev.hybridTimer);
   const nextSeq = (prev?.seq || 0) + 1;
-  ingredientMatchSearchState.set(key, { seq: nextSeq, query: trimmed, timer: null });
-  if (trimmed.length < 3 || cfg.openFoodFactsLiveSearch === false) return;
+  ingredientMatchSearchState.set(key, { seq: nextSeq, query: trimmed, localTimer: null, hybridTimer: null });
+  if (trimmed.length < 2) return;
 
-  const timer = setTimeout(async () => {
+  const localTimer = setTimeout(() => {
     const current = ingredientMatchSearchState.get(key);
     if (!current || current.seq !== nextSeq || current.query !== trimmed) return;
-    const hybridResults = await searchNevoHybrid(trimmed, 8);
-    const latest = ingredientMatchSearchState.get(key);
-    if (!latest || latest.seq !== nextSeq || latest.query !== trimmed) return;
     const resultEl = document.getElementById(targetId);
     if (!resultEl?.dataset?.proposal) return;
-    const proposal = mutateRecipeIngredientInDataset(targetId, ingredientIdx, ingredient => ({
-      ...ingredient,
+    const proposal = JSON.parse(resultEl.dataset.proposal || '{}');
+    const ingredient = proposal?.recipe?.ingredients?.[ingredientIdx];
+    if (!ingredient) return;
+    const localResults = findIngredientMatchResults(trimmed, ingredient.name);
+    const nextProposal = mutateRecipeIngredientInDataset(targetId, ingredientIdx, entry => ({
+      ...entry,
       matchQuery: trimmed,
       editingMatch: true,
-      matchResults: hybridResults,
-      matchLoading: false,
+      matchResults: localResults,
+      matchLoading: trimmed.length >= 3 && cfg.openFoodFactsLiveSearch !== false,
     }));
     const input = resultEl.querySelector(`.smart-recipe-match-input[data-match-query="${ingredientIdx}"]`);
     const resultsEl = input?.closest('.smart-recipe-match-editor')?.querySelector('.smart-recipe-match-results');
-    if (resultsEl && proposal) {
-      resultsEl.innerHTML = buildIngredientMatchResults(targetId, proposal, ingredientIdx);
+    if (resultsEl && nextProposal) {
+      resultsEl.innerHTML = buildIngredientMatchResults(targetId, nextProposal, ingredientIdx);
     }
-  }, 150);
+  }, INGREDIENT_LOCAL_SEARCH_DEBOUNCE_MS);
 
-  ingredientMatchSearchState.set(key, { seq: nextSeq, query: trimmed, timer });
+  let hybridTimer = null;
+  if (trimmed.length >= 3 && cfg.openFoodFactsLiveSearch !== false) {
+    hybridTimer = setTimeout(async () => {
+      const current = ingredientMatchSearchState.get(key);
+      if (!current || current.seq !== nextSeq || current.query !== trimmed) return;
+      const hybridResults = await searchNevoHybrid(trimmed, 8);
+      const latest = ingredientMatchSearchState.get(key);
+      if (!latest || latest.seq !== nextSeq || latest.query !== trimmed) return;
+      const resultEl = document.getElementById(targetId);
+      if (!resultEl?.dataset?.proposal) return;
+      const proposal = mutateRecipeIngredientInDataset(targetId, ingredientIdx, ingredient => ({
+        ...ingredient,
+        matchQuery: trimmed,
+        editingMatch: true,
+        matchResults: hybridResults,
+        matchLoading: false,
+      }));
+      const input = resultEl.querySelector(`.smart-recipe-match-input[data-match-query="${ingredientIdx}"]`);
+      const resultsEl = input?.closest('.smart-recipe-match-editor')?.querySelector('.smart-recipe-match-results');
+      if (resultsEl && proposal) {
+        resultsEl.innerHTML = buildIngredientMatchResults(targetId, proposal, ingredientIdx);
+      }
+    }, INGREDIENT_HYBRID_SEARCH_DEBOUNCE_MS);
+  }
+
+  ingredientMatchSearchState.set(key, {
+    seq: nextSeq,
+    query: trimmed,
+    localTimer,
+    hybridTimer,
+  });
 }
 
 function renderRecipeProposalCard(targetId, proposal) {
@@ -351,7 +394,7 @@ function renderRecipeProposalCard(targetId, proposal) {
           + buildIngredientMatchResults(targetId, proposal, idx)
           + '</div></div>'
         : '')
-      + '</div><label class="smart-recipe-grams-field"><span>Hoeveelheid</span><input type="number" min="0" step="1" inputmode="numeric" class="smart-recipe-grams-input" data-target="' + targetId + '" data-ingredient-grams="' + idx + '" value="' + Math.round(ingredient.grams || 0) + '"><small>gram</small></label><small>'
+      + '</div><label class="smart-recipe-grams-field"><span>Hoeveelheid</span><div class="smart-recipe-grams-control"><input type="number" min="0" step="1" inputmode="numeric" class="smart-recipe-grams-input" data-target="' + targetId + '" data-ingredient-grams="' + idx + '" value="' + Math.round(ingredient.grams || 0) + '"><small>gram</small></div></label><small>'
       + Math.round(matchedItem?.kcal || ingredient.calories || 0) + ' kcal · ' + esc(String(scaledGrams ? Math.round(scaledGrams) + 'g per portie' : '')) + '</small><button type="button" class="smart-recipe-inline-remove" data-action="remove-recipe-ingredient" data-target="' + targetId + '" data-ingredient-idx="' + idx + '" aria-label="Verwijder ingrediënt">✕</button></div>'
     ).join('')
     + '<button type="button" class="btn-secondary smart-recipe-inline-add smart-recipe-inline-add-bottom" data-action="add-recipe-ingredient" data-target="' + targetId + '">+ Ingrediënt</button>'
@@ -1048,10 +1091,12 @@ export function initSmartImportListeners() {
     }
     if (btn.dataset.action === 'search-match') {
       const ingredientIdx = Number(btn.dataset.ingredientIdx);
-      const results = getIngredientMatchResults(proposal, ingredientIdx);
+      const input = rEl.querySelector(`.smart-recipe-match-input[data-match-query="${ingredientIdx}"]`);
+      const query = String(input?.value || proposal?.recipe?.ingredients?.[ingredientIdx]?.matchQuery || '').trim();
+      const ingredientName = proposal?.recipe?.ingredients?.[ingredientIdx]?.name || '';
+      const results = findIngredientMatchResults(query, ingredientName);
       const picked = results[0];
       if (!picked) {
-        const input = rEl.querySelector(`.smart-recipe-match-input[data-match-query="${ingredientIdx}"]`);
         input?.focus();
         return;
       }
@@ -1110,26 +1155,16 @@ export function initSmartImportListeners() {
     const matchQueryInput = e.target.closest('.smart-recipe-match-input');
     if (matchQueryInput) {
       const ingredientIdx = Number(matchQueryInput.dataset.matchQuery);
-      const localResults = getIngredientMatchResults({
-        recipe: {
-          ingredients: [{
-            name: matchQueryInput.defaultValue || matchQueryInput.value,
-            matchQuery: matchQueryInput.value,
-          }],
-        },
-      }, 0);
-      const nextProposal = mutateRecipeIngredientInDataset(matchQueryInput.dataset.target, ingredientIdx, ingredient => ({
+      mutateRecipeIngredientInDataset(matchQueryInput.dataset.target, ingredientIdx, ingredient => ({
         ...ingredient,
         matchQuery: matchQueryInput.value,
         editingMatch: true,
-        matchResults: localResults,
-        matchLoading: String(matchQueryInput.value || '').trim().length >= 3 && cfg.openFoodFactsLiveSearch !== false,
+        matchResults: String(matchQueryInput.value || '').trim().length >= 2
+          ? (Array.isArray(ingredient.matchResults) ? ingredient.matchResults : [])
+          : [],
+        matchLoading: false,
       }));
-      const resultsEl = matchQueryInput.closest('.smart-recipe-match-editor')?.querySelector('.smart-recipe-match-results');
-      if (resultsEl && nextProposal) {
-        resultsEl.innerHTML = buildIngredientMatchResults(matchQueryInput.dataset.target, nextProposal, ingredientIdx);
-      }
-      queueIngredientHybridSearch(matchQueryInput.dataset.target, ingredientIdx, matchQueryInput.value);
+      queueIngredientSearch(matchQueryInput.dataset.target, ingredientIdx, matchQueryInput.value);
       return;
     }
   });
