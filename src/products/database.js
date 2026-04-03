@@ -431,7 +431,7 @@ export async function loadNevo() {
   }
 }
 
-export function searchNevo(query) {
+export function searchNevo(query, limit = 8) {
   // Parse quantity: "2 bananen" -> count=2, query="bananen"
   const parsed = parseQuantity(query);
   let searchQ = parsed.query || query;
@@ -517,11 +517,11 @@ export function searchNevo(query) {
     applyEggPriority(applyBreadPriority(results, query), query),
     query
   );
-  return ranked.slice(0, 8);
+  return ranked.slice(0, limit);
 }
 
-export async function searchNevoHybrid(query, limit = 8) {
-  const localResults = searchNevo(query);
+export async function searchNevoHybrid(query, limit = 12) {
+  const localResults = searchNevo(query, Math.max(limit, 12));
   if (cfg.openFoodFactsLiveSearch === false) return localResults.slice(0, limit);
   if (String(query || '').trim().length < 3) return localResults.slice(0, limit);
 
@@ -532,14 +532,19 @@ export async function searchNevoHybrid(query, limit = 8) {
   const liveOff = applyChoiceRanking(await searchOffLive(query, terms, limit * 2), query);
   if (!liveOff.length) return localResults.slice(0, limit);
 
-  // Keep local results leading, but reserve a few slots so live OFF matches are visible.
-  const localPrimaryCount = Math.max(4, limit - 2);
+  const reservedLiveCount = Math.min(4, Math.max(3, Math.floor(limit / 3)));
+  const localPrimaryCount = Math.max(4, limit - reservedLiveCount);
   const primaryLocal = localResults.slice(0, localPrimaryCount);
   const overflowLocal = localResults.slice(localPrimaryCount);
+  const strongLocalCount = primaryLocal.filter(item => Number(item?._score || 0) >= 55).length;
+  const prioritizeLive = localResults.length <= reservedLiveCount || strongLocalCount <= 2;
+  const mergeOrder = prioritizeLive
+    ? [...liveOff, ...primaryLocal, ...overflowLocal]
+    : [...primaryLocal, ...liveOff, ...overflowLocal];
 
   const seen = new Set();
   const merged = [];
-  for (const item of [...primaryLocal, ...liveOff, ...overflowLocal]) {
+  for (const item of mergeOrder) {
     const key = `${String(item.n || '').toLowerCase()}|${String(item.b || '').toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);

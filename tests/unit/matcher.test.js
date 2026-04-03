@@ -57,4 +57,10 @@ describe('matcher recipe aliases', () => {
   it('recognizes basterdsuiker via recipe-friendly synonym', () => {
     expect(matchItemToNevo({ foodName: 'basterdsuiker' })?.n).toBe('Suiker basterd- bruine');
   });
+
+  it('recognizes split and colored basterdsuiker variants', () => {
+    expect(matchItemToNevo({ foodName: 'basterd suiker' })?.n).toBe('Suiker basterd- bruine');
+    expect(matchItemToNevo({ foodName: 'donkere basterdsuiker' })?.n).toBe('Suiker basterd- bruine');
+    expect(matchItemToNevo({ foodName: 'lichtbruine basterdsuiker' })?.n).toMatch(/basterd/i);
+  });
 });

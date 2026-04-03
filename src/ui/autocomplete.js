@@ -45,7 +45,7 @@ function getFavouriteSearchResults(query) {
     .sort((a, b) => (b._score || 0) - (a._score || 0));
 }
 
-function mergeAutocompleteResults(primary, extra, limit = 8) {
+function mergeAutocompleteResults(primary, extra, limit = 12) {
   const merged = [];
   const seen = new Set();
   for (const item of [...primary, ...extra]) {
@@ -323,7 +323,7 @@ export function initAutocomplete() {
 
     acTimeout = setTimeout(async () => {
       const results = mergeAutocompleteResults(
-        await searchNevoHybrid(val, 8),
+        await searchNevoHybrid(val, 12),
         getFavouriteSearchResults(val),
       );
       if (seq !== searchSeq) return;

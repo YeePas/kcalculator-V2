@@ -75,6 +75,13 @@
   .ac-portie-manual { padding: 0.4rem 0.9rem 0.6rem; }
   .ac-portie-input { font-size: 1rem; padding: 0.5rem; min-height: 38px; }
   .ac-portie-add { min-height: 38px; min-width: 44px; font-size: 1.1rem; }
+  .match-portie-input,
+  .smart-recipe-grams-input,
+  .smart-recipe-servings,
+  .smart-edit-field input,
+  .smart-edit-recipe-row input {
+    font-size: 16px;
+  }
 
   /* Autocomplete items larger */
   .ac-item { padding: 0.65rem 0.9rem; min-height: 44px; }

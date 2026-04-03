@@ -7,13 +7,14 @@
 
 /* ── Database Autocomplete ────────────────────────────────── */
 
-.input-with-ac { position: relative; flex: 1; isolation: isolate; }
+.input-with-ac { position: relative; flex: 1; isolation: isolate; z-index: 120; }
+.input-with-ac:has(.ac-dropdown.open) { z-index: 260; }
 .ac-dropdown {
   display: none; position: absolute; left: 0; right: 0; top: calc(100% + 2px);
   margin-top: 0; width: 100%; box-sizing: border-box;
   background: #fdfdf9; border: 1.5px solid var(--border);
   border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
-  max-height: min(520px, 60vh); overflow-y: auto; z-index: 80;
+  max-height: min(520px, 60vh); overflow-y: auto; z-index: 320;
 }
 .ac-dropdown.open { display: block; }
 

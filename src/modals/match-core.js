@@ -71,6 +71,9 @@ export function renderMatchList() {
 
     const aiLabel = nevo?._aiResult ? ' <span style="font-size:0.6rem;color:var(--blue)">AI</span>' : '';
     const statusLabel = matched ? `✓ ${nevo?._aiResult ? 'AI' : 'Database'}` : ms.manualMode ? '✎ Handmatig' : '? Niet gevonden';
+    const aiPortionHint = nevo?._aiResult && nevo?._aiPortion
+      ? `<div style="font-size:0.72rem;color:var(--muted);padding:0 0.9rem;margin-top:-0.05rem">AI-portie: ${esc(nevo._aiPortion)}</div>`
+      : '';
     const bugBtn = buildBugReportButton('match-modal-item', {
       original: ms.parsed.original,
       parsedName: ms.parsed.foodName,
@@ -103,6 +106,7 @@ export function renderMatchList() {
         <span class="match-item-status">${statusLabel}</span>
       </div>
       ${matched && nevo ? `<div style="font-size:0.75rem;color:var(--accent);padding:0 0.9rem;margin-top:-0.1rem">→ ${esc(nevo.n)}${nevo._group ? ` <span style="color:var(--muted)">(${esc(nevo._group)})</span>` : ''}${nevo.b ? ` <span style="color:var(--muted)">· ${esc(nevo.b)}</span>` : ''}</div>` : ''}
+      ${aiPortionHint}
       ${altOptions}
       ${macroInfo}
       <div class="match-portie-row">

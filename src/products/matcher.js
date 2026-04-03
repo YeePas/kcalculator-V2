@@ -35,6 +35,8 @@ export const FOOD_SYNONYMS = {
   'bruine basterdsuiker':['suiker basterd- bruine'],
   'witte basterdsuiker':['suiker basterd- witte'],
   'lichte basterdsuiker':['lichte basterdsuiker'],
+  'lichtbruine basterdsuiker':['lichte basterdsuiker'],
+  'donkere basterdsuiker':['suiker basterd- bruine'],
   'banaan':['banaan'],'sinaasappel':['sinaasappel'],
   'tomaat':['tomaat'],'tomaten':['tomaat'],'komkommer':['komkommer'],
   'ui':['ui gewone'],'paprika':['paprika'],
@@ -74,7 +76,12 @@ function buildSearchTerms(cleanName) {
     if (cleanName === synonym || cleanName === synonym + 'men' || cleanName === synonym + 's' || cleanName === synonym + 'en') {
       searchTerms.push(...nevoTerms);
       hasSynonym = true;
-    } else if (cleanName.includes(synonym + ' ') || (synonym.length > 4 && synonym.includes(cleanName))) {
+    } else if (
+      cleanName.includes(synonym + ' ')
+      || cleanName.includes(' ' + synonym)
+      || cleanName.endsWith(synonym)
+      || (synonym.length > 4 && synonym.includes(cleanName))
+    ) {
       searchTerms.push(...nevoTerms);
       hasSynonym = true;
     }
@@ -141,6 +148,14 @@ function normalizeCandidateName(name) {
     .replace(/\b\d+\s*(gram|gr|g|ml|liter|l|cl|dl|kg|stuks?|st)\b/gi, '')
     .replace(/\b(een|twee|drie|vier|vijf|halve?|half)\b/gi, '')
     .replace(/,\s*.+$/i, '')
+    .replace(/\bbasterd\s+suiker\b/gi, 'basterdsuiker')
+    .replace(/\b(?:licht|lichte|lichtbruin|lichtbruine|donker|donkere|bruin|bruine|wit|witte)\s+basterdsuiker\b/gi, match => {
+      const normalized = match.toLowerCase();
+      if (normalized.includes('licht')) return 'lichte basterdsuiker';
+      if (normalized.includes('donker') || normalized.includes('bruin')) return 'bruine basterdsuiker';
+      if (normalized.includes('wit')) return 'witte basterdsuiker';
+      return 'basterdsuiker';
+    })
     .replace(/\s+/g, ' ')
     .trim();
 }

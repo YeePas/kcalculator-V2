@@ -57,6 +57,7 @@ TERTIAIRE BRON: Als je helemaal niks vindt, gebruik je eigen kennis op basis van
 
 Let op porties: de NEVO waarden zijn per 100g. Reken om naar de opgegeven portie.
 Gebruik standaard porties als niet opgegeven: boterham=35g brood, glas melk=200ml, kop koffie=150ml, bord pasta=250g gekookt.
+Geef bij "portie" altijd een realistische eetportie terug, niet standaard 100g, behalve als de gebruiker expliciet 100 gram/ml noemt.
 Geef ALTIJD correcte vezelwaarden — nooit 0 tenzij het product echt geen vezels bevat (bijv. suiker, olie, vlees).
 Als de gebruiker verwijst naar eerder gegeten maaltijden, gebruik dan exact de waarden uit de context.
 Na het zoeken antwoord je UITSLUITEND met een JSON array. Geen tekst ervoor of erna. Geen markdown. Alleen de array.`;

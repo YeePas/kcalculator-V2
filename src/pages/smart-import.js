@@ -264,7 +264,7 @@ function findIngredientMatchResults(query, ingredientName) {
   return Array.from(merged.values())
     .map(result => ({ result, score: scoreIngredientMatchResult(result, trimmedQuery, ingredientName) }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 8)
+    .slice(0, 12)
     .map(entry => entry.result);
 }
 
@@ -326,7 +326,7 @@ function queueIngredientSearch(targetId, ingredientIdx, query) {
     hybridTimer = setTimeout(async () => {
       const current = ingredientMatchSearchState.get(key);
       if (!current || current.seq !== nextSeq || current.query !== trimmed) return;
-      const hybridResults = await searchNevoHybrid(trimmed, 8);
+      const hybridResults = await searchNevoHybrid(trimmed, 12);
       const latest = ingredientMatchSearchState.get(key);
       if (!latest || latest.seq !== nextSeq || latest.query !== trimmed) return;
       const resultEl = document.getElementById(targetId);

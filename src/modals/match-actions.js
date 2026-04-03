@@ -8,11 +8,68 @@ import { saveDay } from '../supabase/data.js';
 import { syncFavoritesToSupabase } from '../supabase/sync.js';
 import { buildMealItem } from '../products/matcher.js';
 import { isLiquidLike } from '../products/density.js';
+import { findPortie, parseQuantity } from '../products/portions.js';
 import { parseFood } from '../ai/parser.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
 import { _renderDayUI } from '../ui/render.js';
 import { renderQuickFavs } from '../ui/misc.js';
 import { closeMatchModal, renderMatchList, addMatchedItemsToDay } from './match-core.js';
+
+function round1(value) {
+  return Math.round((Number(value) || 0) * 10) / 10;
+}
+
+function normalizePortionType(value) {
+  const normalized = String(value || '')
+    .toLowerCase()
+    .replace(/[.'’]/g, '')
+    .trim();
+  if (!normalized) return '';
+  if (normalized.endsWith('en')) return normalized.slice(0, -2);
+  if (normalized.endsWith('s')) return normalized.slice(0, -1);
+  return normalized;
+}
+
+function parseExplicitPortionAmount(portionText) {
+  const match = String(portionText || '').match(/(\d+(?:[.,]\d+)?)\s*(kg|gram|gr|g|ml|cl|dl|l)\b/i);
+  if (!match) return null;
+  const count = parseFloat(match[1].replace(',', '.'));
+  if (!Number.isFinite(count) || count <= 0) return null;
+  const unit = String(match[2] || '').toLowerCase();
+  if (unit === 'kg') return Math.round(count * 1000);
+  if (unit === 'l') return Math.round(count * 1000);
+  if (unit === 'dl') return Math.round(count * 100);
+  if (unit === 'cl') return Math.round(count * 10);
+  return Math.round(count);
+}
+
+export function deriveAiSuggestedPortion(item, meal) {
+  const explicitAmount = parseExplicitPortionAmount(item?.portie);
+  if (explicitAmount) return explicitAmount;
+
+  const explicitMl = Number(item?.ml || 0);
+  if (Number.isFinite(explicitMl) && explicitMl > 0) return Math.round(explicitMl);
+
+  const portionText = String(item?.portie || '').trim();
+  if (portionText) {
+    const parsed = parseQuantity(portionText);
+    const count = Number.isFinite(parsed?.count) && parsed.count > 0 ? parsed.count : 1;
+    const normalizedUnit = normalizePortionType(parsed?.unit || portionText);
+    const options = findPortie(item?.naam || '', undefined, undefined);
+    const matchedOption = options.find(option => normalizePortionType(option.t) === normalizedUnit)
+      || (/\bportie\b/i.test(portionText) ? options.find(option => normalizePortionType(option.t) === 'portie') : null)
+      || (/^half|halve\b/i.test(portionText) ? options.find(option => normalizePortionType(option.t) === 'half') : null);
+    if (matchedOption?.g) return Math.max(1, Math.round(matchedOption.g * count));
+  }
+
+  const fallback = findPortie(item?.naam || '', undefined, undefined);
+  const preferred = fallback.find(option => option.t === 'portie')
+    || fallback.find(option => option.t === 'stuk')
+    || fallback[0];
+  if (preferred?.g) return Math.max(1, Math.round(preferred.g));
+
+  return meal === 'drinken' ? 250 : 100;
+}
 
 export async function aiLookupMatch(idx) {
   const ms = matchState[idx];
@@ -32,16 +89,19 @@ export async function aiLookupMatch(idx) {
     const items = await parseFood(ms.parsed.original, selMeal);
     if (items && items.length > 0) {
       const item = items[0];
+      const suggestedPortion = deriveAiSuggestedPortion(item, selMeal);
+      const factor = Math.max(suggestedPortion, 1) / 100;
       ms.nevoMatch = {
         n: item.naam,
-        k: item.kcal || 0,
-        kh: item.koolhydraten_g || 0,
-        vz: item.vezels_g || 0,
-        v: item.vetten_g || 0,
-        e: item.eiwitten_g || 0,
+        k: round1((item.kcal || 0) / factor),
+        kh: round1((item.koolhydraten_g || 0) / factor),
+        vz: round1((item.vezels_g || 0) / factor),
+        v: round1((item.vetten_g || 0) / factor),
+        e: round1((item.eiwitten_g || 0) / factor),
         _aiResult: true,
+        _aiPortion: item.portie || '',
       };
-      ms.gram = 100;
+      ms.gram = suggestedPortion;
       ms.manualMode = false;
       renderMatchList();
     } else {
