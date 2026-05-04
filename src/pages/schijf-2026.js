@@ -7,19 +7,19 @@ import { loadDay } from '../supabase/data.js';
 import { PORTION_ALIASES, matchItemToNevo } from '../products/matcher.js';
 
 const DAY_TARGETS_2026 = {
-  groente_fruit: { naam: 'Groente & fruit', doel: 450, unit: 'g', color: '#1f9e4b', parts: [{ key: 'groente', doel: 250 }, { key: 'fruit', doel: 200 }] },
-  graan_aardappel: { naam: 'Volkoren & aardappel', doel: 400, unit: 'g', color: '#ee8b26', parts: [{ key: 'volkoren_brood', doel: 175 }, { key: 'graan_aardappel', doel: 225 }] },
-  eiwit_zuivel: { naam: 'Eiwit & zuivel', doel: 420, unit: 'g/ml', color: '#d96a93', parts: [{ key: 'zuivel_alt', doel: 400 }, { key: 'kaas', doel: 20 }] },
-  vetten_noten: { naam: 'Vetten & noten', doel: 80, unit: 'g', color: '#f2cf2f', parts: [{ key: 'vetten_olie', doel: 50 }, { key: 'noten', doel: 30 }] },
-  dranken: { naam: 'Dranken zonder suiker', doel: 1600, unit: 'ml', color: '#42b8dc', parts: [{ key: 'dranken', doel: 1600 }] },
+  groente_fruit: { icon: '🥬', naam: 'Groente & fruit', doel: 450, unit: 'g', color: '#1f9e4b', parts: [{ key: 'groente', doel: 250, icon: '🥬', naam: 'Groente' }, { key: 'fruit', doel: 200, icon: '🍎', naam: 'Fruit' }] },
+  graan_aardappel: { icon: '🌾', naam: 'Volkoren & aardappel', doel: 400, unit: 'g', color: '#b38a46', parts: [{ key: 'volkoren_brood', doel: 175, icon: '🌾', naam: 'Volkoren' }, { key: 'graan_aardappel', doel: 225, icon: '🥔', naam: 'Aardappel/graan' }] },
+  eiwit_zuivel: { icon: '🥛', naam: 'Zuivel & eiwit', doel: 420, unit: 'g/ml', color: '#4fb58a', parts: [{ key: 'zuivel_alt', doel: 400, icon: '🥛', naam: 'Zuivel' }, { key: 'kaas', doel: 20, icon: '🧀', naam: 'Kaas' }] },
+  vetten_noten: { icon: '🥑', naam: 'Gezonde vetten', doel: 80, unit: 'g', color: '#7fae4d', parts: [{ key: 'vetten_olie', doel: 50, icon: '🥑', naam: 'Vetten/olie' }, { key: 'noten', doel: 30, icon: '🥜', naam: 'Noten' }] },
+  dranken: { icon: '💧', naam: 'Dranken', doel: 1600, unit: 'ml', color: 'var(--blue)', parts: [{ key: 'dranken', doel: 1600, icon: '💧', naam: 'Water/thee/koffie' }] },
 };
 
 const WEEK_TARGETS_2026 = {
-  plant_eiwit: { naam: 'Peulvruchten, tofu, tempé', doel: 250, unit: 'g', color: '#1f9e4b', max: false },
-  vis: { naam: 'Vis', doel: 100, unit: 'g', color: '#42b8dc', max: false },
-  eieren: { naam: 'Eieren', doel: 3, unit: 'st', color: '#f2cf2f', max: false },
-  vlees: { naam: 'Vlees totaal', doel: 300, unit: 'g', color: '#d96a93', max: true },
-  rood_vlees: { naam: 'Rood vlees', doel: 100, unit: 'g', color: '#ee8b26', max: true },
+  plant_eiwit: { icon: '🍳', naam: 'Peulvruchten/tofu/tempé', doel: 250, unit: 'g', color: '#4fb58a', max: false },
+  vis: { icon: '🐟', naam: 'Vis', doel: 100, unit: 'g', color: 'var(--blue)', max: false },
+  eieren: { icon: '🍳', naam: 'Eieren', doel: 3, unit: 'st', color: '#4fb58a', max: false },
+  vlees: { icon: '🍳', naam: 'Vlees totaal', doel: 300, unit: 'g', color: '#d96a93', max: true },
+  rood_vlees: { icon: '⚠', naam: 'Rood vlees', doel: 100, unit: 'g', color: '#e8a020', max: true },
 };
 
 const SUGAR_DRINK_PATTERN = /\b(frisdrank|cola|fanta|sprite|energy|sap|smoothie|limonade|siroop|diksap|chocomel|fristi|milkshake|alcohol|bier|wijn|cocktail)\b/i;
@@ -193,7 +193,7 @@ function renderSchijfVisual(metas, totals, score) {
 
 function rowValue(meta, totals, key) {
   if (meta.parts) {
-    return meta.parts.map(part => `${Math.round(totals[part.key] || 0)}/${part.doel}`).join(' + ');
+    return meta.parts.map(part => `${part.icon || ''} ${Math.round(totals[part.key] || 0)}/${part.doel}`).join(' · ');
   }
   return `${Math.round(totals[key] || 0)}/${meta.doel}`;
 }
@@ -203,7 +203,7 @@ function renderRows(metas, totals) {
     const ratio = Math.round(ratioForMeta({ ...meta, key }, totals) * 100);
     const tone = ratio >= 80 ? 'ok' : ratio >= 45 ? 'warn' : 'bad';
     return `<div class="schijf2026-row ${tone}">
-      <span><i style="background:${meta.color}"></i>${esc(meta.naam)}</span>
+      <span><i style="background:${meta.color}"></i>${esc(meta.icon || '')} ${esc(meta.naam)}</span>
       <strong>${rowValue(meta, totals, key)} ${esc(meta.unit)}</strong>
     </div>`;
   }).join('');
