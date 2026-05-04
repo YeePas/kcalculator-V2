@@ -48,6 +48,172 @@
 .advies-loading { text-align: center; padding: 2rem; color: var(--muted); font-style: italic; }
 .advies-loading .spin { display: inline-block; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.schijf2026-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+.schijf2026-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.schijf2026-kpi {
+  padding: 0.9rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.schijf2026-kpi div {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.schijf2026-kpi strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 1.8rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1;
+}
+.schijf2026-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.schijf2026-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 0.7rem;
+}
+.schijf2026-head h3,
+.schijf2026-focus h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.2;
+}
+.schijf2026-head span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-align: right;
+}
+.schijf2026-visual {
+  display: flex;
+  justify-content: center;
+  margin: 0.2rem 0 0.85rem;
+  min-height: 230px;
+  align-items: center;
+}
+.schijf2026-visual svg {
+  width: min(230px, 100%);
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+.schijf2026-slice-label {
+  fill: white;
+  font-size: 0.64rem;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.18);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+.schijf2026-score {
+  fill: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.schijf2026-score-label {
+  fill: var(--muted);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.schijf2026-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.52rem 0;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.82rem;
+}
+.schijf2026-row span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+.schijf2026-row i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.schijf2026-row strong {
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.schijf2026-row.ok strong { color: var(--green); }
+.schijf2026-row.warn strong { color: #b98112; }
+.schijf2026-row.bad strong { color: var(--danger); }
+.schijf2026-focus p {
+  margin: 0.45rem 0 0;
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+.schijf2026-note {
+  margin-top: 0.55rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+.schijf2026-source-link {
+  display: inline-flex;
+  margin-top: 0.7rem;
+  font-size: 0.78rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 700;
+}
+.schijf2026-source-link:hover {
+  text-decoration: underline;
+}
+.schijf2026-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+}
+.schijf2026-insight-grid .schijf2026-card h3 {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.schijf2026-suggestion,
+.schijf2026-empty {
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.schijf2026-suggestion:first-of-type,
+.schijf2026-empty:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
 .advies-macro-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; padding: 0.95rem 1rem; background: color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong)); border-radius: calc(var(--radius-md) + 2px); border: 1px solid var(--border); font-size: 0.8rem; flex-wrap: wrap; }
 .advies-macro-item { display: flex; flex-direction: column; align-items: center; min-width: 55px; }
 .advies-macro-val { font-size: 1.05rem; font-weight: 500; }

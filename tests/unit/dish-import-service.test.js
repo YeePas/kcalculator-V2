@@ -16,6 +16,19 @@ describe('extractDishNameFromFreeText', () => {
   it('keeps a plain dish name intact', () => {
     expect(extractDishNameFromFreeText('caesar salad')).toBe('caesar salad');
   });
+
+  it('uses the visible recipe title instead of a section header from OCR text', () => {
+    expect(extractDishNameFromFreeText(`WITTE ASPERGES, PITTIGE KIKKERERWTEN EN RAAPSTELEN
+Voor de yoghurtsaus
+300 gram dikke (plantaardige) yoghurt
+3 eetl. witte tahin
+1 eetl. olijfolie
+750 gram witte asperges, geschild
+2 blikken (ca. 800 g), kikkererwten
+Optioneel
+handje (50 g) amandelen of pompoenpitten, geroosterd`))
+      .toBe('WITTE ASPERGES, PITTIGE KIKKERERWTEN EN RAAPSTELEN');
+  });
 });
 
 describe('createProposalFromNutritionText', () => {

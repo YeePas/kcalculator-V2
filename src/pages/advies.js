@@ -10,10 +10,11 @@ import { saveCfg } from '../storage.js';
 import { loadDay } from '../supabase/data.js';
 import { aiCall, hasAiAvailable, hasAiProxyConfig, hasLocalSessionAi } from '../ai/providers.js';
 import { renderSchijfAnalyse, schijfDagScore, SCHIJF_CATEGORY_META } from './schijf.js';
+import { renderSchijf2026Analyse } from './schijf-2026.js';
 import { getMicroAdvies } from './micronutrients.js';
 import { switchMobileView } from '../ui/misc.js';
 
-const LOCAL_ADVIES_TABS = new Set(['schijf']);
+const LOCAL_ADVIES_TABS = new Set(['schijf', 'schijf2026']);
 const AI_ADVIES_TABS = new Set(['avond', 'dag', 'week', 'micro']);
 
 function getSafeAdviesTab(tab) {
@@ -51,6 +52,7 @@ export function showAdviesContent() {
 
   if (LOCAL_ADVIES_TABS.has(safeTab)) {
     if (safeTab === 'schijf') renderSchijfAnalyse();
+    if (safeTab === 'schijf2026') renderSchijf2026Analyse();
   } else {
     showAdviesPrompt();
   }

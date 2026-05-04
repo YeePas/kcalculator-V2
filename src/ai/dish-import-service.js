@@ -8,7 +8,7 @@ import { createDishProposal, mapProposalToFoodItem } from './dish-import-models.
 import { parsePastedNutrition, fetchUrlContentForImport } from './dish-import-parsing.js';
 import { parsePortionTextPart } from '../products/quantity-parser.js';
 import { findPortie } from '../products/portions.js';
-import { matchItemToNevo, resolveGram } from '../products/matcher.js';
+import { buildMealItem, matchItemToNevo, resolveGram } from '../products/matcher.js';
 
 const TYPO_MAP = {
   ertesoep: 'erwtensoep',
@@ -96,12 +96,12 @@ export function normalizeImportUrl(urlInput) {
   throw new Error('Ongeldige URL');
 }
 
-async function callImportAI(systemPrompt, userPrompt) {
+async function callImportAI(systemPrompt, userPrompt, maxTokens = 1100) {
   const provider = cfg.importProvider || cfg.provider || 'gemini';
   const origModel = cfg.model;
   if (cfg.importModel) cfg.model = cfg.importModel;
   try {
-    const text = await aiCall(provider, systemPrompt, userPrompt, 1100, true);
+    const text = await aiCall(provider, systemPrompt, userPrompt, maxTokens, true);
     return { provider, text };
   } finally {
     cfg.model = origModel;
@@ -131,7 +131,6 @@ function normalizeRecipeLikeInput(input) {
     .flatMap((rawLine) => {
       let line = String(rawLine || '').trim();
       if (!line) return [];
-      if (/^[A-ZÄËÏÖÜÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛ\s-]{3,}$/u.test(line) && !/\d/.test(line)) return [];
       Object.entries(FRACTION_MAP).forEach(([char, replacement]) => {
         line = line.replaceAll(char, ` ${replacement} `);
       });
@@ -230,7 +229,34 @@ function looksGenericDishTitle(value) {
   return !normalized || GENERIC_DISH_TITLES.has(normalized);
 }
 
+function isRecipeSectionHeader(line) {
+  return /^(?:voor\s+de|voor\s+het|voor\s+een|optioneel|benodigdheden|ingredienten|ingrediënten|bereiding)\b/i.test(squeezeSpaces(line));
+}
+
+function looksLikeIngredientLine(line) {
+  return /^(?:\d+(?:\s+\d+\/\d+|[\/.,]\d+)?|een|twee|drie|vier|vijf|zes|zeven|acht|negen|tien|half|halve|handje|wat|ca\.?)\s+(?:g|gr|gram|kg|ml|l|el|tl|eetl|eetlepel|theel|theelepel|blik|blikken|teen|tenen|sjalot|sjalotten|rasp|sap|zeezout|pul|amandelen|pompoenpitten|olijfolie|water)\b/i.test(squeezeSpaces(line));
+}
+
+function extractRecipeTitleFromLines(input) {
+  const lines = String(input || '')
+    .split(/\r?\n/)
+    .map(line => squeezeSpaces(line.replace(/^[^\p{L}\p{N}]+/u, '')))
+    .filter(Boolean);
+  if (lines.length < 2) return '';
+
+  for (const line of lines.slice(0, 5)) {
+    if (isRecipeSectionHeader(line) || looksLikeIngredientLine(line)) continue;
+    if (/\b(?:calorie(?:e|ë)?n?|kcal|koolhydraten|eiwit(?:ten)?|vet(?:ten)?|vezels?)\b/i.test(line)) continue;
+    const candidate = cleanupDishCandidate(line);
+    if (candidate && !looksGenericDishTitle(candidate)) return candidate;
+  }
+  return '';
+}
+
 export function extractDishNameFromFreeText(input) {
+  const recipeTitle = extractRecipeTitleFromLines(input);
+  if (recipeTitle) return recipeTitle;
+
   const raw = squeezeSpaces(input);
   if (!raw) return '';
   if (raw.length <= 80 && !/\b(?:calorie(?:e|ë)?n?|kcal|macro'?s?|voedingswaarden?)\b/i.test(raw)) {
@@ -385,6 +411,75 @@ function createUnparsedAiFallbackProposal(input, provider) {
   });
 }
 
+function explicitGramFromLine(line) {
+  const parenthetical = String(line || '').match(/\((?:ca\.?\s*)?(\d+(?:[.,]\d+)?)\s*g\)/i);
+  if (parenthetical) return Math.max(0, toNum(parenthetical[1], 0));
+  return 0;
+}
+
+function fallbackIngredientName(line, parsed) {
+  const afterComma = String(line || '').match(/\),\s*(.+)$/);
+  if (afterComma?.[1]) return squeezeSpaces(afterComma[1]);
+  return squeezeSpaces(parsed?.foodName || line);
+}
+
+function fallbackGramsForLine(line, parsed, match) {
+  const explicit = explicitGramFromLine(line);
+  if (explicit > 0) return explicit;
+  const resolved = resolveGram(parsed, match);
+  if (parsed?.quantitySource === 'inferred' && !parsed?.gram && !parsed?.ml) {
+    if (/zeezout|zout|peper|chilivlokken|pul biber|aleppo/i.test(line)) return 0;
+    if (/rasp en sap/i.test(line)) return 30;
+    if (/dille|paprikapoeder|miso|tahin|tomatenpuree/i.test(line)) return Math.min(resolved || 0, 30);
+  }
+  return Math.max(0, resolved || 0);
+}
+
+function buildRecipeProposalFromText(input, provider) {
+  const title = extractDishNameFromFreeText(input) || 'Recept';
+  const ingredientLines = String(input || '')
+    .split(/\r?\n/)
+    .map(line => squeezeSpaces(line.replace(/^[^\p{L}\p{N}]+/u, '')))
+    .filter(Boolean)
+    .filter(line => line !== title)
+    .filter(line => !isRecipeSectionHeader(line));
+
+  const ingredients = ingredientLines.map((line, idx) => {
+    const parsed = parsePortionTextPart(line);
+    const match = matchItemToNevo(parsed);
+    const grams = fallbackGramsForLine(line, parsed, match);
+    const mealItem = match && grams > 0 ? buildMealItem(match.n || parsed.foodName, match, grams, false) : null;
+    const name = fallbackIngredientName(line, parsed);
+    return {
+      id: `ri-fallback-${idx}-${Date.now()}`,
+      name,
+      amount: '',
+      unit: '',
+      displayAmount: line,
+      grams,
+      calories: mealItem?.kcal || 0,
+      protein_g: mealItem?.eiwitten_g || 0,
+      carbs_g: mealItem?.koolhydraten_g || 0,
+      fat_g: mealItem?.vetten_g || 0,
+      fiber_g: mealItem?.vezels_g || 0,
+      assumptions: match
+        ? [`Gekoppeld aan ${match.n}; controleer deze match.`]
+        : ['Niet automatisch gekoppeld; controleer dit ingrediënt handmatig.'],
+    };
+  }).filter(ingredient => ingredient.name);
+
+  if (ingredients.length < 2) return null;
+  return buildRecipeProposalFromAi({
+    mode: 'recipe',
+    recipeName: title,
+    recognizedAs: 'Ingrediëntenlijst lokaal verwerkt',
+    confidence: 'low',
+    servings: 4,
+    ingredients,
+    assumptions: ['AI-output was niet volledig parsebaar. De app heeft de OCR-regels lokaal als recept opgebouwd; controleer matches, optionele ingrediënten en porties.'],
+  }, input, provider);
+}
+
 function isRecipeLikeInput(input) {
   const raw = String(input || '').trim();
   if (!raw) return false;
@@ -403,7 +498,9 @@ function sanitizeRecipeIngredient(raw, idx) {
   const fiber_g = Math.max(0, toNum(raw?.fiber_g, 0));
   const amount = cleanNumber(raw?.amount);
   const unit = squeezeSpaces(raw?.unit || '');
-  const displayAmount = amount && unit ? `${amount} ${unit}` : amount || unit || (grams > 0 ? `${Math.round(grams)} g` : '');
+  const displayAmount = amount && unit
+    ? `${amount} ${unit}`
+    : amount || unit || squeezeSpaces(raw?.displayAmount || '') || (grams > 0 ? `${Math.round(grams)} g` : '');
 
   return {
     id: `ri-${idx}-${Date.now()}`,
@@ -565,22 +662,26 @@ export async function analyzeDishNameWithAI(input) {
     ? `Je bent een Nederlandse voedingsanalist voor een eetdagboek.\nDe gebruiker geeft waarschijnlijk een ingrediëntenlijst of recept.\nGeef ALLEEN geldige JSON terug.\nGebruik exact deze structuur:\n{ "mode":"recipe", "recipeName":"...", "recognizedAs":"...", "confidence":"high|medium|low", "servings":1, "totalWeightGrams":0, "ingredients":[{"name":"...", "amount":"2", "unit":"stuks", "grams":0, "calories":0, "protein_g":0, "carbs_g":0, "fat_g":0, "fiber_g":0, "assumptions":["..."]}], "assumptions":["..."], "alternatives":[] }\nRegels:\n- Neem ALLE ingrediënten over.\n- Behoud expliciete hoeveelheden exact.\n- Schat grams waar nodig voor stuks, snuf, scheut, tl/el.\n- Geef voedingswaarden PER ingrediënt voor de gebruikte hoeveelheid, niet per 100g.\n- totalWeightGrams is het totale receptgewicht.\n- Gebruik altijd dubbele quotes voor alle JSON keys en stringwaarden.\n- Geen markdown, geen uitleg, geen code fences, geen tekst buiten het JSON object.`
     : `Je bent een Nederlandse voedingsanalist voor een eetdagboek.\nDoel: verwerk vrije gebruikersinvoer robuust, ook als dat een losse gerechtnaam, een vraag in gewone taal, een halve omschrijving of een combinatie daarvan is.\nGeef ALLEEN geldige JSON terug met exact deze velden:\ninput, recognizedDishName, recognizedAs, confidence(high|medium|low), portionSuggestion{label,grams}, nutrition{calories,protein_g,carbs_g,fat_g,fiber_g}, assumptions[], alternatives[].\nBelangrijke regels:\n- Kies altijd een concreet gerecht of product als recognizedDishName.\n- Geef altijd een bruikbare schatting per portie, ook als de invoer vaag is.\n- Voor simpele invoer zoals "pasta pesto" of "havermout met banaan" moet je alsnog een volledige voedingsinschatting geven.\n- Als details ontbreken, maak redelijke aannames en noem die expliciet.\n- Antwoord zonder markdown, zonder tabel, zonder extra tekst buiten JSON.`;
   const userPrompt = recipeLike
-    ? `Originele invoer:\n${preparedInput}\n\nInterpreteer dit als recept of ingrediëntenlijst en geef gestructureerde ingrediënten met hoeveelheden, gebruikte gram/ml-schatting per ingrediënt, voedingswaarden per gebruikte hoeveelheid en totaalgewicht van het recept.\nAls een regel meerdere ingrediënten bevat, zoals "1/4 tl maizena + 1 tl water", splits die dan in losse ingrediënten.`
+    ? `Originele invoer:\n${preparedInput}\n\nWaarschijnlijke receptnaam: "${normalized}".\n\nInterpreteer dit als recept of ingrediëntenlijst en geef gestructureerde ingrediënten met hoeveelheden, gebruikte gram/ml-schatting per ingrediënt, voedingswaarden per gebruikte hoeveelheid en totaalgewicht van het recept.\nGebruik de waarschijnlijke receptnaam als recipeName, tenzij er duidelijk een betere titel in de invoer staat.\nSectiekoppen zoals "Voor de yoghurtsaus" en "Optioneel" zijn GEEN receptnaam en GEEN ingrediënt.\nAls een regel meerdere ingrediënten bevat, zoals "1/4 tl maizena + 1 tl water", splits die dan in losse ingrediënten.`
     : `Originele invoer: "${preparedInput}".\nHerkende kern: "${normalized}".\n\nVoorbeelden van gewenst gedrag:\n- "ertesoep" -> erwtensoep\n- "mag ik de calorieen voor pasta alla norma met alle macro's" -> pasta alla norma\n- "pasta pesto" -> herken als pasta pesto en geef een normale portie met macro's\n- "caesar" -> caesar salad\nGeef een plausibele Nederlandse portie en voedingsinschatting voor direct gebruik in een eetdagboek.`;
 
   try {
-    const { provider, text } = await callImportAI(systemPrompt, userPrompt);
+    const { provider, text } = await callImportAI(systemPrompt, userPrompt, recipeLike ? 3200 : 1100);
     try {
       const aiJson = extractJsonObject(text);
       if (recipeLike || aiJson?.mode === 'recipe' || Array.isArray(aiJson?.ingredients)) {
         const recipeProposal = buildRecipeProposalFromAi(aiJson, preparedInput, provider);
         if (recipeProposal) return recipeProposal;
+        const localRecipeProposal = buildRecipeProposalFromText(preparedInput, provider);
+        if (localRecipeProposal) return localRecipeProposal;
       }
       return estimateDishFromAIResponse(aiJson, preparedInput, provider);
     } catch {
       try {
         return buildAiTextFallbackProposal(text, preparedInput, provider);
       } catch {
+        const localRecipeProposal = recipeLike ? buildRecipeProposalFromText(preparedInput, provider) : null;
+        if (localRecipeProposal) return localRecipeProposal;
         return createUnparsedAiFallbackProposal(preparedInput, provider);
       }
     }

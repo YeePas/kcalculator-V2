@@ -5,6 +5,22 @@ import { resizeImage } from '../products/custom-photo.js';
 import { estimateDishFromAIResponse } from '../ai/dish-import-service.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
 
+function setPhotoProgress(button, percent, label) {
+  if (!button) return;
+  const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+  button.classList.add('smart-photo-progress');
+  button.classList.toggle('done', safePercent >= 100);
+  button.style.setProperty('--photo-progress', `${safePercent}%`);
+  button.textContent = label || `📸 ${safePercent}%`;
+}
+
+function resetPhotoProgress(button) {
+  if (!button) return;
+  button.classList.remove('smart-photo-progress', 'done');
+  button.style.removeProperty('--photo-progress');
+  button.textContent = '📸 Foto van recept';
+}
+
 export async function handlePhotoUpload(file, renderCard, feedbackNear) {
   if (!file) return;
   const preview = document.getElementById('smart-photo-preview');
@@ -79,15 +95,16 @@ export async function handleRecipePhotoUpload(file, feedbackNear) {
   };
   reader.readAsDataURL(file);
 
-  trigger.textContent = '📸 Receptfoto verwerken…';
+  setPhotoProgress(trigger, 5, '📸 5% voorbereiden');
   trigger.disabled = true;
 
+  setPhotoProgress(trigger, 18, '📸 18% verkleinen');
   const dataUrl = await resizeImage(file, 1400);
   const base64 = dataUrl.split(',')[1];
   const mimeType = dataUrl.split(';')[0].split(':')[1];
 
   if (!hasAiProxyConfig()) {
-    trigger.textContent = '📸 Foto van recept';
+    resetPhotoProgress(trigger);
     trigger.disabled = false;
     feedbackNear(trigger, '⚠️ AI-proxy niet beschikbaar', 'danger');
     return;
@@ -98,13 +115,16 @@ export async function handleRecipePhotoUpload(file, feedbackNear) {
   const prompt = [
     'Lees deze foto van een recept, ingrediëntenlijst of kookboekpagina.',
     'Geef ALLEEN platte tekst terug die direct bruikbaar is in een gerecht-parser.',
-    'Als er een gerechtnaam zichtbaar is, zet die op de eerste regel.',
+    'Als er een gerechtnaam of subtitel zichtbaar is, zet die op de eerste regel.',
+    'Bij een deels afgesneden titel: gebruik de meest specifieke zichtbare titel of subtitel.',
     'Zet ingrediënten elk op een nieuwe regel, inclusief hoeveelheden als die zichtbaar zijn.',
+    'Neem sectiekoppen zoals "Voor de yoghurtsaus" alleen mee als context, niet als ingrediënt.',
     'Laat bereidingsstappen weg tenzij er geen ingrediëntenlijst zichtbaar is.',
     'Geen inleiding, geen markdown, geen bullets tenzij die al nuttig zijn voor een ingrediëntenlijst.',
   ].join(' ');
 
   try {
+    setPhotoProgress(trigger, 38, '📸 38% uploaden');
     const response = await fetch(`${cfg.sbUrl}/functions/v1/ai-proxy`, {
       method: 'POST',
       headers: {
@@ -121,23 +141,26 @@ export async function handleRecipePhotoUpload(file, feedbackNear) {
         imageMimeType: mimeType,
       }),
     });
+    setPhotoProgress(trigger, 78, '📸 78% tekst lezen');
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload?.error || `AI-proxy fout (${response.status})`);
 
     const text = String(payload?.text || '').trim();
     if (!text) throw new Error('Geen tekst uit de receptfoto gehaald');
 
+    setPhotoProgress(trigger, 92, '📸 92% verwerken');
     input.value = text;
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    trigger.textContent = '✓ Receptfoto geladen';
-    feedbackNear(trigger, '✓ Tekst uit receptfoto in het invoerveld gezet', 'ok');
+    setPhotoProgress(trigger, 100, '✓ 100% klaar');
+    feedbackNear(trigger, '✓ Tekst uit receptfoto gehaald, analyse gestart', 'ok');
+    document.getElementById('smart-dish-analyze-btn')?.click();
   } catch (error) {
-    trigger.textContent = '📸 Foto van recept';
+    resetPhotoProgress(trigger);
     feedbackNear(trigger, '✗ ' + (error?.message || 'Foto verwerken mislukt'), 'danger');
   } finally {
     trigger.disabled = false;
     setTimeout(() => {
-      if (trigger) trigger.textContent = '📸 Foto van recept';
+      resetPhotoProgress(trigger);
     }, 3000);
   }
 }
