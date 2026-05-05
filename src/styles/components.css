@@ -86,6 +86,26 @@
   border-radius: 12px;
   padding: 1rem;
 }
+.schijf2026-info {
+  margin-bottom: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong));
+}
+.schijf2026-info h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.9rem;
+}
+.schijf2026-info p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.schijf2026-info strong {
+  color: var(--text);
+}
 .schijf2026-head {
   display: flex;
   align-items: flex-start;

@@ -365,6 +365,11 @@ export async function renderSchijf2026Analyse() {
     <div class="setup-hint" style="margin-bottom:1rem">
       Beta op basis van de vernieuwde Schijf van Vijf 2026. Eerste profiel: volwassenen 18-50 met vlees en vis. Weekadviezen worden over maandag t/m zondag berekend.
     </div>
+    <section class="schijf2026-info">
+      <h3>Waarom dag en week verschillen</h3>
+      <p><strong>Vandaag</strong> kijkt naar dagelijkse basisvakken: groente, fruit, volkoren/aardappel, zuivel/kaas, gezonde vetten/noten en dranken zonder suiker.</p>
+      <p><strong>Deze week</strong> kijkt naar adviezen die je niet elke dag hoeft te halen: peulvruchten/tofu/tempé, vis, eieren en limieten voor vlees en rood vlees. Een weekscore kan dus laag zijn op maandag, ook als je dag er prima uitziet.</p>
+    </section>
     <div class="schijf2026-grid">
       <section class="schijf2026-card">
         <div class="schijf2026-head"><h3>Vandaag</h3><span>${esc(currentDate)}</span></div>
