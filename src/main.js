@@ -51,12 +51,12 @@ import { hasAiProxyConfig } from './ai/providers.js';
 import { submit } from './input/submit.js';
 
 // ── UI ───────────────────────────────────────────────────────
-import { renderMeals, _renderDayUI, toggleMealSection, toggleAllMealSections } from './ui/render.js';
+import { renderMeals, _renderDayUI, initMealListeners } from './ui/render.js';
 import { renderSummary } from './ui/summary.js';
 import { renderDashboard } from './ui/charts.js';
 import { setSyncStatus } from './ui/sync-status.js';
 import {
-  renderQuickFavs, applyTheme, applyVis, deleteItem, deleteRecipeGroup, goToDay, switchMobileView,
+  renderQuickFavs, applyTheme, applyVis, switchMobileView, initQuickFavListeners,
 } from './ui/misc.js';
 import {
   initAutocomplete, closeAcDropdown, renderAcDropdown, selectAcItem,
@@ -70,8 +70,7 @@ import { initBugReportListeners } from './ui/bug-report.js';
 
 // ── Modals ───────────────────────────────────────────────────
 import {
-  saveItemAsFavorite, deleteFav, saveMealAsRecipe, startMealRecipeSelection,
-  cancelMealRecipeSelection, toggleMealRecipeSelection, toggleFavExpand, addFavToMeal,
+  deleteFav, toggleFavExpand, addFavToMeal,
   openEditFavModal, initEditFavModalListeners, recalcEditFavTotals,
 } from './modals/favourites.js';
 import {
@@ -79,7 +78,7 @@ import {
   aiLookupMatch, initMatchModalListeners,
 } from './modals/match.js';
 import {
-  openEditModal, openEditRecipeGroupModal, closeEditModal, initEditModalListeners, moveItemToMeal,
+  closeEditModal, initEditModalListeners, moveItemToMeal,
 } from './modals/edit.js';
 import { initDataManagement } from './modals/data-management.js';
 import { initManualDayEntry } from './modals/manual-day.js';
@@ -108,16 +107,12 @@ import { initAdminListeners } from './pages/admin.js';
 // Expose functions needed by inline onclick handlers
 // ══════════════════════════════════════════════════════════════
 Object.assign(window, {
-  toggleMealSection, toggleAllMealSections, saveMealAsRecipe, deleteRecipeGroup,
-  startMealRecipeSelection, cancelMealRecipeSelection, toggleMealRecipeSelection,
-  saveItemAsFavorite, openEditModal, deleteItem,
   addFavToMeal, toggleFavExpand, deleteFav, openEditFavModal, recalcEditFavTotals,
   openSmartImportPage, closeCustomModal,
-  goToDay,
   updateMatchNevo, updateMatchGram, toggleManualMode,
   addMatchToFavs, aiLookupMatch,
   runAdvies, switchMobileView,
-  closeEditModal, closeMatchModal, moveItemToMeal, openEditRecipeGroupModal,
+  closeEditModal, closeMatchModal, moveItemToMeal,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
   analyzeCustomDishInput, applyCustomDishSuggestion,
   quickSaveCustomDishSuggestion, setCustomDishPortionSize,
@@ -1145,6 +1140,8 @@ function initEventListeners() {
   // Autocomplete
   initAutocomplete();
   initBugReportListeners();
+  initMealListeners();
+  initQuickFavListeners();
 }
 
 function inferNumericInputMode(input) {

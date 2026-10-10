@@ -15,7 +15,12 @@ import {
 import { loadDay } from '../supabase/data.js';
 import { renderSummary } from './summary.js';
 import { renderWeekSpark } from './charts.js';
-import { renderHistory } from './misc.js';
+import { renderHistory, deleteItem, deleteRecipeGroup } from './misc.js';
+import { openEditModal, openEditRecipeGroupModal } from '../modals/edit.js';
+import {
+  saveItemAsFavorite, saveMealAsRecipe,
+  startMealRecipeSelection, cancelMealRecipeSelection, toggleMealRecipeSelection,
+} from '../modals/favourites.js';
 
 /* ── renderMeals: load day data + render ────────────────────── */
 export async function renderMeals() {
@@ -78,7 +83,7 @@ export function _renderDayUI(day) {
     const sec = document.createElement('div');
     sec.className = 'meal-section';
     sec.innerHTML = `
-      <div class="meal-header" onclick="toggleMealSection(this)">
+      <div class="meal-header" data-action="toggle-meal">
         <div class="meal-header-left">
           <span class="meal-title">${MEAL_LABELS[meal]}</span>
           ${isDrink && (mMl > 0 || mCals > 0) ? `<span class="meal-cals">${mCals > 0 ? `${mCals} kcal · ` : ''}${mMl} ml</span>` : ''}
@@ -101,9 +106,35 @@ export function _renderDayUI(day) {
   renderHistory();
 }
 
-export function toggleMealSection(header) {
+function toggleMealSection(header) {
   header.closest('.meal-section').classList.toggle('collapsed');
   refreshMealFoldControls();
+}
+
+const MEAL_ACTIONS = {
+  'toggle-meal': el => toggleMealSection(el),
+  'toggle-group': el => el.closest('.recipe-group').classList.toggle('collapsed'),
+  'edit-group': el => openEditRecipeGroupModal(el.dataset.meal, el.dataset.group),
+  'delete-group': el => deleteRecipeGroup(el.dataset.meal, el.dataset.group),
+  fav: el => saveItemAsFavorite(el.dataset.meal, Number(el.dataset.idx)),
+  edit: el => openEditModal(el.dataset.meal, Number(el.dataset.idx)),
+  delete: el => deleteItem(el.dataset.meal, Number(el.dataset.idx)),
+  'start-recipe': el => startMealRecipeSelection(el.dataset.meal),
+  'save-recipe': el => saveMealAsRecipe(el.dataset.meal),
+  'cancel-recipe': () => cancelMealRecipeSelection(),
+};
+
+export function initMealListeners() {
+  const c = document.getElementById('meals-container');
+  c.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (el && c.contains(el)) MEAL_ACTIONS[el.dataset.action]?.(el);
+  });
+  c.addEventListener('change', e => {
+    const el = e.target.closest('[data-action="toggle-recipe-item"]');
+    if (el) toggleMealRecipeSelection(el.dataset.meal, Number(el.dataset.idx));
+  });
+  document.getElementById('toggle-all-meals-btn')?.addEventListener('click', toggleAllMealSections);
 }
 
 function refreshMealFoldControls() {
@@ -158,15 +189,15 @@ export function renderMealItems(items, meal) {
     const uid = g.groupId.replace(/[^a-zA-Z0-9]/g, '_');
 
     return `<div class="recipe-group${isRecipeSelectionActive ? '' : ' collapsed'}" id="rg-${uid}">
-      <div class="recipe-group-header" onclick="document.getElementById('rg-${uid}').classList.toggle('collapsed')">
+      <div class="recipe-group-header" data-action="toggle-group">
         <div class="recipe-group-name">
           <span class="recipe-group-toggle">▾</span>
           🍽️ ${esc(g.name)}
         </div>
         <div style="display:flex;align-items:center;gap:0.5rem">
           <div class="recipe-group-info">${g.items.length} items · ${r1(totKcal)} kcal</div>
-          <button class="item-edit" onclick="event.stopPropagation();openEditRecipeGroupModal('${meal}','${g.groupId.replace(/'/g, "\\\\'")}')" title="Gerecht bewerken">✏️</button>
-          <button class="item-delete" onclick="event.stopPropagation();deleteRecipeGroup('${meal}','${g.groupId.replace(/'/g, "\\\\'")}')">✕</button>
+          <button class="item-edit" data-action="edit-group" data-meal="${meal}" data-group="${esc(g.groupId)}" title="Gerecht bewerken">✏️</button>
+          <button class="item-delete" data-action="delete-group" data-meal="${meal}" data-group="${esc(g.groupId)}">✕</button>
         </div>
       </div>
       <div class="recipe-group-items">
@@ -198,12 +229,12 @@ export function renderItem(item, meal, idx) {
       <span class="item-cals">${right}</span>
       ${isRecipeSelectionActive
         ? `<label class="meal-item-check" title="Meenemen in gerecht">
-            <input type="checkbox" ${isSelectedForRecipe ? 'checked' : ''} onchange="toggleMealRecipeSelection('${meal}',${idx})">
+            <input type="checkbox" ${isSelectedForRecipe ? 'checked' : ''} data-action="toggle-recipe-item" data-meal="${meal}" data-idx="${idx}">
             <span>Opslaan</span>
           </label>`
-        : `<button class="item-fav" onclick="saveItemAsFavorite('${meal}',${idx})" title="Als favoriet opslaan">⭐</button>
-      <button class="item-edit" onclick="openEditModal('${meal}',${idx})" title="Bewerken">✏️</button>
-      <button class="item-delete" onclick="deleteItem('${meal}',${idx})">✕</button>`}
+        : `<button class="item-fav" data-action="fav" data-meal="${meal}" data-idx="${idx}" title="Als favoriet opslaan">⭐</button>
+      <button class="item-edit" data-action="edit" data-meal="${meal}" data-idx="${idx}" title="Bewerken">✏️</button>
+      <button class="item-delete" data-action="delete" data-meal="${meal}" data-idx="${idx}">✕</button>`}
     </div>
   </div>`;
 }
@@ -212,15 +243,15 @@ function renderMealRecipeActions(meal, selectedCount) {
   const isRecipeSelectionActive = recipeSelectionMeal === meal;
   if (!isRecipeSelectionActive) {
     return `<div class="save-recipe-entry">
-      <button class="save-recipe-btn" onclick="startMealRecipeSelection('${meal}')">🍽️ Kies items voor gerecht</button>
+      <button class="save-recipe-btn" data-action="start-recipe" data-meal="${meal}">🍽️ Kies items voor gerecht</button>
       <a class="save-recipe-help-link" href="handleiding.html#meal-to-recipe" target="_blank" rel="noopener noreferrer">Handleiding: items als gerecht opslaan</a>
     </div>`;
   }
   return `<div class="save-recipe-actions">
     <div class="save-recipe-meta">${selectedCount >= 2 ? `${selectedCount} items geselecteerd` : 'Selecteer minimaal 2 items'}</div>
     <div class="save-recipe-action-row">
-      <button class="save-recipe-btn primary" onclick="saveMealAsRecipe('${meal}')" ${selectedCount < 2 ? 'disabled' : ''}>🍽️ Opslaan als gerecht</button>
-      <button class="save-recipe-btn cancel" onclick="cancelMealRecipeSelection()">Annuleren</button>
+      <button class="save-recipe-btn primary" data-action="save-recipe" data-meal="${meal}" ${selectedCount < 2 ? 'disabled' : ''}>🍽️ Opslaan als gerecht</button>
+      <button class="save-recipe-btn cancel" data-action="cancel-recipe">Annuleren</button>
     </div>
   </div>`;
 }

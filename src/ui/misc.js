@@ -16,6 +16,7 @@ import { renderMeals, _renderDayUI } from './render.js';
 import { updateAdviesModelSelect, showAdviesContent } from '../pages/advies.js';
 import { openSmartImportPage } from '../pages/smart-import.js';
 import { renderAdminPage } from '../pages/admin.js';
+import { addFavToMeal } from '../modals/favourites.js';
 import { renderDataOverzicht } from '../pages/data-overview.js';
 
 /* ── History list ─────────────────────────────────────────── */
@@ -32,7 +33,7 @@ export async function renderHistory() {
     list.innerHTML = days.map(day => {
       const cached = localData[day];
       const cals = cached ? Math.round(dayTotals(cached).cals) : null;
-      return `<div class="history-day" onclick="goToDay('${day}')">
+      return `<div class="history-day" data-day="${day}">
         <span>${formatDate(day)}</span>
         <span class="history-day-cals">${cals !== null && cals > 0 ? cals + ' kcal' : '—'}</span>
       </div>`;
@@ -71,7 +72,7 @@ export function renderQuickFavs() {
     const tip = it
       ? `${naam} — ${it.kcal || 0}kcal · ${it.koolhydraten_g || 0}g kh · ${it.vetten_g || 0}g vet · ${it.eiwitten_g || 0}g eiwit${isRecipe ? ' (' + f.items.length + ' items)' : (it.portie ? ' (' + it.portie + ')' : '')}`
       : (f.tekst || naam);
-    return `<button class="quick-fav-chip" onclick="addFavToMeal(${i})" title="${esc(tip)}">${icon}${esc(naam)}</button>`;
+    return `<button class="quick-fav-chip" data-fav-idx="${i}" title="${esc(tip)}">${icon}${esc(naam)}</button>`;
   };
 
   const topFavs = ranked.slice(0, 10);
@@ -90,6 +91,17 @@ export function renderQuickFavs() {
       </details>
     ` : ''}
   `;
+}
+
+export function initQuickFavListeners() {
+  document.getElementById('quick-favs')?.addEventListener('click', e => {
+    const chip = e.target.closest('.quick-fav-chip[data-fav-idx]');
+    if (chip) addFavToMeal(Number(chip.dataset.favIdx));
+  });
+  document.getElementById('history-list')?.addEventListener('click', e => {
+    const row = e.target.closest('.history-day[data-day]');
+    if (row) goToDay(row.dataset.day);
+  });
 }
 
 /* ── Theme (auto / light / dark) ──────────────────────────── */
