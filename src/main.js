@@ -104,7 +104,7 @@ import { initAdminListeners } from './pages/admin.js';
 // ══════════════════════════════════════════════════════════════
 Object.assign(window, {
   openSmartImportPage, closeCustomModal,
-  runAdvies, switchMobileView,
+  switchMobileView,
   closeEditModal, moveItemToMeal,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
   analyzeCustomDishInput, applyCustomDishSuggestion,
