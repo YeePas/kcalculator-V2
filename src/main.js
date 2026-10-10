@@ -73,9 +73,7 @@ import {
   initFavModalListeners, initEditFavModalListeners,
 } from './modals/favourites.js';
 import { initMatchModalListeners } from './modals/match.js';
-import {
-  initEditModalListeners, moveItemToMeal,
-} from './modals/edit.js';
+import { initEditModalListeners } from './modals/edit.js';
 import { initDataManagement } from './modals/data-management.js';
 import { initManualDayEntry } from './modals/manual-day.js';
 import { initManualTdeeEntry } from './modals/manual-tdee.js';
@@ -94,15 +92,6 @@ import {
   openSmartImportPage, closeSmartImportPage, initSmartImportListeners, syncSmartImportProviderSelects,
 } from './pages/smart-import.js';
 import { initAdminListeners } from './pages/admin.js';
-
-// ══════════════════════════════════════════════════════════════
-// Expose functions needed by inline onclick handlers
-// ══════════════════════════════════════════════════════════════
-Object.assign(window, {
-  openSmartImportPage,
-  switchMobileView,
-  moveItemToMeal,
-});
 
 function switchDashPeriod(numDays, btn) {
   document.querySelectorAll('.dash-tab').forEach(b => b.classList.remove('active'));
