@@ -74,7 +74,7 @@ import {
 } from './modals/favourites.js';
 import { initMatchModalListeners } from './modals/match.js';
 import {
-  closeEditModal, initEditModalListeners, moveItemToMeal,
+  initEditModalListeners, moveItemToMeal,
 } from './modals/edit.js';
 import { initDataManagement } from './modals/data-management.js';
 import { initManualDayEntry } from './modals/manual-day.js';
@@ -101,19 +101,18 @@ import { initAdminListeners } from './pages/admin.js';
 Object.assign(window, {
   openSmartImportPage, closeCustomModal,
   switchMobileView,
-  closeEditModal, moveItemToMeal,
+  moveItemToMeal,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
   analyzeCustomDishInput, applyCustomDishSuggestion,
   quickSaveCustomDishSuggestion, setCustomDishPortionSize,
   applyCustomDishAlternative,
 });
 
-// switchDashPeriod for week modal dash-tab buttons
-window.switchDashPeriod = function(numDays, btn) {
+function switchDashPeriod(numDays, btn) {
   document.querySelectorAll('.dash-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderDashboard(numDays);
-};
+}
 
 // ══════════════════════════════════════════════════════════════
 // Export/Import
@@ -726,7 +725,15 @@ function initEventListeners() {
 
   // Week / Data overview
   document.getElementById('week-btn')?.addEventListener('click', openWeekModal);
-  document.getElementById('week-modal')?.addEventListener('click', e => { if (e.target === document.getElementById('week-modal')) document.getElementById('week-modal').classList.remove('open'); });
+  document.getElementById('week-modal')?.addEventListener('click', e => {
+    const weekModal = document.getElementById('week-modal');
+    if (e.target === weekModal || e.target.closest('[data-close]')) {
+      weekModal.classList.remove('open');
+      return;
+    }
+    const tab = e.target.closest('.dash-tab[data-days]');
+    if (tab) switchDashPeriod(Number(tab.dataset.days), tab);
+  });
   document.getElementById('do-back-btn')?.addEventListener('click', closeDataOverzicht);
   document.querySelectorAll('.do-period-tab').forEach(btn => {
     btn.addEventListener('click', () => switchDOPeriod(parseInt(btn.dataset.days), btn));

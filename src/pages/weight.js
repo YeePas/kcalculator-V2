@@ -51,6 +51,9 @@ export function updateWeightDisplay() {
 export function initWeightListeners() {
   document.getElementById('log-weight-btn')?.addEventListener('click', openWeightModal);
   document.getElementById('weight-save-btn')?.addEventListener('click', saveWeightEntry);
+  document.getElementById('weight-cancel-btn')?.addEventListener('click', () => {
+    document.getElementById('weight-modal').classList.remove('open');
+  });
   document.getElementById('weight-modal')?.addEventListener('click', e => {
     if (e.target.id === 'weight-modal') document.getElementById('weight-modal').classList.remove('open');
   });

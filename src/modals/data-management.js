@@ -209,6 +209,10 @@ export function initDataManagement() {
   // ── Typed confirmation: cancel ──
   document.getElementById('delete-confirm-cancel')?.addEventListener('click', hideConfirmArea);
 
+  document.getElementById('data-mgmt-close-btn')?.addEventListener('click', () => {
+    document.getElementById('data-mgmt-modal').classList.remove('open');
+  });
+
   // ── Close on backdrop ──
   document.getElementById('data-mgmt-modal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('data-mgmt-modal')) {

@@ -362,12 +362,12 @@
   <div class="modal" style="max-width:560px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
       <h3 style="margin:0">📊 Dashboard</h3>
-      <button onclick="document.getElementById('week-modal').classList.remove('open')" style="background:none;border:none;font-size:1.2rem;color:var(--muted);cursor:pointer">✕</button>
+      <button data-close style="background:none;border:none;font-size:1.2rem;color:var(--muted);cursor:pointer">✕</button>
     </div>
     <div class="dash-period-tabs">
-      <button class="dash-tab active" onclick="switchDashPeriod(7,this)">Week</button>
-      <button class="dash-tab" onclick="switchDashPeriod(14,this)">2 weken</button>
-      <button class="dash-tab" onclick="switchDashPeriod(30,this)">Maand</button>
+      <button class="dash-tab active" data-days="7">Week</button>
+      <button class="dash-tab" data-days="14">2 weken</button>
+      <button class="dash-tab" data-days="30">Maand</button>
     </div>
     <div class="dash-toggle-row">
       <label class="dash-toggle active" data-macro="kcal"><span class="dash-dot" style="background:var(--accent)"></span>Kcal</label>
@@ -377,7 +377,7 @@
     </div>
     <div id="week-body"><div style="text-align:center;padding:1.5rem;color:var(--muted)">Laden…</div></div>
     <div class="modal-btns" style="margin-top:1rem">
-      <button class="btn-secondary" onclick="document.getElementById('week-modal').classList.remove('open')">Sluiten</button>
+      <button class="btn-secondary" data-close>Sluiten</button>
     </div>
   </div>
 </div>
@@ -459,7 +459,7 @@
     <div class="setup-status" id="data-mgmt-status"></div>
 
     <div class="modal-btns" style="margin-top:1rem">
-      <button class="btn-secondary" onclick="document.getElementById('data-mgmt-modal').classList.remove('open')">Sluiten</button>
+      <button class="btn-secondary" id="data-mgmt-close-btn">Sluiten</button>
     </div>
   </div>
 </div>
@@ -478,7 +478,7 @@
     </div>
     <div class="modal-btns">
       <button class="btn-primary" id="weight-save-btn">Opslaan</button>
-      <button class="btn-secondary" onclick="document.getElementById('weight-modal').classList.remove('open')">Annuleren</button>
+      <button class="btn-secondary" id="weight-cancel-btn">Annuleren</button>
     </div>
   </div>
 </div>
@@ -553,7 +553,7 @@
     <div class="modal-btns edit-modal-actions">
       <button class="btn-primary" id="edit-save-btn">Opslaan</button>
       <button class="btn-secondary" id="edit-fav-btn" style="flex:0.6">⭐ Favoriet</button>
-      <button class="btn-secondary" onclick="closeEditModal()">Annuleren</button>
+      <button class="btn-secondary" id="edit-cancel-btn">Annuleren</button>
     </div>
   </div>
 </div>
