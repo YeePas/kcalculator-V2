@@ -3,6 +3,7 @@
 import { cfg, authUser } from '../state.js';
 import { fillCustomFields } from './custom-ui.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
+import { DEFAULT_PROVIDER_MODELS } from '../constants.js';
 
 export function resizeImage(file, maxDim = 800) {
   return new Promise((resolve) => {
@@ -77,7 +78,7 @@ export async function handleCustomPhoto(file) {
       },
       body: JSON.stringify({
         provider,
-        model: model || (provider === 'openai' ? 'gpt-4o-mini' : provider === 'gemini' ? 'gemini-2.5-flash' : 'claude-haiku-4-5-20251001'),
+        model: model || DEFAULT_PROVIDER_MODELS[provider] || DEFAULT_PROVIDER_MODELS.claude,
         user: prompt,
         maxTokens: 500,
         imageData: base64,

@@ -4,6 +4,7 @@ import { cfg, authUser } from '../state.js';
 import { resizeImage } from '../products/custom-photo.js';
 import { estimateDishFromAIResponse } from '../ai/dish-import-service.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
+import { DEFAULT_PROVIDER_MODELS } from '../constants.js';
 
 function setPhotoProgress(button, percent, label) {
   if (!button) return;
@@ -56,7 +57,7 @@ export async function handlePhotoUpload(file, renderCard, feedbackNear) {
       },
       body: JSON.stringify({
         provider,
-        model: model || (provider === 'openai' ? 'gpt-4o-mini' : provider === 'gemini' ? 'gemini-2.5-flash' : 'claude-haiku-4-5-20251001'),
+        model: model || DEFAULT_PROVIDER_MODELS[provider] || DEFAULT_PROVIDER_MODELS.claude,
         user: prompt,
         maxTokens: 600,
         imageData: base64,
@@ -134,7 +135,7 @@ export async function handleRecipePhotoUpload(file, feedbackNear) {
       },
       body: JSON.stringify({
         provider,
-        model: model || (provider === 'openai' ? 'gpt-4o-mini' : provider === 'gemini' ? 'gemini-2.5-flash' : 'claude-haiku-4-5-20251001'),
+        model: model || DEFAULT_PROVIDER_MODELS[provider] || DEFAULT_PROVIDER_MODELS.claude,
         user: prompt,
         maxTokens: 900,
         imageData: base64,

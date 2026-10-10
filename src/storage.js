@@ -193,9 +193,12 @@ export function normalizeStoredAiModel(model) {
   const value = cleanString(model);
   if (!value) return '';
   const legacyMap = {
-    'claude-haiku-4-5-20250514': 'claude-haiku-4-5-20251001',
-    'claude-sonnet-4-5-20250514': 'claude-sonnet-4-5-20250929',
-    'claude-sonnet-4-5': 'claude-sonnet-4-5-20250929',
+    'claude-haiku-4-5-20250514': 'claude-haiku-5-5',
+    'claude-haiku-4-5-20251001': 'claude-haiku-5-5',
+    'claude-haiku-4-5': 'claude-haiku-5-5',
+    'claude-sonnet-4-5-20250514': 'claude-sonnet-5-5',
+    'claude-sonnet-4-5-20250929': 'claude-sonnet-5-5',
+    'claude-sonnet-4-5': 'claude-sonnet-5-5',
   };
   return legacyMap[value] || value;
 }

@@ -159,11 +159,26 @@ async function callOpenAIVision(model: string, key: string, user: string, maxTok
   return payload?.choices?.[0]?.message?.content || '';
 }
 
+// Claude 5.x models think by default and those tokens count towards max_tokens; these are short
+// lookups, so keep thinking light. Older models reject the effort parameter.
+// Older app versions (cached PWAs) may still send retired Claude 4.5 model IDs.
+function currentClaudeModel(model: unknown) {
+  const value = String(model || '');
+  if (!value || value.startsWith('claude-haiku-4-5')) return 'claude-haiku-5-5';
+  if (value.startsWith('claude-sonnet-4-5')) return 'claude-sonnet-5-5';
+  return value;
+}
+
+function claudeOutputConfig(model: string) {
+  return /^claude-[a-z]+-5(-|$)/.test(model) ? { output_config: { effort: 'low' } } : {};
+}
+
 async function callClaude(model: string, key: string, system: string | null, user: string, maxTokens: number, useWebSearch: boolean) {
   const body: Record<string, unknown> = {
     model,
     max_tokens: maxTokens,
     messages: [{ role: 'user', content: user }],
+    ...claudeOutputConfig(model),
   };
   if (system) body.system = system;
   if (useWebSearch) {
@@ -204,6 +219,7 @@ async function callClaudeVision(model: string, key: string, user: string, maxTok
     body: JSON.stringify({
       model,
       max_tokens: maxTokens,
+      ...claudeOutputConfig(model),
       messages: [{
         role: 'user',
         content: [
@@ -260,8 +276,8 @@ Deno.serve(async (req) => {
     const key = await getUserStoredKey('claude', authHeader) || getSecret('ANTHROPIC_API_KEY');
     if (!key) return json({ error: 'Supabase secret ANTHROPIC_API_KEY ontbreekt' }, 500);
     const text = imageData
-      ? await callClaudeVision(String(body.model || 'claude-haiku-4-5-20251001'), key, user, maxTokens, imageData, imageMimeType)
-      : await callClaude(String(body.model || 'claude-haiku-4-5-20251001'), key, system, user, maxTokens, useWebSearch);
+      ? await callClaudeVision(currentClaudeModel(body.model), key, user, maxTokens, imageData, imageMimeType)
+      : await callClaude(currentClaudeModel(body.model), key, system, user, maxTokens, useWebSearch);
     return json({ text });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);

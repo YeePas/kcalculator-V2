@@ -7,7 +7,7 @@ import { saveDay } from '../supabase/data.js';
 import { syncFavoritesToSupabase } from '../supabase/sync.js';
 import { _renderDayUI } from '../ui/render.js';
 import { switchMobileView, renderQuickFavs } from '../ui/misc.js';
-import { PROVIDER_MODELS, MEAL_LABELS } from '../constants.js';
+import { PROVIDER_MODELS, DEFAULT_PROVIDER_MODELS as DEFAULT_PROVIDER_MODEL, MEAL_LABELS } from '../constants.js';
 import { matchItemToNevo, buildMealItem } from '../products/matcher.js';
 import { searchNevo, searchNevoHybrid } from '../products/database.js';
 import {
@@ -27,11 +27,6 @@ let activeTab = 'dish_name';
 const ingredientMatchSearchState = new Map();
 const INGREDIENT_LOCAL_SEARCH_DEBOUNCE_MS = 70;
 const INGREDIENT_HYBRID_SEARCH_DEBOUNCE_MS = 220;
-const DEFAULT_PROVIDER_MODEL = {
-  claude: 'claude-haiku-4-5-20251001',
-  gemini: 'gemini-2.5-flash',
-  openai: 'gpt-4o-mini',
-};
 
 function getApplyButtonLabel() {
   const meal = getTargetMeal();

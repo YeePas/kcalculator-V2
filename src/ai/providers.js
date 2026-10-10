@@ -3,18 +3,11 @@
 
 import { cfg, authUser } from '../state.js';
 import { isLocalDevHost } from '../storage.js';
+import { PROVIDER_MODELS as PROVIDER_MODEL_LIST, DEFAULT_PROVIDER_MODELS as DEFAULT_MODELS } from '../constants.js';
 
-const DEFAULT_MODELS = {
-  claude: 'claude-haiku-4-5-20251001',
-  gemini: 'gemini-2.5-flash',
-  openai: 'gpt-4o-mini',
-};
-
-const PROVIDER_MODELS = {
-  claude: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-5-20250929'],
-  gemini: ['gemini-2.5-flash', 'gemini-2.5-pro'],
-  openai: ['gpt-4o-mini', 'gpt-4o'],
-};
+const PROVIDER_MODELS = Object.fromEntries(
+  Object.entries(PROVIDER_MODEL_LIST).map(([provider, models]) => [provider, models.map(model => model.id)])
+);
 
 function resolveModel(provider, preferredModel) {
   const validModels = PROVIDER_MODELS[provider] || [];
@@ -129,11 +122,9 @@ export async function claudeCall(prompt, maxTokens = 1400) {
  * Update the inline model select dropdown.
  */
 export function updateInlineModelSelect(provider) {
-  const providerOptions = {
-    claude: [{ value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5 — snel & goedkoop' }, { value: 'claude-sonnet-4-5-20250929', label: 'Sonnet 4.5 — slimmer, ~8× duurder' }],
-    gemini: [{ value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash — gratis' }, { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro — betaald, slimmer' }],
-    openai: [{ value: 'gpt-4o-mini', label: 'GPT-4o mini — goedkoop' }, { value: 'gpt-4o', label: 'GPT-4o — slimmer, ~6× duurder' }],
-  };
+  const providerOptions = Object.fromEntries(
+    Object.entries(PROVIDER_MODEL_LIST).map(([p, models]) => [p, models.map(m => ({ value: m.id, label: m.hint }))])
+  );
   const sel = document.getElementById('inline-model-select');
   if (!sel) return;
   const models = providerOptions[provider] || [];

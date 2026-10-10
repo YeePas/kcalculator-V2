@@ -4,7 +4,7 @@ import {
   localData, currentDate, goals, cfg,
   activeAdviesTab, setActiveAdviesTab,
 } from '../state.js';
-import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
+import { MEAL_NAMES, MEAL_LABELS, AI_MODEL_OPTIONS, DEFAULT_PROVIDER_MODELS } from '../constants.js';
 import { dateKey, emptyDay, r1, formatDate, dayTotals } from '../utils.js';
 import { saveCfg } from '../storage.js';
 import { loadDay } from '../supabase/data.js';
@@ -71,14 +71,7 @@ function showAdviesPrompt() {
 export function updateAdviesModelSelect() {
   const sel = document.getElementById('advies-model-select');
   if (!sel) return;
-  const opts = [
-    {value:'claude|claude-haiku-4-5-20251001', label:'Claude Haiku'},
-    {value:'claude|claude-sonnet-4-5-20250929', label:'Claude Sonnet'},
-    {value:'gemini|gemini-2.5-flash',           label:'Gemini Flash (gratis)'},
-    {value:'gemini|gemini-2.5-pro',             label:'Gemini Pro'},
-    {value:'openai|gpt-4o-mini',                label:'GPT-4o mini'},
-    {value:'openai|gpt-4o',                     label:'GPT-4o'},
-  ];
+  const opts = AI_MODEL_OPTIONS;
   const available = opts.filter(o => {
     if (hasAiProxyConfig()) return true;
     return hasLocalSessionAi('gemini') && o.value.startsWith('gemini|');
@@ -87,7 +80,7 @@ export function updateAdviesModelSelect() {
   const saved = cfg.adviesProvider && cfg.adviesModel ? cfg.adviesProvider + '|' + cfg.adviesModel : null;
   if (saved && available.some(o => o.value === saved)) sel.value = saved;
   else {
-    const def = (cfg.provider || 'claude') + '|' + (cfg.model || 'claude-haiku-4-5-20251001');
+    const def = (cfg.provider || 'claude') + '|' + (cfg.model || DEFAULT_PROVIDER_MODELS.claude);
     if (available.some(o => o.value === def)) sel.value = def;
     else if (available[0]) sel.value = available[0].value;
   }

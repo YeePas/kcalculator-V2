@@ -2,6 +2,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  normalizeStoredAiModel,
   safeParse,
   loadCfg,
   saveCfg,
@@ -165,5 +166,18 @@ describe('loadCustomProducts / saveCustomProducts', () => {
     ];
     saveCustomProducts(products);
     expect(loadCustomProducts()).toEqual(products);
+  });
+});
+
+describe('normalizeStoredAiModel', () => {
+  it('moves retired Claude 4.5 choices to the current models', () => {
+    expect(normalizeStoredAiModel('claude-haiku-4-5-20251001')).toBe('claude-haiku-5-5');
+    expect(normalizeStoredAiModel('claude-sonnet-4-5-20250929')).toBe('claude-sonnet-5-5');
+    expect(normalizeStoredAiModel('claude-sonnet-4-5')).toBe('claude-sonnet-5-5');
+  });
+
+  it('keeps other models untouched', () => {
+    expect(normalizeStoredAiModel('gpt-4o-mini')).toBe('gpt-4o-mini');
+    expect(normalizeStoredAiModel('')).toBe('');
   });
 });

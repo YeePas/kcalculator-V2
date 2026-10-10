@@ -4,6 +4,7 @@ import { cfg } from '../state.js';
 import { loadCustomProducts } from '../storage.js';
 import { r1 } from '../utils.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
+import { AI_MODEL_OPTIONS, DEFAULT_PROVIDER_MODELS } from '../constants.js';
 import { trapFocus, releaseFocus } from '../ui/focus.js';
 import { clearCustomDishSuggestionState } from './custom-suggestion.js';
 
@@ -71,14 +72,7 @@ export function updatePhotoModelSelect() {
   const sel = document.getElementById('custom-photo-model');
   if (!sel) return;
 
-  const opts = [
-    { value: 'claude|claude-haiku-4-5-20251001', label: 'Claude Haiku' },
-    { value: 'claude|claude-sonnet-4-5-20250929', label: 'Claude Sonnet' },
-    { value: 'gemini|gemini-2.5-flash', label: 'Gemini Flash' },
-    { value: 'gemini|gemini-2.5-pro', label: 'Gemini Pro' },
-    { value: 'openai|gpt-4o-mini', label: 'GPT-4o mini' },
-    { value: 'openai|gpt-4o', label: 'GPT-4o' },
-  ];
+  const opts = AI_MODEL_OPTIONS;
 
   const available = opts.filter(o => {
     return hasAiProxyConfig();
@@ -86,7 +80,7 @@ export function updatePhotoModelSelect() {
 
   sel.innerHTML = available.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
 
-  const def = (cfg.provider || 'claude') + '|' + (cfg.model || 'claude-haiku-4-5-20251001');
+  const def = (cfg.provider || 'claude') + '|' + (cfg.model || DEFAULT_PROVIDER_MODELS.claude);
   if (available.some(o => o.value === def)) sel.value = def;
 }
 

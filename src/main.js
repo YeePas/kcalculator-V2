@@ -13,7 +13,7 @@ import {
 } from './state.js';
 import {
   CFG_KEY, GOALS_KEY, LOCAL_KEY, VIS_KEY, FAV_KEY, CUSTOM_KEY,
-  DEFAULT_GOALS, MEAL_NAMES, MEAL_LABELS, PROVIDER_MODELS,
+  DEFAULT_GOALS, MEAL_NAMES, MEAL_LABELS, PROVIDER_MODELS, DEFAULT_PROVIDER_MODELS as AI_PROVIDER_DEFAULT_MODELS,
   ENERGY_LOCAL_KEY,
 } from './constants.js';
 import {
@@ -84,11 +84,6 @@ import {
 } from './ui/bug-report.js';
 
 const ALLOW_REGISTRATION = ['true', '1', 'yes', 'on'].includes(String(import.meta.env.VITE_ALLOW_REGISTRATION || '').toLowerCase());
-const AI_PROVIDER_DEFAULT_MODELS = {
-  claude: 'claude-haiku-4-5-20251001',
-  gemini: 'gemini-2.5-flash',
-  openai: 'gpt-4o-mini',
-};
 
 // ── Modals ───────────────────────────────────────────────────
 import {
