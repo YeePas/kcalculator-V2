@@ -59,17 +59,14 @@ import {
   renderQuickFavs, applyTheme, applyVis, deleteItem, deleteRecipeGroup, goToDay, switchMobileView,
 } from './ui/misc.js';
 import {
-  initAutocomplete, closeAcDropdown, renderAcDropdown,
-  selectAcItem, setPortie, addNevoItem, importAcItemToCustom,
+  initAutocomplete, closeAcDropdown, renderAcDropdown, selectAcItem,
 } from './ui/autocomplete.js';
 import {
   ALLOW_REGISTRATION, handleAuthRedirect, getSelectedAiProvider, setAiProviderStatus, testSetupAiProvider,
   showSetup, hideSetup, activateSettingsTab, openGoalsModal, openAdminIfRoute,
   setProviderUI, setSmartImportProviderUI, setAdviesProviderUI,
 } from './ui/settings.js';
-import {
-  openBugReportModal, closeBugReportModal, submitBugReport, openGeneralFeedback,
-} from './ui/bug-report.js';
+import { initBugReportListeners } from './ui/bug-report.js';
 
 // ── Modals ───────────────────────────────────────────────────
 import {
@@ -115,11 +112,10 @@ Object.assign(window, {
   startMealRecipeSelection, cancelMealRecipeSelection, toggleMealRecipeSelection,
   saveItemAsFavorite, openEditModal, deleteItem,
   addFavToMeal, toggleFavExpand, deleteFav, openEditFavModal, recalcEditFavTotals,
-  selectAcItem, setPortie, addNevoItem, importAcItemToCustom, openSmartImportPage, closeCustomModal,
+  openSmartImportPage, closeCustomModal,
   goToDay,
   updateMatchNevo, updateMatchGram, toggleManualMode,
   addMatchToFavs, aiLookupMatch,
-  openBugReportModal, closeBugReportModal, submitBugReport, openGeneralFeedback,
   runAdvies, switchMobileView,
   closeEditModal, closeMatchModal, moveItemToMeal, openEditRecipeGroupModal,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
@@ -1148,6 +1144,7 @@ function initEventListeners() {
 
   // Autocomplete
   initAutocomplete();
+  initBugReportListeners();
 }
 
 function inferNumericInputMode(input) {

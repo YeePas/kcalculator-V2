@@ -13,6 +13,7 @@ import { loadCustomProducts, saveCustomProducts, loadFavs, saveFavs } from '../s
 import { syncCustomProductsToSupabase, syncFavoritesToSupabase } from '../supabase/sync.js';
 import { saveDay } from '../supabase/data.js';
 import { _renderDayUI } from './render.js';
+import { openSmartImportPage } from '../pages/smart-import.js';
 
 function getFavouriteSearchResults(query) {
   const q = String(query || '').trim().toLowerCase();
@@ -69,8 +70,7 @@ export function renderAcDropdown(results, query, isLoading = false) {
     ? '<div class="ac-loading-row"><span class="ac-loading-spinner" aria-hidden="true"></span><span>Zoeken in OpenFoodFacts.org…</span></div>'
     : '';
 
-  const safeQuery = encodeURIComponent(query);
-  const manualBtn = `<button class="ac-manual-btn" onmousedown="openSmartImportPage(decodeURIComponent('${safeQuery}'))">➕ Eigen product toevoegen… (BETA)</button>`;
+  const manualBtn = `<button class="ac-manual-btn" data-action="open-smart-import" data-query="${esc(query)}">➕ Eigen product toevoegen… (BETA)</button>`;
 
   if (!results.length) {
     dd.innerHTML = `
@@ -85,7 +85,7 @@ export function renderAcDropdown(results, query, isLoading = false) {
   dd.innerHTML = `
     <div class="ac-hint"><span class="ac-hint-badge">Database + OpenFoodFacts.org</span> Selecteer product of druk Enter voor AI-analyse</div>
     ${results.map((r, i) => `
-      <div class="ac-item" data-idx="${i}" onmousedown="selectAcItem(${i})">
+      <div class="ac-item" data-action="select" data-idx="${i}">
         <div style="min-width:0;flex:1">
           <div class="ac-item-name">${highlightMatches(r.n, terms)}${r._custom ? ' <span style="font-size:0.65rem;color:var(--accent)">eigen</span>' : ''}${r._favorite ? ` <span style="font-size:0.65rem;color:${r._favoriteRecipe ? 'var(--green)' : 'var(--accent)'}">${r._favoriteRecipe ? 'gerecht' : 'favoriet'}</span>` : ''}${r.src === 'off-api' ? ' <span style="font-size:0.65rem;color:var(--green)">live</span>' : ''}</div>
           <div class="ac-item-group">${esc(r._group || '')}</div>
@@ -118,7 +118,7 @@ export function selectAcItem(idx) {
         ${item.k} kcal · ${item.kh}g koolh · ${item.vz}g vezel · ${item.v}g vet · ${item.e}g eiwit
       </div>
       <div class="ac-portie-quicks">
-        <button class="ac-portie-quick" onclick="addNevoItem()">Toevoegen aan ${esc(selMeal)}</button>
+        <button class="ac-portie-quick" data-action="add">Toevoegen aan ${esc(selMeal)}</button>
       </div>
     `;
     dd.classList.add('open');
@@ -139,22 +139,20 @@ export function selectAcItem(idx) {
     portions: porties.slice(0, 6),
   });
   const importBtn = item.src === 'off-api'
-    ? '<button class="ac-portie-quick" onclick="importAcItemToCustom()">💾 Opslaan in eigen producten</button>'
+    ? '<button class="ac-portie-quick" data-action="import-custom">💾 Opslaan in eigen producten</button>'
     : '';
 
   let portieButtons = '';
   for (const p of porties) {
     const label = p.l || p.t;
-    const encodedLabel = encodeURIComponent(label);
     if (p.t === 'gram' || p.t === 'ml') {
       const unitLabel = useMl || p.t === 'ml' ? 'ml' : 'g';
-      portieButtons += `<button class="ac-portie-quick" onclick="setPortie(${p.g},decodeURIComponent('${encodeURIComponent(`${p.g}${unitLabel}`)}'))">${p.g}${unitLabel}</button>`;
+      portieButtons += `<button class="ac-portie-quick" data-action="portie" data-gram="${p.g}" data-label="${esc(`${p.g}${unitLabel}`)}">${p.g}${unitLabel}</button>`;
     } else {
       const amountLabel = `${p.g}${useMl ? 'ml' : 'g'}`;
-      portieButtons += `<button class="ac-portie-quick" onclick="setPortie(${p.g},decodeURIComponent('${encodedLabel}'))">${esc(label)} (${amountLabel})</button>`;
+      portieButtons += `<button class="ac-portie-quick" data-action="portie" data-gram="${p.g}" data-label="${esc(label)}">${esc(label)} (${amountLabel})</button>`;
       if (['stuk', 'snee', 'plak', 'ei'].includes(p.t)) {
-        const doubleLabel = encodeURIComponent(`2x ${label}`);
-        portieButtons += `<button class="ac-portie-quick" onclick="setPortie(${p.g * 2},decodeURIComponent('${doubleLabel}'))">2x (${p.g * 2}${useMl ? 'ml' : 'g'})</button>`;
+        portieButtons += `<button class="ac-portie-quick" data-action="portie" data-gram="${p.g * 2}" data-label="${esc(`2x ${label}`)}">2x (${p.g * 2}${useMl ? 'ml' : 'g'})</button>`;
       }
     }
   }
@@ -164,9 +162,9 @@ export function selectAcItem(idx) {
     <div class="ac-portie-quicks">${portieButtons}</div>
     ${importBtn ? `<div class="ac-portie-quicks" style="padding-top:0">${importBtn}</div>` : ''}
     <div class="ac-portie-manual">
-      <input type="number" inputmode="numeric" pattern="[0-9]*" class="ac-portie-input" id="ac-portie-gram" value="${defaultGram}" min="1" step="10" onkeydown="if(event.key==='Enter'){event.preventDefault();addNevoItem();}">
+      <input type="number" inputmode="numeric" pattern="[0-9]*" class="ac-portie-input" id="ac-portie-gram" value="${defaultGram}" min="1" step="10">
       <span class="ac-portie-unit">${useMl ? 'ml' : 'gram'}</span>
-      <button class="ac-portie-add" onclick="addNevoItem()">+</button>
+      <button class="ac-portie-add" data-action="add">+</button>
     </div>
     <div style="padding:0.3rem 0.9rem;font-size:0.72rem;color:var(--muted)">
       <strong>Per 100g:</strong> ${item.k} kcal · ${item.kh}g koolh · ${item.vz}g vezel · ${item.v}g vet · ${item.e}g eiwit
@@ -366,6 +364,30 @@ export function initAutocomplete() {
       selectAcItem(acSelectedIdx);
     } else if (e.key === 'Escape') {
       closeAcDropdown();
+    }
+  });
+
+  const dd = document.getElementById('ac-dropdown');
+  // Mousedown (not click) for result rows: it fires before the input's blur
+  // can close the dropdown.
+  dd.addEventListener('mousedown', (e) => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+    if (el.dataset.action === 'select') selectAcItem(Number(el.dataset.idx));
+    else if (el.dataset.action === 'open-smart-import') openSmartImportPage(el.dataset.query);
+  });
+  dd.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+    const { action } = el.dataset;
+    if (action === 'add') addNevoItem();
+    else if (action === 'portie') setPortie(Number(el.dataset.gram), el.dataset.label);
+    else if (action === 'import-custom') importAcItemToCustom();
+  });
+  dd.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.id === 'ac-portie-gram') {
+      e.preventDefault();
+      addNevoItem();
     }
   });
 
