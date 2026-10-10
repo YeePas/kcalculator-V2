@@ -340,7 +340,8 @@ export function aggregatePeriod(entries, goalsObj, dayTotalsFn, energyMap) {
       totalKcal += intake; totalCarbs += t.carbs; totalFat += t.fat; totalProt += t.prot; totalFiber += t.fiber;
       if (goalsObj.kcal && Math.abs(intake - goalsObj.kcal) <= goalsObj.kcal * 0.1) daysOnTarget++;
     }
-    if (tdee > 0 && key !== todayKey) {
+    // Only compare intake with TDEE on days that were actually logged; an empty day is not a 0 kcal day.
+    if (tdee > 0 && intake > 0 && key !== todayKey) {
       daysWithEnergy++;
       totalKcalWithEnergy += intake;
       totalActive += energy.active_kcal || 0; totalResting += energy.resting_kcal || 0; totalTDEE += tdee;

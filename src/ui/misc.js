@@ -2,7 +2,7 @@
 
 import {
   localData, currentDate, goals, authUser, cfg,
-  vis, showDrinks, setCurrentDate,
+  vis, showDrinks, setCurrentDate, _doCurrentDays,
 } from '../state.js';
 import {
   MEAL_NAMES, MEAL_LABELS, LOCAL_KEY, DARK_KEY, VIS_KEY,
@@ -16,6 +16,7 @@ import { renderMeals, _renderDayUI } from './render.js';
 import { updateAdviesModelSelect, showAdviesContent } from '../pages/advies.js';
 import { openSmartImportPage } from '../pages/smart-import.js';
 import { renderAdminPage } from '../pages/admin.js';
+import { renderDataOverzicht } from '../pages/data-overview.js';
 
 /* ── History list ─────────────────────────────────────────── */
 export async function renderHistory() {

@@ -28,4 +28,26 @@ describe('aggregatePeriod energy balance', () => {
     expect(result.avgResting).toBe(2000);
     expect(result.cumulativeBalance).toBe(-500);
   });
+
+  it('ignores days with activity data but no logged food', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-27T12:00:00Z'));
+
+    const entries = [
+      { key: '2026-03-24', day: { cals: 2400, carbs: 0, fat: 0, prot: 0, fiber: 0 } },
+      { key: '2026-03-25', day: null },
+      { key: '2026-03-26', day: { cals: 0, carbs: 0, fat: 0, prot: 0, fiber: 0 } },
+    ];
+    const energyMap = {
+      '2026-03-24': { tdee_kcal: 2600 },
+      '2026-03-25': { tdee_kcal: 2500 },
+      '2026-03-26': { tdee_kcal: 2700 },
+    };
+
+    const result = aggregatePeriod(entries, {}, day => day, energyMap);
+
+    expect(result.daysWithEnergy).toBe(1);
+    expect(result.avgBalance).toBe(-200);
+    expect(result.cumulativeBalance).toBe(-200);
+  });
 });
