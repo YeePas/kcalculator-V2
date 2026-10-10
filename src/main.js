@@ -70,8 +70,7 @@ import { initBugReportListeners } from './ui/bug-report.js';
 
 // ── Modals ───────────────────────────────────────────────────
 import {
-  deleteFav, toggleFavExpand, addFavToMeal,
-  openEditFavModal, initEditFavModalListeners, recalcEditFavTotals,
+  initFavModalListeners, initEditFavModalListeners,
 } from './modals/favourites.js';
 import {
   closeMatchModal, updateMatchNevo, updateMatchGram, toggleManualMode, addMatchToFavs,
@@ -107,7 +106,6 @@ import { initAdminListeners } from './pages/admin.js';
 // Expose functions needed by inline onclick handlers
 // ══════════════════════════════════════════════════════════════
 Object.assign(window, {
-  addFavToMeal, toggleFavExpand, deleteFav, openEditFavModal, recalcEditFavTotals,
   openSmartImportPage, closeCustomModal,
   updateMatchNevo, updateMatchGram, toggleManualMode,
   addMatchToFavs, aiLookupMatch,
@@ -1127,6 +1125,7 @@ function initEventListeners() {
   initMatchModalListeners();
   initEditModalListeners();
   initEditFavModalListeners();
+  initFavModalListeners();
   initDataManagement();
   initManualDayEntry();
   initManualTdeeEntry();

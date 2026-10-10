@@ -390,11 +390,11 @@
     <div class="fav-list" id="fav-list"></div>
 
     <div id="fav-add-section" style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem">
-      <button class="btn-secondary" id="fav-add-new-btn" style="width:100%;padding:0.5rem;font-size:0.82rem" onclick="document.getElementById('fav-modal').classList.remove('open');openSmartImportPage()">➕ Nieuw favoriet of product toevoegen (BETA)</button>
+      <button class="btn-secondary" id="fav-add-new-btn" style="width:100%;padding:0.5rem;font-size:0.82rem" data-action="add-new">➕ Nieuw favoriet of product toevoegen (BETA)</button>
     </div>
 
     <div class="modal-btns" style="margin-top:1rem">
-      <button class="btn-secondary" onclick="document.getElementById('fav-modal').classList.remove('open')">Sluiten</button>
+      <button class="btn-secondary" data-action="close">Sluiten</button>
     </div>
   </div>
 </div>

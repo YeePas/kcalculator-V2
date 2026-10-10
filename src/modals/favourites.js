@@ -15,6 +15,7 @@ import { renderQuickFavs } from '../ui/misc.js';
 import { searchNevo } from '../products/database.js';
 import { buildMealItem } from '../products/matcher.js';
 import { submit } from '../input/submit.js';
+import { openSmartImportPage } from '../pages/smart-import.js';
 
 function rerenderCurrentDay() {
   _renderDayUI(localData[currentDate] || emptyDay());
@@ -72,7 +73,7 @@ export function renderFavList() {
       : '';
     const badge = isRecipe ? `<span class="fav-recipe-badge">🍽️ ${f.items.length} items</span>` : '';
     const expandBtn = isRecipe
-      ? `<button class="fav-expand-btn" id="fav-expand-${i}" onclick="event.stopPropagation();toggleFavExpand(${i})">▸ Ingrediënten tonen</button>`
+      ? `<button class="fav-expand-btn" id="fav-expand-${i}" data-action="expand" data-idx="${i}">▸ Ingrediënten tonen</button>`
       : '';
     const subItems = isRecipe
       ? `<div class="fav-subitems" id="fav-subitems-${i}" style="display:none">${f.items.map(si =>
@@ -83,11 +84,11 @@ export function renderFavList() {
         ).join('')}</div>`
       : '';
 
-    return `<div class="fav-item" style="flex-wrap:wrap" onclick="addFavToMeal(${i})">
+    return `<div class="fav-item" style="flex-wrap:wrap" data-action="add" data-idx="${i}">
       <div style="flex:1;min-width:0"><div class="fav-item-name">${esc(naam)}${badge}</div>${macros}${expandBtn}</div>
       <div style="display:flex;gap:0.2rem;align-items:center;flex-shrink:0">
-        <button class="fav-item-edit" onclick="event.stopPropagation();openEditFavModal(${i})" title="Bewerken">✏️</button>
-        <button class="fav-item-del" onclick="event.stopPropagation();deleteFav(${i})" title="Verwijder">✕</button>
+        <button class="fav-item-edit" data-action="edit" data-idx="${i}" title="Bewerken">✏️</button>
+        <button class="fav-item-del" data-action="delete" data-idx="${i}" title="Verwijder">✕</button>
       </div>
       ${subItems}
     </div>`;
@@ -307,7 +308,7 @@ export function openEditFavModal(idx) {
           </div>
           <input type="number" class="editfav-si-kcal" value="${si.kcal || 0}" min="0" style="width:70px;border:1.5px solid var(--border);border-radius:6px;padding:0.35rem 0.5rem;font-size:0.82rem;text-align:right;font-family:var(--font-body);background:var(--bg);color:var(--text)" title="kcal">
           <span style="font-size:0.7rem;color:var(--muted)">kcal</span>
-          <button class="item-delete" onclick="this.closest('.editfav-subitem').remove();recalcEditFavTotals()" title="Verwijder ingrediënt" style="font-size:0.8rem">✕</button>
+          <button class="item-delete" data-action="remove-subitem" title="Verwijder ingrediënt" style="font-size:0.8rem">✕</button>
         </div>
       </div>`).join('');
     container.style.display = '';
@@ -345,7 +346,33 @@ export function recalcEditFavTotals() {
   document.getElementById('editfav-prot').value = r1(totalProt);
 }
 
+const FAV_MODAL_ACTIONS = {
+  add: idx => addFavToMeal(idx),
+  expand: idx => toggleFavExpand(idx),
+  edit: idx => openEditFavModal(idx),
+  delete: idx => deleteFav(idx),
+  'add-new': () => {
+    document.getElementById('fav-modal').classList.remove('open');
+    openSmartImportPage();
+  },
+  close: () => document.getElementById('fav-modal').classList.remove('open'),
+};
+
+export function initFavModalListeners() {
+  document.getElementById('fav-modal')?.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (el) FAV_MODAL_ACTIONS[el.dataset.action]?.(Number(el.dataset.idx));
+  });
+}
+
 export function initEditFavModalListeners() {
+  document.getElementById('editfav-items-container')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action="remove-subitem"]');
+    if (!btn) return;
+    btn.closest('.editfav-subitem').remove();
+    recalcEditFavTotals();
+  });
+
   document.getElementById('editfav-cancel-btn')?.addEventListener('click', () => {
     document.getElementById('edit-fav-modal').classList.remove('open');
     editFavIdx = null;
