@@ -328,6 +328,8 @@ export function initAutocomplete() {
       );
       if (seq !== searchSeq) return;
       if (input.value.trim() !== val) return;
+      // The user already picked a product; don't replace the portion picker.
+      if (acSelectedItem) return;
       if (results.length > 0) {
         renderAcDropdown(results, val);
       } else if (val.length >= 3) {

@@ -235,7 +235,7 @@ body.dark .provider-btn.active { background: color-mix(in srgb, var(--accent-lig
 .settings-save-area { margin-top: auto; padding-top: 0.9rem; border-top: 1px solid var(--border); }
 
 @media (max-width: 600px) {
-  #setup-screen { padding: 0.75rem; align-items: stretch; }
+  #setup-screen { padding: 0.75rem; align-items: flex-start; }
   .setup-box { max-width: none; min-height: calc(100dvh - 1.5rem); border-radius: 26px; padding: 1.35rem 1.1rem 2rem; }
   .auth-brand { grid-template-columns: 1fr; align-items: flex-start; }
   .auth-brand-mark { width: 66px; height: 66px; border-radius: 20px; }

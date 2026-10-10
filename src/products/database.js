@@ -186,6 +186,16 @@ function toSingularSearchTerm(term) {
   return value;
 }
 
+// Dutch plurals shorten the vowel and voice the last consonant: "bananen" ->
+// stem "banan" -> "banaan", "kazen" -> "kaas", "bonen" -> "boon".
+export function toLongVowelSearchTerm(stem) {
+  let value = String(stem || '');
+  if (value.length < 3) return value;
+  if (value.endsWith('v')) value = value.slice(0, -1) + 'f';
+  else if (value.endsWith('z')) value = value.slice(0, -1) + 's';
+  return value.replace(/(^|[^aeiou])([aeou])([^aeiouy])$/, '$1$2$2$3');
+}
+
 function buildSearchVariants(query) {
   const normalized = normalizeSearchText(query);
   if (!normalized) return [];
@@ -198,7 +208,15 @@ function buildSearchVariants(query) {
     seen.add(singularPhrase);
     variants.push(singularPhrase);
   }
-  for (const word of singularWords) {
+  const longVowelWords = words.map((word, i) => (
+    singularWords[i] !== word ? toLongVowelSearchTerm(singularWords[i]) : singularWords[i]
+  ));
+  const longVowelPhrase = longVowelWords.join(' ').trim();
+  if (longVowelPhrase && !seen.has(longVowelPhrase)) {
+    seen.add(longVowelPhrase);
+    variants.push(longVowelPhrase);
+  }
+  for (const word of [...singularWords, ...longVowelWords]) {
     if (word && !seen.has(word)) {
       seen.add(word);
       variants.push(word);
