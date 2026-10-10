@@ -72,10 +72,7 @@ import { initBugReportListeners } from './ui/bug-report.js';
 import {
   initFavModalListeners, initEditFavModalListeners,
 } from './modals/favourites.js';
-import {
-  closeMatchModal, updateMatchNevo, updateMatchGram, toggleManualMode, addMatchToFavs,
-  aiLookupMatch, initMatchModalListeners,
-} from './modals/match.js';
+import { initMatchModalListeners } from './modals/match.js';
 import {
   closeEditModal, initEditModalListeners, moveItemToMeal,
 } from './modals/edit.js';
@@ -107,10 +104,8 @@ import { initAdminListeners } from './pages/admin.js';
 // ══════════════════════════════════════════════════════════════
 Object.assign(window, {
   openSmartImportPage, closeCustomModal,
-  updateMatchNevo, updateMatchGram, toggleManualMode,
-  addMatchToFavs, aiLookupMatch,
   runAdvies, switchMobileView,
-  closeEditModal, closeMatchModal, moveItemToMeal,
+  closeEditModal, moveItemToMeal,
   parseNutritionText, importFromOFF, aiFilLCustomProduct,
   analyzeCustomDishInput, applyCustomDishSuggestion,
   quickSaveCustomDishSuggestion, setCustomDishPortionSize,

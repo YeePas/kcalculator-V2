@@ -52,7 +52,7 @@ export function renderMatchList() {
       const exactAiIdx = nevo?._aiResult
         ? alts.findIndex(a => String(a.n || '').toLowerCase() === String(nevo.n || '').toLowerCase())
         : -1;
-      altOptions = `<select class="match-db-select" onchange="updateMatchNevo(${i}, this.value)">
+      altOptions = `<select class="match-db-select" data-idx="${i}">
         ${nevo?._aiResult
           ? `<option value="" ${exactAiIdx < 0 ? 'selected' : ''}>— AI herkend: ${esc(nevo.n || 'onbekend')} —</option>`
           : (nevo ? '' : '<option value="">— Kies een product —</option>')}
@@ -84,9 +84,9 @@ export function renderMatchList() {
       isManual: Boolean(ms.manualMode),
     });
     const actionBtns = [];
-    if (!ms.manualMode) actionBtns.push(`<button class="match-manual-btn" onclick="toggleManualMode(${i})">✎ Handmatig</button>`);
-    actionBtns.push(`<button class="match-manual-btn" onclick="aiLookupMatch(${i})" style="border-color:var(--blue);color:var(--blue)">🤖 AI zoeken</button>`);
-    if (matched) actionBtns.push(`<button class="match-manual-btn" id="match-fav-${i}" onclick="addMatchToFavs(${i})" style="border-color:var(--accent);color:var(--accent)">⭐ Favoriet</button>`);
+    if (!ms.manualMode) actionBtns.push(`<button class="match-manual-btn" data-action="manual" data-idx="${i}">✎ Handmatig</button>`);
+    actionBtns.push(`<button class="match-manual-btn" data-action="ai-lookup" data-idx="${i}" style="border-color:var(--blue);color:var(--blue)">🤖 AI zoeken</button>`);
+    if (matched) actionBtns.push(`<button class="match-manual-btn" id="match-fav-${i}" data-action="fav" data-idx="${i}" style="border-color:var(--accent);color:var(--accent)">⭐ Favoriet</button>`);
     if (bugBtn) actionBtns.push(bugBtn);
 
     const manualForm = ms.manualMode
@@ -111,8 +111,7 @@ export function renderMatchList() {
       ${macroInfo}
       <div class="match-portie-row">
         <label style="font-size:0.75rem;color:var(--muted)">Portie:</label>
-        <input type="number" class="match-portie-input" value="${Math.round(ms.gram)}" min="1" step="10"
-          oninput="updateMatchGram(${i}, this.value)">
+        <input type="number" class="match-portie-input" value="${Math.round(ms.gram)}" min="1" step="10" data-idx="${i}">
         <span style="font-size:0.75rem;color:var(--muted)">${useMl ? 'ml' : 'gram'}</span>
       </div>
       <div class="match-item-actions">${actionBtns.join(' ')}</div>
