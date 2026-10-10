@@ -99,13 +99,9 @@ import { initAdminListeners } from './pages/admin.js';
 // Expose functions needed by inline onclick handlers
 // ══════════════════════════════════════════════════════════════
 Object.assign(window, {
-  openSmartImportPage, closeCustomModal,
+  openSmartImportPage,
   switchMobileView,
   moveItemToMeal,
-  parseNutritionText, importFromOFF, aiFilLCustomProduct,
-  analyzeCustomDishInput, applyCustomDishSuggestion,
-  quickSaveCustomDishSuggestion, setCustomDishPortionSize,
-  applyCustomDishAlternative,
 });
 
 function switchDashPeriod(numDays, btn) {
@@ -979,8 +975,22 @@ function initEventListeners() {
   document.getElementById('custom-photo-input')?.addEventListener('change', e => {
     if (e.target.files[0]) handleCustomPhoto(e.target.files[0]);
   });
+  const customActions = {
+    'analyze-dish': () => analyzeCustomDishInput(),
+    'portion-size': el => setCustomDishPortionSize(el.dataset.size),
+    alternative: el => applyCustomDishAlternative(el.dataset.type),
+    'apply-suggestion': () => applyCustomDishSuggestion(),
+    'quick-save': () => quickSaveCustomDishSuggestion(),
+    'parse-text': () => parseNutritionText(),
+    'pick-photo': () => document.getElementById('custom-photo-input').click(),
+    'import-url': () => importFromOFF(),
+    'ai-fill': () => aiFilLCustomProduct(),
+    close: () => closeCustomModal(),
+  };
   document.getElementById('custom-product-modal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('custom-product-modal')) closeCustomModal();
+    const el = e.target.closest('[data-action]');
+    if (el) customActions[el.dataset.action]?.(el);
   });
   document.getElementById('custom-dish-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') {

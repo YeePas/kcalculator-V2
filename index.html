@@ -583,7 +583,7 @@
         <label>Snel gerecht herkennen</label>
         <input type="text" id="custom-dish-input" placeholder="Bijv. linzensoep, Caesar salad, Ottolenghi bloemkooltaart of plak een receptlink">
         <div class="custom-import-row" style="margin-top:0.45rem">
-          <button class="btn-secondary" id="custom-dish-analyze-btn" onclick="analyzeCustomDishInput()">🔎 Analyseer gerecht</button>
+          <button class="btn-secondary" id="custom-dish-analyze-btn" data-action="analyze-dish">🔎 Analyseer gerecht</button>
         </div>
 
         <div class="custom-suggestion-card" id="custom-dish-result" style="display:none">
@@ -598,10 +598,10 @@
           <div class="custom-suggestion-portion">
             <strong>Voorgestelde portie:</strong> <span id="custom-dish-portion">—</span>
             <div class="custom-size-quick">
-              <button class="btn-secondary" onclick="setCustomDishPortionSize('klein')">Klein</button>
-              <button class="btn-secondary" onclick="setCustomDishPortionSize('normaal')">Normaal</button>
-              <button class="btn-secondary" onclick="setCustomDishPortionSize('groot')">Groot</button>
-              <button class="btn-secondary" onclick="applyCustomDishAlternative('veg')">Vegetarisch</button>
+              <button class="btn-secondary" data-action="portion-size" data-size="klein">Klein</button>
+              <button class="btn-secondary" data-action="portion-size" data-size="normaal">Normaal</button>
+              <button class="btn-secondary" data-action="portion-size" data-size="groot">Groot</button>
+              <button class="btn-secondary" data-action="alternative" data-type="veg">Vegetarisch</button>
             </div>
           </div>
 
@@ -619,8 +619,8 @@
           </details>
 
           <div class="custom-suggestion-actions">
-            <button class="btn-secondary" onclick="applyCustomDishSuggestion()">Gebruik voorstel</button>
-            <button class="btn-primary" onclick="quickSaveCustomDishSuggestion()">⚡ 1-klik opslaan</button>
+            <button class="btn-secondary" data-action="apply-suggestion">Gebruik voorstel</button>
+            <button class="btn-primary" data-action="quick-save">⚡ 1-klik opslaan</button>
           </div>
         </div>
       </div>
@@ -633,8 +633,8 @@ Eiwit: 10.7g
 Koolhydraten: 6.4g
 Vet: 3.3g"></textarea>
         <div class="custom-import-row">
-          <button class="btn-secondary" id="custom-parse-btn" onclick="parseNutritionText()">📋 Herken</button>
-          <button class="btn-secondary" id="custom-photo-btn" onclick="document.getElementById('custom-photo-input').click()">📸 Foto</button>
+          <button class="btn-secondary" id="custom-parse-btn" data-action="parse-text">📋 Herken</button>
+          <button class="btn-secondary" id="custom-photo-btn" data-action="pick-photo">📸 Foto</button>
           <select id="custom-photo-model" class="custom-model-select" title="AI model voor fotoherkenning"></select>
           <input type="file" id="custom-photo-input" accept="image/*" capture="environment" style="display:none">
         </div>
@@ -648,7 +648,7 @@ Vet: 3.3g"></textarea>
         <label style="font-size:0.75rem;color:var(--muted)">Of importeer via URL</label>
         <div style="display:flex;gap:0.4rem">
           <input type="text" id="custom-url" placeholder="URL van openfoodfacts.org, ah.nl of jumbo.com" style="flex:1;font-size:0.8rem">
-          <button class="btn-secondary" onclick="importFromOFF()" style="flex:none;padding:0.4rem 0.7rem;font-size:0.78rem" id="custom-url-btn">Importeer</button>
+          <button class="btn-secondary" data-action="import-url" style="flex:none;padding:0.4rem 0.7rem;font-size:0.78rem" id="custom-url-btn">Importeer</button>
         </div>
       </div>
       <div class="custom-grid">
@@ -697,8 +697,8 @@ Vet: 3.3g"></textarea>
       <div class="custom-count" id="custom-count"></div>
     </div>
     <div class="modal-btns">
-      <button class="btn-secondary" onclick="closeCustomModal()">Annuleren</button>
-      <button class="btn-secondary" onclick="aiFilLCustomProduct()" style="border-color:var(--blue);color:var(--blue)" id="custom-ai-btn">🤖 Vul in met AI</button>
+      <button class="btn-secondary" data-action="close">Annuleren</button>
+      <button class="btn-secondary" data-action="ai-fill" style="border-color:var(--blue);color:var(--blue)" id="custom-ai-btn">🤖 Vul in met AI</button>
       <button class="btn-primary" id="custom-add-btn">Toevoegen</button>
     </div>
   </div>
