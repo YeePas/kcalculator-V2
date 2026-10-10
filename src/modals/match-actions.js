@@ -13,7 +13,10 @@ import { parseFood } from '../ai/parser.js';
 import { hasAiProxyConfig } from '../ai/providers.js';
 import { _renderDayUI } from '../ui/render.js';
 import { renderQuickFavs } from '../ui/misc.js';
-import { closeMatchModal, renderMatchList, addMatchedItemsToDay } from './match-core.js';
+import {
+  closeMatchModal, renderMatchList, addMatchedItemsToDay,
+  updateMatchNevo, updateMatchGram, toggleManualMode, addMatchToFavs,
+} from './match-core.js';
 
 function round1(value) {
   return Math.round((Number(value) || 0) * 10) / 10;
@@ -134,9 +137,28 @@ export function buildItemsFromMatchState(isDrink) {
   return items;
 }
 
+const MATCH_ITEM_ACTIONS = {
+  manual: toggleManualMode,
+  'ai-lookup': aiLookupMatch,
+  fav: addMatchToFavs,
+};
+
 export function initMatchModalListeners() {
   document.getElementById('match-modal').addEventListener('click', e => {
     if (e.target === document.getElementById('match-modal')) closeMatchModal();
+  });
+  document.getElementById('match-cancel-btn').addEventListener('click', closeMatchModal);
+
+  const list = document.getElementById('match-list');
+  list.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (btn) MATCH_ITEM_ACTIONS[btn.dataset.action]?.(Number(btn.dataset.idx));
+  });
+  list.addEventListener('change', e => {
+    if (e.target.matches('.match-db-select')) updateMatchNevo(Number(e.target.dataset.idx), e.target.value);
+  });
+  list.addEventListener('input', e => {
+    if (e.target.matches('.match-portie-input')) updateMatchGram(Number(e.target.dataset.idx), e.target.value);
   });
 
   document.getElementById('match-confirm-btn').addEventListener('click', () => {

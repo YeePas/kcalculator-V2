@@ -362,12 +362,12 @@
   <div class="modal" style="max-width:560px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
       <h3 style="margin:0">📊 Dashboard</h3>
-      <button onclick="document.getElementById('week-modal').classList.remove('open')" style="background:none;border:none;font-size:1.2rem;color:var(--muted);cursor:pointer">✕</button>
+      <button data-close style="background:none;border:none;font-size:1.2rem;color:var(--muted);cursor:pointer">✕</button>
     </div>
     <div class="dash-period-tabs">
-      <button class="dash-tab active" onclick="switchDashPeriod(7,this)">Week</button>
-      <button class="dash-tab" onclick="switchDashPeriod(14,this)">2 weken</button>
-      <button class="dash-tab" onclick="switchDashPeriod(30,this)">Maand</button>
+      <button class="dash-tab active" data-days="7">Week</button>
+      <button class="dash-tab" data-days="14">2 weken</button>
+      <button class="dash-tab" data-days="30">Maand</button>
     </div>
     <div class="dash-toggle-row">
       <label class="dash-toggle active" data-macro="kcal"><span class="dash-dot" style="background:var(--accent)"></span>Kcal</label>
@@ -377,7 +377,7 @@
     </div>
     <div id="week-body"><div style="text-align:center;padding:1.5rem;color:var(--muted)">Laden…</div></div>
     <div class="modal-btns" style="margin-top:1rem">
-      <button class="btn-secondary" onclick="document.getElementById('week-modal').classList.remove('open')">Sluiten</button>
+      <button class="btn-secondary" data-close>Sluiten</button>
     </div>
   </div>
 </div>
@@ -390,11 +390,11 @@
     <div class="fav-list" id="fav-list"></div>
 
     <div id="fav-add-section" style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem">
-      <button class="btn-secondary" id="fav-add-new-btn" style="width:100%;padding:0.5rem;font-size:0.82rem" onclick="document.getElementById('fav-modal').classList.remove('open');openSmartImportPage()">➕ Nieuw favoriet of product toevoegen (BETA)</button>
+      <button class="btn-secondary" id="fav-add-new-btn" style="width:100%;padding:0.5rem;font-size:0.82rem" data-action="add-new">➕ Nieuw favoriet of product toevoegen (BETA)</button>
     </div>
 
     <div class="modal-btns" style="margin-top:1rem">
-      <button class="btn-secondary" onclick="document.getElementById('fav-modal').classList.remove('open')">Sluiten</button>
+      <button class="btn-secondary" data-action="close">Sluiten</button>
     </div>
   </div>
 </div>
@@ -459,7 +459,7 @@
     <div class="setup-status" id="data-mgmt-status"></div>
 
     <div class="modal-btns" style="margin-top:1rem">
-      <button class="btn-secondary" onclick="document.getElementById('data-mgmt-modal').classList.remove('open')">Sluiten</button>
+      <button class="btn-secondary" id="data-mgmt-close-btn">Sluiten</button>
     </div>
   </div>
 </div>
@@ -478,7 +478,7 @@
     </div>
     <div class="modal-btns">
       <button class="btn-primary" id="weight-save-btn">Opslaan</button>
-      <button class="btn-secondary" onclick="document.getElementById('weight-modal').classList.remove('open')">Annuleren</button>
+      <button class="btn-secondary" id="weight-cancel-btn">Annuleren</button>
     </div>
   </div>
 </div>
@@ -553,7 +553,7 @@
     <div class="modal-btns edit-modal-actions">
       <button class="btn-primary" id="edit-save-btn">Opslaan</button>
       <button class="btn-secondary" id="edit-fav-btn" style="flex:0.6">⭐ Favoriet</button>
-      <button class="btn-secondary" onclick="closeEditModal()">Annuleren</button>
+      <button class="btn-secondary" id="edit-cancel-btn">Annuleren</button>
     </div>
   </div>
 </div>
@@ -583,7 +583,7 @@
         <label>Snel gerecht herkennen</label>
         <input type="text" id="custom-dish-input" placeholder="Bijv. linzensoep, Caesar salad, Ottolenghi bloemkooltaart of plak een receptlink">
         <div class="custom-import-row" style="margin-top:0.45rem">
-          <button class="btn-secondary" id="custom-dish-analyze-btn" onclick="analyzeCustomDishInput()">🔎 Analyseer gerecht</button>
+          <button class="btn-secondary" id="custom-dish-analyze-btn" data-action="analyze-dish">🔎 Analyseer gerecht</button>
         </div>
 
         <div class="custom-suggestion-card" id="custom-dish-result" style="display:none">
@@ -598,10 +598,10 @@
           <div class="custom-suggestion-portion">
             <strong>Voorgestelde portie:</strong> <span id="custom-dish-portion">—</span>
             <div class="custom-size-quick">
-              <button class="btn-secondary" onclick="setCustomDishPortionSize('klein')">Klein</button>
-              <button class="btn-secondary" onclick="setCustomDishPortionSize('normaal')">Normaal</button>
-              <button class="btn-secondary" onclick="setCustomDishPortionSize('groot')">Groot</button>
-              <button class="btn-secondary" onclick="applyCustomDishAlternative('veg')">Vegetarisch</button>
+              <button class="btn-secondary" data-action="portion-size" data-size="klein">Klein</button>
+              <button class="btn-secondary" data-action="portion-size" data-size="normaal">Normaal</button>
+              <button class="btn-secondary" data-action="portion-size" data-size="groot">Groot</button>
+              <button class="btn-secondary" data-action="alternative" data-type="veg">Vegetarisch</button>
             </div>
           </div>
 
@@ -619,8 +619,8 @@
           </details>
 
           <div class="custom-suggestion-actions">
-            <button class="btn-secondary" onclick="applyCustomDishSuggestion()">Gebruik voorstel</button>
-            <button class="btn-primary" onclick="quickSaveCustomDishSuggestion()">⚡ 1-klik opslaan</button>
+            <button class="btn-secondary" data-action="apply-suggestion">Gebruik voorstel</button>
+            <button class="btn-primary" data-action="quick-save">⚡ 1-klik opslaan</button>
           </div>
         </div>
       </div>
@@ -633,8 +633,8 @@ Eiwit: 10.7g
 Koolhydraten: 6.4g
 Vet: 3.3g"></textarea>
         <div class="custom-import-row">
-          <button class="btn-secondary" id="custom-parse-btn" onclick="parseNutritionText()">📋 Herken</button>
-          <button class="btn-secondary" id="custom-photo-btn" onclick="document.getElementById('custom-photo-input').click()">📸 Foto</button>
+          <button class="btn-secondary" id="custom-parse-btn" data-action="parse-text">📋 Herken</button>
+          <button class="btn-secondary" id="custom-photo-btn" data-action="pick-photo">📸 Foto</button>
           <select id="custom-photo-model" class="custom-model-select" title="AI model voor fotoherkenning"></select>
           <input type="file" id="custom-photo-input" accept="image/*" capture="environment" style="display:none">
         </div>
@@ -648,7 +648,7 @@ Vet: 3.3g"></textarea>
         <label style="font-size:0.75rem;color:var(--muted)">Of importeer via URL</label>
         <div style="display:flex;gap:0.4rem">
           <input type="text" id="custom-url" placeholder="URL van openfoodfacts.org, ah.nl of jumbo.com" style="flex:1;font-size:0.8rem">
-          <button class="btn-secondary" onclick="importFromOFF()" style="flex:none;padding:0.4rem 0.7rem;font-size:0.78rem" id="custom-url-btn">Importeer</button>
+          <button class="btn-secondary" data-action="import-url" style="flex:none;padding:0.4rem 0.7rem;font-size:0.78rem" id="custom-url-btn">Importeer</button>
         </div>
       </div>
       <div class="custom-grid">
@@ -697,8 +697,8 @@ Vet: 3.3g"></textarea>
       <div class="custom-count" id="custom-count"></div>
     </div>
     <div class="modal-btns">
-      <button class="btn-secondary" onclick="closeCustomModal()">Annuleren</button>
-      <button class="btn-secondary" onclick="aiFilLCustomProduct()" style="border-color:var(--blue);color:var(--blue)" id="custom-ai-btn">🤖 Vul in met AI</button>
+      <button class="btn-secondary" data-action="close">Annuleren</button>
+      <button class="btn-secondary" data-action="ai-fill" style="border-color:var(--blue);color:var(--blue)" id="custom-ai-btn">🤖 Vul in met AI</button>
       <button class="btn-primary" id="custom-add-btn">Toevoegen</button>
     </div>
   </div>
@@ -713,7 +713,7 @@ Vet: 3.3g"></textarea>
     <div class="modal-btns">
       <button class="btn-primary" id="match-add-and-save-btn" style="background:var(--green)">✓ Toevoegen én opslaan als gerecht</button>
       <button class="btn-primary" id="match-confirm-btn">✓ Toevoegen</button>
-      <button class="btn-secondary" onclick="closeMatchModal()">Annuleren</button>
+      <button class="btn-secondary" id="match-cancel-btn">Annuleren</button>
     </div>
   </div>
 </div>
@@ -827,7 +827,7 @@ Vet: 3.3g"></textarea>
     </div>
 
     <div class="meal-fold-controls">
-      <button class="meal-fold-btn" id="toggle-all-meals-btn" onclick="toggleAllMealSections()">↕️ Alles inklappen</button>
+      <button class="meal-fold-btn" id="toggle-all-meals-btn">↕️ Alles inklappen</button>
     </div>
 
     <div id="meals-container"></div>
@@ -976,20 +976,20 @@ Vet: 3.3g"></textarea>
     </div>
 
     <div class="smart-import-tabs" id="smart-import-tabs">
-      <button class="smart-import-tab active" data-tab="dish_name" type="button" onclick="switchSmartImportTab('dish_name')">🍽️ Herkennen</button>
-      <button class="smart-import-tab" data-tab="manual_nutrition" type="button" onclick="switchSmartImportTab('manual_nutrition')">📋 Invullen</button>
-      <button class="smart-import-tab" data-tab="url_import" type="button" onclick="switchSmartImportTab('url_import')">🔗 URL</button>
-      <button class="smart-import-tab" data-tab="manage" type="button" onclick="switchSmartImportTab('manage')">📦 Beheer</button>
+      <button class="smart-import-tab active" data-tab="dish_name" type="button">🍽️ Herkennen</button>
+      <button class="smart-import-tab" data-tab="manual_nutrition" type="button">📋 Invullen</button>
+      <button class="smart-import-tab" data-tab="url_import" type="button">🔗 URL</button>
+      <button class="smart-import-tab" data-tab="manage" type="button">📦 Beheer</button>
     </div>
 
     <div class="meal-selector smart-import-meal-selector" id="smart-import-meal-selector" aria-label="Kies maaltijd voor Smart Import">
-      <button class="meal-btn smart-import-meal-btn active" data-meal="ontbijt" type="button" onclick="selectSmartImportMeal('ontbijt')">🌅 Ontbijt</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="ochtendsnack" type="button" onclick="selectSmartImportMeal('ochtendsnack')">🍎 Ochtendsnack</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="lunch" type="button" onclick="selectSmartImportMeal('lunch')">☀️ Lunch</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="middagsnack" type="button" onclick="selectSmartImportMeal('middagsnack')">🍪 Middagsnack</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="avondeten" type="button" onclick="selectSmartImportMeal('avondeten')">🌙 Avondeten</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="avondsnack" type="button" onclick="selectSmartImportMeal('avondsnack')">🌜 Avondsnack</button>
-      <button class="meal-btn smart-import-meal-btn drink-btn" data-meal="drinken" type="button" onclick="selectSmartImportMeal('drinken')">💧 Drinken</button>
+      <button class="meal-btn smart-import-meal-btn active" data-meal="ontbijt" type="button">🌅 Ontbijt</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="ochtendsnack" type="button">🍎 Ochtendsnack</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="lunch" type="button">☀️ Lunch</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="middagsnack" type="button">🍪 Middagsnack</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="avondeten" type="button">🌙 Avondeten</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="avondsnack" type="button">🌜 Avondsnack</button>
+      <button class="meal-btn smart-import-meal-btn drink-btn" data-meal="drinken" type="button">💧 Drinken</button>
     </div>
 
     <div class="smart-import-body" id="smart-import-body">
@@ -1003,9 +1003,9 @@ Vet: 3.3g"></textarea>
           <textarea id="smart-dish-input" rows="8" placeholder="Voer hier een gerecht in: &quot;Erwtensoep, Nasi Lemak, Pasta Pesto&quot;.&#10;Of &quot;Een pistache ijsje met hoorntje van een ijssalon&quot;&#10;Of plak een recept met de ingrediënten per regel.&#10;- Pasta 75 g&#10;- Kipfilet 150 g&#10;- Courgette 200 g&#10;- Pesto 20 g&#10;- Parmezaan 10 g"></textarea>
         </div>
         <div class="smart-actions">
-          <button class="btn-secondary" id="smart-photo-label" type="button" onclick="document.getElementById('smart-photo-input').click()">📸 Foto van recept</button>
+          <button class="btn-secondary" id="smart-photo-label" type="button">📸 Foto van recept</button>
           <input type="file" id="smart-photo-input" accept="image/*" capture="environment" style="display:none">
-          <button class="btn-primary" id="smart-dish-analyze-btn" type="button" onclick="runSmartImportDishAnalysis()">🔎 Analyseer</button>
+          <button class="btn-primary" id="smart-dish-analyze-btn" type="button">🔎 Analyseer</button>
           <select id="smart-import-provider-select" title="AI-provider" class="smart-inline-select"></select>
           <select id="smart-import-model-select" title="Model" class="smart-inline-select"></select>
         </div>
@@ -1017,19 +1017,19 @@ Vet: 3.3g"></textarea>
       <section class="smart-section" data-section="manual_nutrition" style="display:none">
         <div class="smart-form-row">
           <label for="smart-manual-paste">Plak voedingswaarden (liefst per 100g)</label>
-          <textarea id="smart-manual-paste" rows="5" placeholder="Per 100g&#10;Calorieën 214 kcal&#10;Koolhydraten 46 g&#10;Eiwit 8,7 g&#10;Vet 1,2 g&#10;Vezels 7-8 g" oninput="refreshSmartImportManualProposal()"></textarea>
+          <textarea id="smart-manual-paste" rows="5" placeholder="Per 100g&#10;Calorieën 214 kcal&#10;Koolhydraten 46 g&#10;Eiwit 8,7 g&#10;Vet 1,2 g&#10;Vezels 7-8 g"></textarea>
         </div>
         <div class="smart-actions">
-          <button class="btn-primary" id="smart-manual-parse-btn" type="button" onclick="parseSmartImportManual()">📋 Herken en vul in</button>
+          <button class="btn-primary" id="smart-manual-parse-btn" type="button">📋 Herken en vul in</button>
         </div>
         <div class="smart-form-grid">
-          <div class="smart-form-row"><label for="smart-manual-title">Titel</label><input id="smart-manual-title" type="text" placeholder="Bijv. Linzensoep" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-kcal">kcal per 100g</label><input id="smart-manual-kcal" type="number" min="0" step="1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-protein">eiwit g per 100g</label><input id="smart-manual-protein" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-carbs">koolh. g per 100g</label><input id="smart-manual-carbs" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-fat">vet g per 100g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-fiber">vezels g per 100g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-portion">Portiegrootte (g)</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" oninput="refreshSmartImportManualProposal()" /></div>
+          <div class="smart-form-row"><label for="smart-manual-title">Titel</label><input id="smart-manual-title" type="text" placeholder="Bijv. Linzensoep" /></div>
+          <div class="smart-form-row"><label for="smart-manual-kcal">kcal per 100g</label><input id="smart-manual-kcal" type="number" min="0" step="1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-protein">eiwit g per 100g</label><input id="smart-manual-protein" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-carbs">koolh. g per 100g</label><input id="smart-manual-carbs" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fat">vet g per 100g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fiber">vezels g per 100g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-portion">Portiegrootte (g)</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" /></div>
         </div>
         <div class="setup-hint" style="margin-top:0.35rem">Waarden hierboven zijn per 100g. De app rekent automatisch om naar jouw portiegrootte.</div>
         <div class="smart-result" id="smart-manual-result"></div>
@@ -1042,7 +1042,7 @@ Vet: 3.3g"></textarea>
           <input id="smart-url-input" type="url" placeholder="https://world.openfoodfacts.org/product/..." />
         </div>
         <div class="smart-actions">
-          <button class="btn-primary" id="smart-url-import-btn" type="button" onclick="runSmartImportUrlImport()">🔗 Importeer</button>
+          <button class="btn-primary" id="smart-url-import-btn" type="button">🔗 Importeer</button>
         </div>
         <div class="smart-result" id="smart-url-result"></div>
       </section>

@@ -268,7 +268,7 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
     if (goals.kcal) html += '<span><span class="do-legend-dot" style="background:var(--muted)"></span>Doel (' + goals.kcal + ')</span>';
     html += '</div>';
     html += '<div style="margin-top:0.8rem;display:flex;justify-content:flex-start;gap:0.55rem;flex-wrap:wrap">'
-      + '<button class="btn-secondary" type="button" onclick="document.getElementById(\'settings-import-btn\')?.click()" style="flex:0 0 auto">🍎 Import</button>'
+      + '<button class="btn-secondary" type="button" id="do-import-health" style="flex:0 0 auto">🍎 Import</button>'
       + '<button class="btn-secondary" type="button" data-action="open-manual-tdee" style="flex:0 0 auto">✏️ TDEE</button>'
       + '</div>';
     html += '</section>';
@@ -440,6 +440,7 @@ function renderDataOverviewContent(contentEl, numDays, dateKeys, entries, energy
     }
   });
 
+  document.getElementById('do-import-health')?.addEventListener('click', () => document.getElementById('settings-import-btn')?.click());
   document.getElementById('do-export-csv')?.addEventListener('click', () => exportPeriodCSV(numDays));
   document.getElementById('do-export-print')?.addEventListener('click', () => exportWeekrapportPrint());
   renderWeightChart(document.getElementById('do-weight-chart'), numDays);

@@ -5,7 +5,7 @@ import {
   activeAdviesTab, setActiveAdviesTab,
 } from '../state.js';
 import { MEAL_NAMES, MEAL_LABELS, AI_MODEL_OPTIONS, DEFAULT_PROVIDER_MODELS } from '../constants.js';
-import { dateKey, emptyDay, r1, formatDate, dayTotals } from '../utils.js';
+import { dateKey, emptyDay, r1, formatDate, dayTotals, esc } from '../utils.js';
 import { saveCfg } from '../storage.js';
 import { loadDay } from '../supabase/data.js';
 import { aiCall, hasAiAvailable, hasAiProxyConfig, hasLocalSessionAi } from '../ai/providers.js';
@@ -64,7 +64,7 @@ function showAdviesPrompt() {
     <div style="text-align:center;padding:2rem 1rem">
       <div style="font-size:2rem;margin-bottom:0.5rem">💡</div>
       <p style="color:var(--muted);margin-bottom:1rem;font-size:0.88rem">${tabLabels[activeAdviesTab] || 'Advies'} — klik op Genereren om een AI-analyse te starten.</p>
-      <button class="btn-primary" onclick="runAdvies('${activeAdviesTab}')" style="max-width:200px">🔍 Genereren</button>
+      <button class="btn-primary" data-action="run-advies" data-tab="${esc(activeAdviesTab)}" style="max-width:200px">🔍 Genereren</button>
     </div>`;
 }
 
@@ -436,6 +436,10 @@ Wees concreet, persoonlijk en verwijs naar ALLE bovenstaande data. Noem producte
 }
 
 export function initAdviesListeners() {
+  document.getElementById('advies-body')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action="run-advies"]');
+    if (btn) runAdvies(btn.dataset.tab);
+  });
   document.getElementById('advies-model-select')?.addEventListener('change', function () {
     _syncAdviesModel();
     saveCfg(cfg);

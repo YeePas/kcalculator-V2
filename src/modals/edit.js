@@ -104,6 +104,7 @@ export function closeEditRecipeGroupModal() {
 }
 
 export function initEditModalListeners() {
+  document.getElementById('edit-cancel-btn').addEventListener('click', closeEditModal);
   // Live recalculation when gram changes
   document.getElementById('edit-gram').addEventListener('input', () => {
     if (!editBasePer100) return;

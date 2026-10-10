@@ -834,10 +834,6 @@ function refreshManualProposal() {
   renderProposalCard('smart-manual-result', proposal);
 }
 
-export function refreshSmartImportManualProposal() {
-  refreshManualProposal();
-}
-
 export function switchSmartImportTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.smart-import-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -960,6 +956,19 @@ export function closeSmartImportPage() {
 /* ── Listeners ───────────────────────────────────────────── */
 
 export function initSmartImportListeners() {
+  document.getElementById('smart-import-tabs')?.addEventListener('click', e => {
+    const tab = e.target.closest('.smart-import-tab[data-tab]');
+    if (tab) switchSmartImportTab(tab.dataset.tab);
+  });
+  document.getElementById('smart-import-meal-selector')?.addEventListener('click', e => {
+    const btn = e.target.closest('.smart-import-meal-btn[data-meal]');
+    if (btn) selectSmartImportMeal(btn.dataset.meal);
+  });
+  document.getElementById('smart-photo-label')?.addEventListener('click', () => document.getElementById('smart-photo-input')?.click());
+  document.getElementById('smart-dish-analyze-btn')?.addEventListener('click', runSmartImportDishAnalysis);
+  document.getElementById('smart-manual-parse-btn')?.addEventListener('click', parseSmartImportManual);
+  document.getElementById('smart-url-import-btn')?.addEventListener('click', runSmartImportUrlImport);
+
   document.getElementById('smart-import-provider-select')?.addEventListener('change', syncSmartImportProviderSelects);
   document.getElementById('smart-import-model-select')?.addEventListener('change', () => {
     cfg.importProvider = document.getElementById('smart-import-provider-select')?.value;
@@ -981,6 +990,7 @@ export function initSmartImportListeners() {
   });
 
   [
+    'smart-manual-paste',
     'smart-manual-title',
     'smart-manual-kcal',
     'smart-manual-protein',

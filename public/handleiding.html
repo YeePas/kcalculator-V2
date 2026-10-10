@@ -286,7 +286,7 @@ body {
     <a href="#sync">Sync</a>
     <a href="#pwa">App Opslaan</a>
     <a href="#instellingen">Instellingen</a>
-    <button class="dark-toggle" onclick="document.body.classList.toggle('dark')" aria-label="Wissel thema">
+    <button class="dark-toggle" aria-label="Wissel thema">
       <span class="toggle-icon">&#9790;</span>
     </button>
   </div>
@@ -791,14 +791,6 @@ body {
 
 </div>
 
-<script>
-// Restore dark mode preference
-if (localStorage.getItem('kcalc-dark') === '1' || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !localStorage.getItem('kcalc-dark'))) {
-  document.body.classList.add('dark');
-}
-document.querySelector('.dark-toggle').addEventListener('click', () => {
-  localStorage.setItem('kcalc-dark', document.body.classList.contains('dark') ? '1' : '0');
-});
-</script>
+<script src="handleiding.js"></script>
 </body>
 </html>

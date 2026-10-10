@@ -47,8 +47,8 @@ function ensureBugModal() {
         </select>
       </div>
       <div class="modal-btns">
-        <button class="btn-secondary" onclick="closeBugReportModal()">Sluiten</button>
-        <button class="btn-primary" id="bug-report-submit-btn" onclick="submitBugReport()">Versturen</button>
+        <button class="btn-secondary" data-action="close">Sluiten</button>
+        <button class="btn-primary" id="bug-report-submit-btn" data-action="submit">Versturen</button>
       </div>
       <div id="bug-report-status" class="setup-status" style="margin-top:0.7rem"></div>
     </div>
@@ -56,6 +56,9 @@ function ensureBugModal() {
 
   modal.addEventListener('click', e => {
     if (e.target === modal) closeBugReportModal();
+    const action = e.target.closest('[data-action]')?.dataset.action;
+    if (action === 'close') closeBugReportModal();
+    else if (action === 'submit') submitBugReport();
   });
 
   document.body.appendChild(modal);
@@ -88,7 +91,7 @@ export function buildBugReportButton(context, details = {}) {
   };
   const encoded = encodePayload(payload);
   if (!encoded) return '';
-  return `<button class="beta-bug-btn" onclick="openBugReportModal('${encoded}')" title="Meld een bug voor dit onderdeel" aria-label="Meld bug">🐞</button>`;
+  return `<button class="beta-bug-btn" data-bug-payload="${encoded}" title="Meld een bug voor dit onderdeel" aria-label="Meld bug">🐞</button>`;
 }
 
 export function openGeneralFeedback(context = 'general-feedback', details = {}) {
@@ -191,4 +194,13 @@ export async function submitBugReport() {
   } finally {
     btn && (btn.disabled = false);
   }
+}
+
+// 🐞 buttons are rendered inside several containers (autocomplete, match modal),
+// so they share one document-level listener.
+export function initBugReportListeners() {
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.beta-bug-btn[data-bug-payload]');
+    if (btn) openBugReportModal(btn.dataset.bugPayload);
+  });
 }

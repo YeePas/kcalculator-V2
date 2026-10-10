@@ -51,39 +51,29 @@ import { hasAiProxyConfig } from './ai/providers.js';
 import { submit } from './input/submit.js';
 
 // ── UI ───────────────────────────────────────────────────────
-import { renderMeals, _renderDayUI, toggleMealSection, toggleAllMealSections } from './ui/render.js';
+import { renderMeals, _renderDayUI, initMealListeners } from './ui/render.js';
 import { renderSummary } from './ui/summary.js';
 import { renderDashboard } from './ui/charts.js';
 import { setSyncStatus } from './ui/sync-status.js';
 import {
-  renderQuickFavs, applyTheme, applyVis, deleteItem, deleteRecipeGroup, goToDay, switchMobileView,
+  renderQuickFavs, applyTheme, applyVis, switchMobileView, initQuickFavListeners,
 } from './ui/misc.js';
 import {
-  initAutocomplete, closeAcDropdown, renderAcDropdown,
-  selectAcItem, setPortie, addNevoItem, importAcItemToCustom,
+  initAutocomplete, closeAcDropdown, renderAcDropdown, selectAcItem,
 } from './ui/autocomplete.js';
 import {
   ALLOW_REGISTRATION, handleAuthRedirect, getSelectedAiProvider, setAiProviderStatus, testSetupAiProvider,
   showSetup, hideSetup, activateSettingsTab, openGoalsModal, openAdminIfRoute,
   setProviderUI, setSmartImportProviderUI, setAdviesProviderUI,
 } from './ui/settings.js';
-import {
-  openBugReportModal, closeBugReportModal, submitBugReport, openGeneralFeedback,
-} from './ui/bug-report.js';
+import { initBugReportListeners } from './ui/bug-report.js';
 
 // ── Modals ───────────────────────────────────────────────────
 import {
-  saveItemAsFavorite, deleteFav, saveMealAsRecipe, startMealRecipeSelection,
-  cancelMealRecipeSelection, toggleMealRecipeSelection, toggleFavExpand, addFavToMeal,
-  openEditFavModal, initEditFavModalListeners, recalcEditFavTotals,
+  initFavModalListeners, initEditFavModalListeners,
 } from './modals/favourites.js';
-import {
-  closeMatchModal, updateMatchNevo, updateMatchGram, toggleManualMode, addMatchToFavs,
-  aiLookupMatch, initMatchModalListeners,
-} from './modals/match.js';
-import {
-  openEditModal, openEditRecipeGroupModal, closeEditModal, initEditModalListeners, moveItemToMeal,
-} from './modals/edit.js';
+import { initMatchModalListeners } from './modals/match.js';
+import { initEditModalListeners } from './modals/edit.js';
 import { initDataManagement } from './modals/data-management.js';
 import { initManualDayEntry } from './modals/manual-day.js';
 import { initManualTdeeEntry } from './modals/manual-tdee.js';
@@ -99,44 +89,15 @@ import {
   openAdviesModal, closeAdviesPage, showAdviesContent, runAdvies, initAdviesListeners,
 } from './pages/advies.js';
 import {
-  openSmartImportPage, closeSmartImportPage, initSmartImportListeners,
-  switchSmartImportTab, selectSmartImportMeal,
-  runSmartImportDishAnalysis, parseSmartImportManual, runSmartImportUrlImport,
-  refreshSmartImportManualProposal, syncSmartImportProviderSelects,
+  openSmartImportPage, closeSmartImportPage, initSmartImportListeners, syncSmartImportProviderSelects,
 } from './pages/smart-import.js';
-import { renderManageList } from './pages/smart-import-manage.js';
 import { initAdminListeners } from './pages/admin.js';
 
-// ══════════════════════════════════════════════════════════════
-// Expose functions needed by inline onclick handlers
-// ══════════════════════════════════════════════════════════════
-Object.assign(window, {
-  toggleMealSection, toggleAllMealSections, saveMealAsRecipe, deleteRecipeGroup,
-  startMealRecipeSelection, cancelMealRecipeSelection, toggleMealRecipeSelection,
-  saveItemAsFavorite, openEditModal, deleteItem,
-  addFavToMeal, toggleFavExpand, deleteFav, openEditFavModal, recalcEditFavTotals,
-  selectAcItem, setPortie, addNevoItem, importAcItemToCustom, openSmartImportPage, closeCustomModal,
-  goToDay,
-  updateMatchNevo, updateMatchGram, toggleManualMode,
-  addMatchToFavs, aiLookupMatch,
-  openBugReportModal, closeBugReportModal, submitBugReport, openGeneralFeedback,
-  runAdvies, switchMobileView,
-  closeEditModal, closeMatchModal, moveItemToMeal, openEditRecipeGroupModal,
-  parseNutritionText, importFromOFF, aiFilLCustomProduct,
-  analyzeCustomDishInput, applyCustomDishSuggestion,
-  quickSaveCustomDishSuggestion, setCustomDishPortionSize,
-  applyCustomDishAlternative,
-  switchSmartImportTab, selectSmartImportMeal,
-  runSmartImportDishAnalysis, parseSmartImportManual, runSmartImportUrlImport,
-  refreshSmartImportManualProposal, syncSmartImportProviderSelects,
-});
-
-// switchDashPeriod for week modal dash-tab buttons
-window.switchDashPeriod = function(numDays, btn) {
+function switchDashPeriod(numDays, btn) {
   document.querySelectorAll('.dash-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderDashboard(numDays);
-};
+}
 
 // ══════════════════════════════════════════════════════════════
 // Export/Import
@@ -625,61 +586,6 @@ function refreshProductDB() {
 // Event Listeners
 // ══════════════════════════════════════════════════════════════
 function initEventListeners() {
-  document.addEventListener('click', e => {
-    const smartTab = e.target.closest('.smart-import-tab[data-tab]');
-    if (smartTab) {
-      switchSmartImportTab(smartTab.dataset.tab);
-      return;
-    }
-
-    const smartMeal = e.target.closest('.smart-import-meal-btn[data-meal]');
-    if (smartMeal) {
-      selectSmartImportMeal(smartMeal.dataset.meal);
-      return;
-    }
-
-    if (e.target.closest('#smart-dish-analyze-btn')) {
-      runSmartImportDishAnalysis();
-      return;
-    }
-
-    if (e.target.closest('#smart-manual-parse-btn')) {
-      parseSmartImportManual();
-      return;
-    }
-
-    if (e.target.closest('#smart-url-import-btn')) {
-      runSmartImportUrlImport();
-    }
-  });
-
-  document.addEventListener('input', e => {
-    const manualField = e.target.closest('#smart-manual-title, #smart-manual-kcal, #smart-manual-protein, #smart-manual-carbs, #smart-manual-fat, #smart-manual-fiber, #smart-manual-portion');
-    if (manualField) {
-      refreshSmartImportManualProposal();
-      return;
-    }
-
-    const manageSearch = e.target.closest('#smart-manage-search');
-    if (manageSearch) {
-      const term = manageSearch.value || '';
-      renderManageList(term);
-    }
-  });
-
-  document.addEventListener('change', e => {
-    if (e.target.closest('#smart-import-provider-select')) {
-      syncSmartImportProviderSelects();
-      return;
-    }
-
-    if (e.target.closest('#smart-import-model-select')) {
-      cfg.importProvider = document.getElementById('smart-import-provider-select')?.value;
-      cfg.importModel = document.getElementById('smart-import-model-select')?.value;
-      saveCfg(cfg);
-    }
-  });
-
   // Setup close
   document.getElementById('setup-close-btn')?.addEventListener('click', hideSetup);
   document.addEventListener('keydown', e => {
@@ -804,7 +710,15 @@ function initEventListeners() {
 
   // Week / Data overview
   document.getElementById('week-btn')?.addEventListener('click', openWeekModal);
-  document.getElementById('week-modal')?.addEventListener('click', e => { if (e.target === document.getElementById('week-modal')) document.getElementById('week-modal').classList.remove('open'); });
+  document.getElementById('week-modal')?.addEventListener('click', e => {
+    const weekModal = document.getElementById('week-modal');
+    if (e.target === weekModal || e.target.closest('[data-close]')) {
+      weekModal.classList.remove('open');
+      return;
+    }
+    const tab = e.target.closest('.dash-tab[data-days]');
+    if (tab) switchDashPeriod(Number(tab.dataset.days), tab);
+  });
   document.getElementById('do-back-btn')?.addEventListener('click', closeDataOverzicht);
   document.querySelectorAll('.do-period-tab').forEach(btn => {
     btn.addEventListener('click', () => switchDOPeriod(parseInt(btn.dataset.days), btn));
@@ -1050,8 +964,22 @@ function initEventListeners() {
   document.getElementById('custom-photo-input')?.addEventListener('change', e => {
     if (e.target.files[0]) handleCustomPhoto(e.target.files[0]);
   });
+  const customActions = {
+    'analyze-dish': () => analyzeCustomDishInput(),
+    'portion-size': el => setCustomDishPortionSize(el.dataset.size),
+    alternative: el => applyCustomDishAlternative(el.dataset.type),
+    'apply-suggestion': () => applyCustomDishSuggestion(),
+    'quick-save': () => quickSaveCustomDishSuggestion(),
+    'parse-text': () => parseNutritionText(),
+    'pick-photo': () => document.getElementById('custom-photo-input').click(),
+    'import-url': () => importFromOFF(),
+    'ai-fill': () => aiFilLCustomProduct(),
+    close: () => closeCustomModal(),
+  };
   document.getElementById('custom-product-modal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('custom-product-modal')) closeCustomModal();
+    const el = e.target.closest('[data-action]');
+    if (el) customActions[el.dataset.action]?.(el);
   });
   document.getElementById('custom-dish-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
@@ -1136,6 +1064,7 @@ function initEventListeners() {
   initMatchModalListeners();
   initEditModalListeners();
   initEditFavModalListeners();
+  initFavModalListeners();
   initDataManagement();
   initManualDayEntry();
   initManualTdeeEntry();
@@ -1148,6 +1077,9 @@ function initEventListeners() {
 
   // Autocomplete
   initAutocomplete();
+  initBugReportListeners();
+  initMealListeners();
+  initQuickFavListeners();
 }
 
 function inferNumericInputMode(input) {
