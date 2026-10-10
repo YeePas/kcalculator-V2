@@ -36,7 +36,7 @@ De productiebuild komt in `dist/`.
 
 ## Deploy naar GitHub Pages
 
-Deze repo bevat een workflow in [.github/workflows/deploy-pages.yml](/Users/joepwillemsen/Documents/GitHub/kcalculator/.github/workflows/deploy-pages.yml) die deployt bij pushes naar `main`.
+Deze repo bevat een workflow in [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) die deployt bij pushes naar `main`.
 
 Voor GitHub Pages moet je in GitHub nog even controleren:
 
@@ -45,11 +45,11 @@ Voor GitHub Pages moet je in GitHub nog even controleren:
 3. Custom domain op `kcalculator.eu`
 4. DNS-records van `kcalculator.eu` correct naar GitHub Pages
 
-Het custom domain bestand staat in [public/CNAME](/Users/joepwillemsen/Documents/GitHub/kcalculator/public/CNAME).
+Het custom domain bestand staat in [public/CNAME](public/CNAME).
 
 ## Deploy naar Supabase via GitHub Actions
 
-Deze repo bevat ook een workflow in [.github/workflows/deploy-supabase.yml](/Users/joepwillemsen/Documents/GitHub/kcalculator-V2/.github/workflows/deploy-supabase.yml).
+Deze repo bevat ook een workflow in [.github/workflows/deploy-supabase.yml](.github/workflows/deploy-supabase.yml).
 
 Die doet automatisch:
 
@@ -80,6 +80,10 @@ Daarna geldt:
 
 - push naar `main` = website deployt via GitHub Pages
 - Supabase functions en migrations deployen automatisch mee via GitHub Actions
+
+## Supabase keep-alive
+
+Gratis Supabase-projecten pauzeren na 7 dagen zonder databaseactiviteit. De workflow [.github/workflows/supabase-keepalive.yml](.github/workflows/supabase-keepalive.yml) doet daarom elke maandag en donderdag een kleine query. Hij gebruikt de bestaande secrets `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY`, en je kunt hem ook handmatig starten via de Actions-tab.
 
 ## Omgevingsvariabelen
 
