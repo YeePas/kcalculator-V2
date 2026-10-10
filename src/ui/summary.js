@@ -58,6 +58,7 @@ export function renderSummary(day) {
   infoRest.innerHTML = goals.kcal
     ? (restKcal >= 0 ? `<strong>${restKcal}</strong> kcal over` : `<span style="color:${overageTone?.colorVar || 'var(--danger)'}"><strong>${Math.abs(restKcal)}</strong> kcal te veel</span>`)
     : '';
+  renderDayProgress(cals, prot, restKcal, overageTone);
   document.getElementById('ring-info-carbs').innerHTML = renderGoalDelta(carbs, goals.carbs, 'g', 'kh');
   document.getElementById('ring-info-prot').innerHTML = renderGoalDelta(prot, goals.prot, 'g', 'eiwit');
   document.getElementById('ring-info-fat').innerHTML = renderGoalDelta(fat, goals.fat, 'g', 'vet');
@@ -76,6 +77,25 @@ export function renderSummary(day) {
   setBar('bar-e', prot, goals.prot, 'bar-e');
   setBar('bar-f', fiber, goals.fiber, 'bar-f');
   setBar('bar-w', water, goals.water, 'bar-w');
+}
+
+// Compact remaining-kcal strip above the input on mobile, where the summary lives on another tab.
+function renderDayProgress(cals, prot, restKcal, overageTone) {
+  const wrap = document.getElementById('day-progress');
+  const text = document.getElementById('day-progress-text');
+  const fill = document.getElementById('day-progress-fill');
+  if (!wrap || !text || !fill) return;
+  wrap.classList.toggle('no-goal', !goals.kcal);
+  if (!goals.kcal) return;
+
+  const kcalPart = restKcal >= 0
+    ? `<strong>${restKcal}</strong> kcal over`
+    : `<span style="color:${overageTone?.colorVar || 'var(--danger)'}"><strong>${Math.abs(restKcal)}</strong> kcal te veel</span>`;
+  const protRest = goals.prot ? Math.round(goals.prot - prot) : null;
+  const protPart = protRest !== null && protRest > 0 ? ` · <strong>${protRest}g</strong> eiwit over` : '';
+  text.innerHTML = `${kcalPart}${protPart}<span class="day-progress-total">${Math.round(cals)} / ${goals.kcal}</span>`;
+  fill.style.width = pct(cals, goals.kcal) + '%';
+  fill.style.background = overageTone ? overageTone.colorVar : '';
 }
 
 function renderMealShare(day, totalCals) {

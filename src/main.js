@@ -1059,7 +1059,11 @@ function initEventListeners() {
     document.querySelectorAll('.meal-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     setSelMeal(btn.dataset.meal);
+    scrollMealButtonIntoView(btn);
   }));
+  document.getElementById('day-progress')?.addEventListener('click', () => {
+    switchMobileView('overzicht', document.querySelector('.mobile-tab[data-view="overzicht"]'));
+  });
 
   // Submit & input
   document.getElementById('send-btn')?.addEventListener('click', submit);
@@ -1514,7 +1518,16 @@ function autoSelectMealByTime() {
     document.querySelectorAll('.meal-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     setSelMeal(mealByTime);
+    scrollMealButtonIntoView(btn);
   }
+}
+
+// On mobile the meal selector is a single scrollable row; keep the active meal visible
+// without scrolling the page itself.
+function scrollMealButtonIntoView(btn) {
+  const row = btn.parentElement;
+  if (!row || row.scrollWidth <= row.clientWidth) return;
+  row.scrollLeft = btn.offsetLeft - (row.clientWidth - btn.offsetWidth) / 2;
 }
 
 // ══════════════════════════════════════════════════════════════

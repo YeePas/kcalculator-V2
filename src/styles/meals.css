@@ -12,6 +12,13 @@
 
 .input-area { position: relative; overflow: visible; background: linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 92%, transparent), color-mix(in srgb, var(--surface-soft) 78%, var(--surface-strong))); border-radius: calc(var(--radius-lg) + 2px); border: 1px solid var(--border); padding: 1.45rem; margin-bottom: 1.55rem; box-shadow: var(--shadow-md); }
 .input-area::before { content: ''; position: absolute; inset: -2rem auto auto -3rem; width: 14rem; height: 14rem; background: radial-gradient(circle, rgba(29, 185, 84, 0.12), transparent 72%); pointer-events: none; }
+.day-progress { display: none; width: 100%; margin: 0 0 0.85rem; padding: 0; border: 0; background: none; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+.day-progress.no-goal { display: none !important; }
+.day-progress-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem; font-size: 0.84rem; color: var(--muted); }
+.day-progress-text strong { color: var(--text); font-weight: 700; }
+.day-progress-total { margin-left: auto; font-size: 0.74rem; font-variant-numeric: tabular-nums; }
+.day-progress-bar { display: block; height: 6px; margin-top: 0.4rem; border-radius: 999px; background: color-mix(in srgb, var(--border) 70%, transparent); overflow: hidden; }
+.day-progress-fill { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #22c15d, #179846); transition: width 0.3s ease; }
 .meal-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 0.42rem; width: 100%; margin-bottom: 1rem; padding: 0.42rem; background: color-mix(in srgb, var(--surface-strong) 76%, var(--surface-soft)); border: 1px solid var(--border); border-radius: 30px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.75); }
 .meal-btn { width: 100%; min-height: 44px; padding: 0.52rem 0.95rem; border-radius: 999px; border: 1px solid transparent; background: transparent; font-family: var(--font-body); font-size: 0.79rem; cursor: pointer; color: var(--muted); transition: all 0.15s; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; justify-content: flex-start; text-align: left; }
 .meal-btn.active { background: linear-gradient(135deg, #22c15d, #179846); border-color: transparent; color: white; box-shadow: 0 10px 20px rgba(29, 185, 84, 0.24); }
