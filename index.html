@@ -976,20 +976,20 @@ Vet: 3.3g"></textarea>
     </div>
 
     <div class="smart-import-tabs" id="smart-import-tabs">
-      <button class="smart-import-tab active" data-tab="dish_name" type="button" onclick="switchSmartImportTab('dish_name')">🍽️ Herkennen</button>
-      <button class="smart-import-tab" data-tab="manual_nutrition" type="button" onclick="switchSmartImportTab('manual_nutrition')">📋 Invullen</button>
-      <button class="smart-import-tab" data-tab="url_import" type="button" onclick="switchSmartImportTab('url_import')">🔗 URL</button>
-      <button class="smart-import-tab" data-tab="manage" type="button" onclick="switchSmartImportTab('manage')">📦 Beheer</button>
+      <button class="smart-import-tab active" data-tab="dish_name" type="button">🍽️ Herkennen</button>
+      <button class="smart-import-tab" data-tab="manual_nutrition" type="button">📋 Invullen</button>
+      <button class="smart-import-tab" data-tab="url_import" type="button">🔗 URL</button>
+      <button class="smart-import-tab" data-tab="manage" type="button">📦 Beheer</button>
     </div>
 
     <div class="meal-selector smart-import-meal-selector" id="smart-import-meal-selector" aria-label="Kies maaltijd voor Smart Import">
-      <button class="meal-btn smart-import-meal-btn active" data-meal="ontbijt" type="button" onclick="selectSmartImportMeal('ontbijt')">🌅 Ontbijt</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="ochtendsnack" type="button" onclick="selectSmartImportMeal('ochtendsnack')">🍎 Ochtendsnack</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="lunch" type="button" onclick="selectSmartImportMeal('lunch')">☀️ Lunch</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="middagsnack" type="button" onclick="selectSmartImportMeal('middagsnack')">🍪 Middagsnack</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="avondeten" type="button" onclick="selectSmartImportMeal('avondeten')">🌙 Avondeten</button>
-      <button class="meal-btn smart-import-meal-btn" data-meal="avondsnack" type="button" onclick="selectSmartImportMeal('avondsnack')">🌜 Avondsnack</button>
-      <button class="meal-btn smart-import-meal-btn drink-btn" data-meal="drinken" type="button" onclick="selectSmartImportMeal('drinken')">💧 Drinken</button>
+      <button class="meal-btn smart-import-meal-btn active" data-meal="ontbijt" type="button">🌅 Ontbijt</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="ochtendsnack" type="button">🍎 Ochtendsnack</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="lunch" type="button">☀️ Lunch</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="middagsnack" type="button">🍪 Middagsnack</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="avondeten" type="button">🌙 Avondeten</button>
+      <button class="meal-btn smart-import-meal-btn" data-meal="avondsnack" type="button">🌜 Avondsnack</button>
+      <button class="meal-btn smart-import-meal-btn drink-btn" data-meal="drinken" type="button">💧 Drinken</button>
     </div>
 
     <div class="smart-import-body" id="smart-import-body">
@@ -1003,9 +1003,9 @@ Vet: 3.3g"></textarea>
           <textarea id="smart-dish-input" rows="8" placeholder="Voer hier een gerecht in: &quot;Erwtensoep, Nasi Lemak, Pasta Pesto&quot;.&#10;Of &quot;Een pistache ijsje met hoorntje van een ijssalon&quot;&#10;Of plak een recept met de ingrediënten per regel.&#10;- Pasta 75 g&#10;- Kipfilet 150 g&#10;- Courgette 200 g&#10;- Pesto 20 g&#10;- Parmezaan 10 g"></textarea>
         </div>
         <div class="smart-actions">
-          <button class="btn-secondary" id="smart-photo-label" type="button" onclick="document.getElementById('smart-photo-input').click()">📸 Foto van recept</button>
+          <button class="btn-secondary" id="smart-photo-label" type="button">📸 Foto van recept</button>
           <input type="file" id="smart-photo-input" accept="image/*" capture="environment" style="display:none">
-          <button class="btn-primary" id="smart-dish-analyze-btn" type="button" onclick="runSmartImportDishAnalysis()">🔎 Analyseer</button>
+          <button class="btn-primary" id="smart-dish-analyze-btn" type="button">🔎 Analyseer</button>
           <select id="smart-import-provider-select" title="AI-provider" class="smart-inline-select"></select>
           <select id="smart-import-model-select" title="Model" class="smart-inline-select"></select>
         </div>
@@ -1017,19 +1017,19 @@ Vet: 3.3g"></textarea>
       <section class="smart-section" data-section="manual_nutrition" style="display:none">
         <div class="smart-form-row">
           <label for="smart-manual-paste">Plak voedingswaarden (liefst per 100g)</label>
-          <textarea id="smart-manual-paste" rows="5" placeholder="Per 100g&#10;Calorieën 214 kcal&#10;Koolhydraten 46 g&#10;Eiwit 8,7 g&#10;Vet 1,2 g&#10;Vezels 7-8 g" oninput="refreshSmartImportManualProposal()"></textarea>
+          <textarea id="smart-manual-paste" rows="5" placeholder="Per 100g&#10;Calorieën 214 kcal&#10;Koolhydraten 46 g&#10;Eiwit 8,7 g&#10;Vet 1,2 g&#10;Vezels 7-8 g"></textarea>
         </div>
         <div class="smart-actions">
-          <button class="btn-primary" id="smart-manual-parse-btn" type="button" onclick="parseSmartImportManual()">📋 Herken en vul in</button>
+          <button class="btn-primary" id="smart-manual-parse-btn" type="button">📋 Herken en vul in</button>
         </div>
         <div class="smart-form-grid">
-          <div class="smart-form-row"><label for="smart-manual-title">Titel</label><input id="smart-manual-title" type="text" placeholder="Bijv. Linzensoep" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-kcal">kcal per 100g</label><input id="smart-manual-kcal" type="number" min="0" step="1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-protein">eiwit g per 100g</label><input id="smart-manual-protein" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-carbs">koolh. g per 100g</label><input id="smart-manual-carbs" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-fat">vet g per 100g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-fiber">vezels g per 100g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" oninput="refreshSmartImportManualProposal()" /></div>
-          <div class="smart-form-row"><label for="smart-manual-portion">Portiegrootte (g)</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" oninput="refreshSmartImportManualProposal()" /></div>
+          <div class="smart-form-row"><label for="smart-manual-title">Titel</label><input id="smart-manual-title" type="text" placeholder="Bijv. Linzensoep" /></div>
+          <div class="smart-form-row"><label for="smart-manual-kcal">kcal per 100g</label><input id="smart-manual-kcal" type="number" min="0" step="1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-protein">eiwit g per 100g</label><input id="smart-manual-protein" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-carbs">koolh. g per 100g</label><input id="smart-manual-carbs" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fat">vet g per 100g</label><input id="smart-manual-fat" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-fiber">vezels g per 100g</label><input id="smart-manual-fiber" type="number" min="0" step="0.1" /></div>
+          <div class="smart-form-row"><label for="smart-manual-portion">Portiegrootte (g)</label><input id="smart-manual-portion" type="number" min="1" step="1" placeholder="100" /></div>
         </div>
         <div class="setup-hint" style="margin-top:0.35rem">Waarden hierboven zijn per 100g. De app rekent automatisch om naar jouw portiegrootte.</div>
         <div class="smart-result" id="smart-manual-result"></div>
@@ -1042,7 +1042,7 @@ Vet: 3.3g"></textarea>
           <input id="smart-url-input" type="url" placeholder="https://world.openfoodfacts.org/product/..." />
         </div>
         <div class="smart-actions">
-          <button class="btn-primary" id="smart-url-import-btn" type="button" onclick="runSmartImportUrlImport()">🔗 Importeer</button>
+          <button class="btn-primary" id="smart-url-import-btn" type="button">🔗 Importeer</button>
         </div>
         <div class="smart-result" id="smart-url-result"></div>
       </section>

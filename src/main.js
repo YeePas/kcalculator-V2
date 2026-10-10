@@ -91,12 +91,8 @@ import {
   openAdviesModal, closeAdviesPage, showAdviesContent, runAdvies, initAdviesListeners,
 } from './pages/advies.js';
 import {
-  openSmartImportPage, closeSmartImportPage, initSmartImportListeners,
-  switchSmartImportTab, selectSmartImportMeal,
-  runSmartImportDishAnalysis, parseSmartImportManual, runSmartImportUrlImport,
-  refreshSmartImportManualProposal, syncSmartImportProviderSelects,
+  openSmartImportPage, closeSmartImportPage, initSmartImportListeners, syncSmartImportProviderSelects,
 } from './pages/smart-import.js';
-import { renderManageList } from './pages/smart-import-manage.js';
 import { initAdminListeners } from './pages/admin.js';
 
 // ══════════════════════════════════════════════════════════════
@@ -110,9 +106,6 @@ Object.assign(window, {
   analyzeCustomDishInput, applyCustomDishSuggestion,
   quickSaveCustomDishSuggestion, setCustomDishPortionSize,
   applyCustomDishAlternative,
-  switchSmartImportTab, selectSmartImportMeal,
-  runSmartImportDishAnalysis, parseSmartImportManual, runSmartImportUrlImport,
-  refreshSmartImportManualProposal, syncSmartImportProviderSelects,
 });
 
 // switchDashPeriod for week modal dash-tab buttons
@@ -609,61 +602,6 @@ function refreshProductDB() {
 // Event Listeners
 // ══════════════════════════════════════════════════════════════
 function initEventListeners() {
-  document.addEventListener('click', e => {
-    const smartTab = e.target.closest('.smart-import-tab[data-tab]');
-    if (smartTab) {
-      switchSmartImportTab(smartTab.dataset.tab);
-      return;
-    }
-
-    const smartMeal = e.target.closest('.smart-import-meal-btn[data-meal]');
-    if (smartMeal) {
-      selectSmartImportMeal(smartMeal.dataset.meal);
-      return;
-    }
-
-    if (e.target.closest('#smart-dish-analyze-btn')) {
-      runSmartImportDishAnalysis();
-      return;
-    }
-
-    if (e.target.closest('#smart-manual-parse-btn')) {
-      parseSmartImportManual();
-      return;
-    }
-
-    if (e.target.closest('#smart-url-import-btn')) {
-      runSmartImportUrlImport();
-    }
-  });
-
-  document.addEventListener('input', e => {
-    const manualField = e.target.closest('#smart-manual-title, #smart-manual-kcal, #smart-manual-protein, #smart-manual-carbs, #smart-manual-fat, #smart-manual-fiber, #smart-manual-portion');
-    if (manualField) {
-      refreshSmartImportManualProposal();
-      return;
-    }
-
-    const manageSearch = e.target.closest('#smart-manage-search');
-    if (manageSearch) {
-      const term = manageSearch.value || '';
-      renderManageList(term);
-    }
-  });
-
-  document.addEventListener('change', e => {
-    if (e.target.closest('#smart-import-provider-select')) {
-      syncSmartImportProviderSelects();
-      return;
-    }
-
-    if (e.target.closest('#smart-import-model-select')) {
-      cfg.importProvider = document.getElementById('smart-import-provider-select')?.value;
-      cfg.importModel = document.getElementById('smart-import-model-select')?.value;
-      saveCfg(cfg);
-    }
-  });
-
   // Setup close
   document.getElementById('setup-close-btn')?.addEventListener('click', hideSetup);
   document.addEventListener('keydown', e => {
