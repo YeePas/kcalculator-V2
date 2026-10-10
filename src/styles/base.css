@@ -94,8 +94,8 @@ a { color: inherit; }
 .setup-section-head p { margin: 0; font-size: 0.78rem; line-height: 1.5; color: var(--muted); }
 .setup-field  { margin-bottom: 1rem; }
 .setup-field label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.4rem; }
-.setup-field input { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.8rem 1rem; font-family: var(--font-body); font-size: 0.95rem; background: color-mix(in srgb, var(--surface-strong) 82%, var(--surface-soft)); color: var(--text); transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.65); }
-.setup-field input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); box-shadow: 0 0 0 4px var(--accent-light), var(--shadow-sm); background: var(--surface-strong); transform: translateY(-1px); }
+.setup-field input, .setup-field select { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.8rem 1rem; font-family: var(--font-body); font-size: 0.95rem; background: color-mix(in srgb, var(--surface-strong) 82%, var(--surface-soft)); color: var(--text); transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.65); }
+.setup-field input:focus, .setup-field select:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); box-shadow: 0 0 0 4px var(--accent-light), var(--shadow-sm); background: var(--surface-strong); transform: translateY(-1px); }
 .setup-hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; line-height: 1.5; }
 .setup-hint a { color: var(--accent); text-decoration: none; }
 .settings-inline-title { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.7rem; font-size: 0.95rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }

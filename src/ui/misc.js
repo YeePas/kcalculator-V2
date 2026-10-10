@@ -91,13 +91,35 @@ export function renderQuickFavs() {
   `;
 }
 
-/* ── Dark mode ────────────────────────────────────────────── */
-export function applyDark(on) {
-  document.body.classList.toggle('dark', on);
-  const toggle = document.getElementById('dark-toggle');
-  if (toggle) toggle.textContent = on ? '☀️' : '🌙';
-  localStorage.setItem(DARK_KEY, on ? '1' : '0');
+/* ── Theme (auto / light / dark) ──────────────────────────── */
+const darkMedia = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
+
+export function loadThemeMode() {
+  let stored = null;
+  try { stored = localStorage.getItem(DARK_KEY); } catch {}
+  // Legacy values: '1' was an explicit dark choice; '0' was written on every boot, so treat it as auto.
+  if (stored === '1' || stored === 'dark') return 'dark';
+  if (stored === 'light') return 'light';
+  return 'auto';
 }
+
+function renderTheme() {
+  const mode = loadThemeMode();
+  const dark = mode === 'dark' || (mode === 'auto' && Boolean(darkMedia?.matches));
+  document.body.classList.toggle('dark', dark);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#09100c' : '#1db954');
+  const select = document.getElementById('setup-theme');
+  if (select) select.value = mode;
+}
+
+export function applyTheme(mode) {
+  if (mode) {
+    try { localStorage.setItem(DARK_KEY, mode); } catch {}
+  }
+  renderTheme();
+}
+
+darkMedia?.addEventListener?.('change', renderTheme);
 
 /* ── Macro visibility toggles ────────────────────────────── */
 export function applyVis(persist = true) {

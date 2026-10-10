@@ -12,7 +12,7 @@ import {
   setNevoData, setOffReady,
 } from './state.js';
 import {
-  CFG_KEY, GOALS_KEY, LOCAL_KEY, VIS_KEY, FAV_KEY, DARK_KEY, CUSTOM_KEY,
+  CFG_KEY, GOALS_KEY, LOCAL_KEY, VIS_KEY, FAV_KEY, CUSTOM_KEY,
   DEFAULT_GOALS, MEAL_NAMES, MEAL_LABELS, PROVIDER_MODELS,
   ENERGY_LOCAL_KEY,
 } from './constants.js';
@@ -72,7 +72,7 @@ import { renderDashboard, renderWeekSpark, renderMacroDonut } from './ui/charts.
 import { setSyncStatus } from './ui/sync-status.js';
 import {
   renderHistory, renderQuickFavs,
-  applyDark, applyVis, deleteItem, deleteRecipeGroup,
+  applyTheme, applyVis, deleteItem, deleteRecipeGroup,
   goToDay, switchMobileView,
 } from './ui/misc.js';
 import {
@@ -739,7 +739,7 @@ function showSetup(panel) {
   const screen = document.getElementById('setup-screen');
   screen.style.display = 'flex';
   const closeBtn = document.getElementById('setup-close-btn');
-  if (closeBtn) closeBtn.style.display = authUser ? '' : 'none';
+  if (closeBtn) closeBtn.style.display = (panel === 'user' || authUser) ? '' : 'none';
   const authEl = document.getElementById('setup-auth');
   const userEl = document.getElementById('setup-user');
   if (authEl) authEl.style.display = 'none';
@@ -1015,6 +1015,12 @@ function initEventListeners() {
 
   // Setup close
   document.getElementById('setup-close-btn')?.addEventListener('click', hideSetup);
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const screen = document.getElementById('setup-screen');
+    const closeBtn = document.getElementById('setup-close-btn');
+    if (screen?.style.display === 'flex' && closeBtn?.style.display !== 'none') hideSetup();
+  });
 
   // Goals modal
   document.getElementById('summary-goals-btn')?.addEventListener('click', openGoalsModal);
@@ -1135,8 +1141,8 @@ function initEventListeners() {
 
   document.getElementById('fav-modal')?.addEventListener('click', e => { if (e.target === document.getElementById('fav-modal')) document.getElementById('fav-modal').classList.remove('open'); });
 
-  // Dark mode
-  document.getElementById('dark-toggle')?.addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));
+  // Theme
+  document.getElementById('setup-theme')?.addEventListener('change', e => applyTheme(e.target.value));
 
   // AI settings provider radios
   document.querySelectorAll('input[name="default-ai-provider"]').forEach(input => {
@@ -1517,7 +1523,7 @@ function autoSelectMealByTime() {
 (async () => {
   try {
     console.log('[Boot] Starting...');
-    applyDark(localStorage.getItem(DARK_KEY) === '1');
+    applyTheme();
     applyVis(false);
     setCfg(loadCfg());
     setGoals(loadGoals());
