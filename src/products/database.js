@@ -196,6 +196,28 @@ export function toLongVowelSearchTerm(stem) {
   return value.replace(/(^|[^aeiou])([aeou])([^aeiouy])$/, '$1$2$2$3');
 }
 
+// Dutch compounds are written both ways ("volkorenbrood" / "volkoren brood"); these heads
+// are split off a single word so it also matches names like "Brood volkoren".
+const COMPOUND_HEADS = [
+  'brood', 'broodjes', 'melk', 'kaas', 'yoghurt', 'kwark', 'rijst', 'pasta', 'saus', 'soep',
+  'olie', 'boter', 'worst', 'vlees', 'filet', 'koek', 'koekjes', 'taart', 'sap', 'thee', 'koffie',
+];
+
+export function compoundSearchVariants(words) {
+  const variants = [];
+  if (words.length >= 2 && words.length <= 3) variants.push(words.join(''));
+  if (words.length === 1) {
+    const [word] = words;
+    for (const head of COMPOUND_HEADS) {
+      if (word.length > head.length + 2 && word.endsWith(head)) {
+        variants.push(`${word.slice(0, -head.length)} ${head}`);
+        break;
+      }
+    }
+  }
+  return variants;
+}
+
 function buildSearchVariants(query) {
   const normalized = normalizeSearchText(query);
   if (!normalized) return [];
@@ -207,6 +229,12 @@ function buildSearchVariants(query) {
   if (singularPhrase && !seen.has(singularPhrase)) {
     seen.add(singularPhrase);
     variants.push(singularPhrase);
+  }
+  for (const compound of compoundSearchVariants(words)) {
+    if (!seen.has(compound)) {
+      seen.add(compound);
+      variants.push(compound);
+    }
   }
   const longVowelWords = words.map((word, i) => (
     singularWords[i] !== word ? toLongVowelSearchTerm(singularWords[i]) : singularWords[i]
@@ -224,6 +252,8 @@ function buildSearchVariants(query) {
   }
 
   for (const variant of [...variants]) {
+    // Expand only variants that stand for the whole query, not a single word of a longer one.
+    if (variant.split(/\s+/).length < words.length) continue;
     const synonyms = SEARCH_SYNONYMS[variant] || [];
     for (const synonym of synonyms) {
       const normalizedSynonym = normalizeSearchText(synonym);
@@ -239,34 +269,26 @@ function isBreadPriorityQuery(query) {
   const normalized = normalizeSearchText(query);
   if (!normalized) return false;
   const words = normalized.split(/\s+/).filter(Boolean);
-  return words.some(word => BREAD_PRIORITY_TERMS.includes(word));
+  return words.some(word => BREAD_PRIORITY_TERMS.includes(word) || word.endsWith('brood'));
 }
 
 function applyBreadPriority(results, query) {
   if (!isBreadPriorityQuery(query) || !Array.isArray(results) || !results.length) return results;
 
-  const promoted = [];
-  const used = new Set();
-  for (const rule of BREAD_PRIORITY_RULES) {
-    const match = results.find(item => {
-      if (!item?.n) return false;
-      const key = `${String(item.n).toLowerCase()}|${String(item.b || '').toLowerCase()}`;
-      if (used.has(key)) return false;
-      return rule.test(normalizeSearchText(item.n));
-    });
-    if (!match) continue;
-    const key = `${String(match.n).toLowerCase()}|${String(match.b || '').toLowerCase()}`;
-    used.add(key);
-    promoted.push(match);
-  }
+  // Only results that match the whole query compete (partial matches carry a -200 penalty).
+  const candidates = results.filter(item => (item._score || 0) > -100);
+  if (!candidates.length) return results;
+  const topScore = Math.max(...candidates.map(item => item._score || 0));
 
-  if (!promoted.length) return results;
-
-  const remainder = results.filter(item => {
-    const key = `${String(item?.n || '').toLowerCase()}|${String(item?.b || '').toLowerCase()}`;
-    return !used.has(key);
+  // Lift the generic breads (volkoren, bruin, wit, zuurdesem) to the top, in rule order;
+  // as a score bonus so the later score sort keeps them there.
+  const boosted = new Map();
+  BREAD_PRIORITY_RULES.forEach((rule, i) => {
+    const match = candidates.find(item => item?.n && !boosted.has(item) && rule.test(normalizeSearchText(item.n)));
+    if (match) boosted.set(match, topScore + (BREAD_PRIORITY_RULES.length - i));
   });
-  return [...promoted, ...remainder];
+  if (!boosted.size) return results;
+  return results.map(item => (boosted.has(item) ? { ...item, _score: boosted.get(item) } : item));
 }
 
 function isEggPriorityQuery(query) {
@@ -460,6 +482,12 @@ export function searchNevo(query, limit = 8) {
   const primaryQuery = searchVariants[0] || '';
   const primaryTerms = primaryQuery.split(/\s+/).filter(t => t.length >= 2);
   if (!primaryTerms.length) return [];
+  // In a multi-word query, a variant that covers only some of the words (e.g. just "brood"
+  // for "volkoren brood") ranks after every result that matches the whole query.
+  const compoundQuery = primaryTerms.join('');
+  const partialPenalty = (variant, terms) => (
+    primaryTerms.length > 1 && terms.length < primaryTerms.length && variant !== compoundQuery ? 200 : 0
+  );
 
   const results = [];
   const seen = new Set();
@@ -489,6 +517,7 @@ export function searchNevo(query, limit = 8) {
       if (searchText === variant) score += 24;
       if (searchText.startsWith(variant)) score += 10;
       if (variant !== primaryQuery) score -= 6;
+      score -= partialPenalty(variant, terms);
       bestScore = Math.max(bestScore, score);
     }
     if (bestScore > -Infinity) {
@@ -521,6 +550,7 @@ export function searchNevo(query, limit = 8) {
         if (brandLower && primaryQuery.includes(brandLower)) score += 8;
         if (item.b) score += 2;
         if (variant !== primaryQuery) score -= 6;
+        score -= partialPenalty(variant, terms);
         score -= item.n.length * 0.04;
         bestScore = Math.max(bestScore, score);
       }

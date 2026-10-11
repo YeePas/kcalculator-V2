@@ -8,6 +8,8 @@ import { findPortie } from '../products/portions.js';
 import { buildMealItem } from '../products/matcher.js';
 import { isLiquidLike } from '../products/density.js';
 import { buildBugReportButton } from './bug-report.js';
+import { ICON_SAVE } from './icons.js';
+import { buildAmountUnits, defaultCount, amountGrams, amountLabel, stepCount } from '../products/portion-amount.js';
 import { localData, currentDate, cfg } from '../state.js';
 import { loadCustomProducts, saveCustomProducts, loadFavs, saveFavs } from '../storage.js';
 import { syncCustomProductsToSupabase, syncFavoritesToSupabase } from '../supabase/sync.js';
@@ -139,40 +141,37 @@ export function selectAcItem(idx) {
     portions: porties.slice(0, 6),
   });
   const importBtn = item.src === 'off-api'
-    ? '<button class="ac-portie-quick" data-action="import-custom">💾 Opslaan in eigen producten</button>'
+    ? `<button type="button" class="icon-action ac-save-btn" data-action="import-custom" title="Opslaan in eigen producten" aria-label="Opslaan in eigen producten">${ICON_SAVE}</button>`
     : '';
 
-  let portieButtons = '';
-  for (const p of porties) {
-    const label = p.l || p.t;
-    if (p.t === 'gram' || p.t === 'ml') {
-      const unitLabel = useMl || p.t === 'ml' ? 'ml' : 'g';
-      portieButtons += `<button class="ac-portie-quick" data-action="portie" data-gram="${p.g}" data-label="${esc(`${p.g}${unitLabel}`)}">${p.g}${unitLabel}</button>`;
-    } else {
-      const amountLabel = `${p.g}${useMl ? 'ml' : 'g'}`;
-      portieButtons += `<button class="ac-portie-quick" data-action="portie" data-gram="${p.g}" data-label="${esc(label)}">${esc(label)} (${amountLabel})</button>`;
-      if (['stuk', 'snee', 'plak', 'ei'].includes(p.t)) {
-        portieButtons += `<button class="ac-portie-quick" data-action="portie" data-gram="${p.g * 2}" data-label="${esc(`2x ${label}`)}">2x (${p.g * 2}${useMl ? 'ml' : 'g'})</button>`;
-      }
-    }
-  }
+  const units = buildAmountUnits(porties, useMl);
+  acAmount = { units, unitIdx: 0, count: defaultCount(units[0]), useMl };
 
   dd.innerHTML = `
-    <div class="ac-hint"><span class="ac-hint-badge">${esc(badge)}</span> ${esc(item.n)} ${bugBtn}</div>
-    <div class="ac-portie-quicks">${portieButtons}</div>
-    ${importBtn ? `<div class="ac-portie-quicks" style="padding-top:0">${importBtn}</div>` : ''}
-    <div class="ac-portie-manual">
-      <input type="number" inputmode="numeric" pattern="[0-9]*" class="ac-portie-input" id="ac-portie-gram" value="${defaultGram}" min="1" step="10">
-      <span class="ac-portie-unit">${useMl ? 'ml' : 'gram'}</span>
-      <button class="ac-portie-add" data-action="add">+</button>
+    <div class="ac-hint"><span class="ac-hint-badge">${esc(badge)}</span> <span class="ac-hint-name">${esc(item.n)}</span> ${importBtn}${bugBtn}</div>
+    <div class="ac-amount">
+      <div class="ac-stepper">
+        <button type="button" class="ac-step" data-action="step" data-dir="-1" aria-label="Minder">−</button>
+        <input type="number" inputmode="decimal" class="ac-count" id="ac-portie-count" value="${acAmount.count}" min="0" step="any" aria-label="Aantal">
+        <button type="button" class="ac-step" data-action="step" data-dir="1" aria-label="Meer">+</button>
+      </div>
+      <div class="ac-units" role="group" aria-label="Eenheid">
+        ${units.map((u, i) => `<button type="button" class="ac-unit${i === 0 ? ' is-active' : ''}" data-action="unit" data-unit="${i}" aria-pressed="${i === 0}">${esc(u.label)}${u.isBase ? '' : ` <span class="ac-unit-g">${u.g}${useMl ? 'ml' : 'g'}</span>`}</button>`).join('')}
+      </div>
     </div>
-    <div style="padding:0.3rem 0.9rem;font-size:0.72rem;color:var(--muted)">
-      <strong>Per 100g:</strong> ${item.k} kcal · ${item.kh}g koolh · ${item.vz}g vezel · ${item.v}g vet · ${item.e}g eiwit
+    <div class="ac-amount-foot">
+      <span class="ac-amount-total" id="ac-amount-total"></span>
+      <button type="button" class="ac-portie-add" data-action="add">Toevoegen</button>
+    </div>
+    <input type="hidden" id="ac-portie-gram">
+    <div class="ac-per100">
+      <strong>Per 100${useMl ? 'ml' : 'g'}:</strong> ${item.k} kcal · ${item.kh}g koolh · ${item.vz}g vezel · ${item.v}g vet · ${item.e}g eiwit
     </div>
   `;
+  updateAcAmount();
   dd.classList.add('open');
   setTimeout(() => {
-    const inp = document.getElementById('ac-portie-gram');
+    const inp = document.getElementById('ac-portie-count');
     if (!inp) return;
     // On desktop: focus + select for quick editing
     // On mobile (touch): don't auto-focus to avoid keyboard jumping up unexpectedly;
@@ -182,6 +181,49 @@ export function selectAcItem(idx) {
       inp.select();
     }
   }, 50);
+}
+
+// Portion picker state for the selected product: count × units[unitIdx].
+let acAmount = null;
+
+function updateAcAmount() {
+  if (!acAmount || !acSelectedItem) return;
+  const unit = acAmount.units[acAmount.unitIdx];
+  const grams = amountGrams(acAmount.count, unit);
+  const kcal = buildMealItem(acSelectedItem.n, acSelectedItem, grams, acAmount.useMl).kcal;
+  const gramInput = document.getElementById('ac-portie-gram');
+  if (gramInput) gramInput.value = grams;
+  const total = document.getElementById('ac-amount-total');
+  if (total) total.textContent = `${unit.isBase ? '' : `${grams}${acAmount.useMl ? 'ml' : 'g'} · `}${kcal} kcal`;
+}
+
+function setAcUnit(unitIdx) {
+  if (!acAmount || !acAmount.units[unitIdx]) return;
+  const prev = acAmount.units[acAmount.unitIdx];
+  const next = acAmount.units[unitIdx];
+  // Switching to plain grams keeps the current weight; switching to a portion starts at 1.
+  acAmount.count = next.isBase ? Math.round(amountGrams(acAmount.count, prev)) || 100 : 1;
+  acAmount.unitIdx = unitIdx;
+  document.querySelectorAll('#ac-dropdown .ac-unit').forEach((btn, i) => {
+    btn.classList.toggle('is-active', i === unitIdx);
+    btn.setAttribute('aria-pressed', String(i === unitIdx));
+  });
+  const input = document.getElementById('ac-portie-count');
+  if (input) input.value = acAmount.count;
+  updateAcAmount();
+}
+
+function stepAcAmount(direction) {
+  if (!acAmount) return;
+  acAmount.count = stepCount(acAmount.count, acAmount.units[acAmount.unitIdx], direction);
+  const input = document.getElementById('ac-portie-count');
+  if (input) input.value = acAmount.count;
+  updateAcAmount();
+}
+
+function currentAmountLabel() {
+  if (!acAmount) return undefined;
+  return amountLabel(acAmount.count, acAmount.units[acAmount.unitIdx], acAmount.useMl);
 }
 
 export function setPortie(gram, label) {
@@ -230,7 +272,8 @@ export function addNevoItem(portieLabel) {
   }
 
   const gramInput = document.getElementById('ac-portie-gram');
-  const gram = parseFloat(gramInput?.value) || 100;
+  const gram = parseFloat(gramInput?.value);
+  if (!(gram > 0)) return;
 
   const useMl = isLiquidLike(acSelectedItem.n, selMeal === 'drinken');
   const item = buildMealItem(acSelectedItem.n, acSelectedItem, gram, useMl);
@@ -380,15 +423,21 @@ export function initAutocomplete() {
     const el = e.target.closest('[data-action]');
     if (!el) return;
     const { action } = el.dataset;
-    if (action === 'add') addNevoItem();
-    else if (action === 'portie') setPortie(Number(el.dataset.gram), el.dataset.label);
+    if (action === 'add') addNevoItem(acSelectedItem?._favorite ? undefined : currentAmountLabel());
+    else if (action === 'step') stepAcAmount(Number(el.dataset.dir));
+    else if (action === 'unit') setAcUnit(Number(el.dataset.unit));
     else if (action === 'import-custom') importAcItemToCustom();
   });
   dd.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.target.id === 'ac-portie-gram') {
+    if (e.key === 'Enter' && e.target.id === 'ac-portie-count') {
       e.preventDefault();
-      addNevoItem();
+      addNevoItem(currentAmountLabel());
     }
+  });
+  dd.addEventListener('input', (e) => {
+    if (e.target.id !== 'ac-portie-count' || !acAmount) return;
+    acAmount.count = parseFloat(String(e.target.value).replace(',', '.')) || 0;
+    updateAcAmount();
   });
 
   document.addEventListener('click', (e) => {

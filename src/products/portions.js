@@ -77,7 +77,8 @@ export const PRODUCT_PORTIES = [
   [/\bmaïs\b|\bmais\b/i, [{ t:'kolf', g:200, l:'kolf' },{ t:'opscheplepel', g:50, l:'opscheplepel' },{ t:'gram', g:100 }]],
 
   // ═══ BROOD & BAKKERIJ ═══
-  [/\bboterham|\bbrood\b/i, [{ t:'snee', g:35, l:'snee' },{ t:'dun', g:25, l:'dunne snee' },{ t:'dik', g:45, l:'dikke snee' },{ t:'gram', g:100 }]],
+  // Also compounds such as "meergranenbrood" and "volkorenbrood", but not "stokbrood" or "broodje"
+  [/\bboterham|(?<!stok)brood\b/i, [{ t:'snee', g:35, l:'snee' },{ t:'dun', g:25, l:'dunne snee' },{ t:'dik', g:45, l:'dikke snee' },{ t:'gram', g:100 }]],
   [/\bcroissant/i,     [{ t:'stuk', g:60, l:'croissant' },{ t:'mini', g:25, l:'mini' },{ t:'gram', g:100 }]],
   [/\bbeschuit/i,      [{ t:'stuk', g:10, l:'beschuit' },{ t:'gram', g:100 }]],
   [/\bcracker/i,       [{ t:'stuk', g:10, l:'cracker' },{ t:'gram', g:100 }]],

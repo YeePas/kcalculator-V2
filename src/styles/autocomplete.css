@@ -103,3 +103,24 @@ body:has(.modal-overlay.open) .ac-dropdown {
 @keyframes ac-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Amount picker: count stepper × unit chips ─────────────── */
+.ac-hint-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.ac-hint .ac-save-btn { width: 28px; height: 28px; margin-left: auto; }
+.ac-amount { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.75rem 0.9rem 0.4rem; }
+.ac-stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-strong); overflow: hidden; }
+.ac-step { width: 36px; height: 36px; border: 0; background: transparent; color: var(--muted); font-size: 1.1rem; line-height: 1; cursor: pointer; transition: color 0.15s, background 0.15s; }
+.ac-step:hover { color: var(--accent); background: var(--accent-light); }
+.ac-count { width: 3.4rem; height: 36px; border: 0; border-left: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle); background: transparent; color: var(--text); font-family: var(--font-body); font-size: 0.95rem; font-weight: 700; text-align: center; -moz-appearance: textfield; }
+.ac-count::-webkit-outer-spin-button,
+.ac-count::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ac-count:focus { outline: none; background: var(--accent-light); }
+.ac-units { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.ac-unit { display: inline-flex; align-items: baseline; gap: 0.3rem; padding: 0.42rem 0.75rem; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text); font-family: var(--font-body); font-size: 0.8rem; cursor: pointer; transition: color 0.15s, background 0.15s, border-color 0.15s; }
+.ac-unit:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.ac-unit.is-active { background: var(--accent); border-color: var(--accent); color: white; }
+.ac-unit-g { font-size: 0.7rem; opacity: 0.7; }
+.ac-amount-foot { display: flex; align-items: center; gap: 0.75rem; padding: 0.35rem 0.9rem 0.6rem; }
+.ac-amount-total { font-size: 0.85rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.ac-amount-foot .ac-portie-add { margin-left: auto; padding: 0.5rem 1.1rem; border-radius: 999px; font-weight: 700; cursor: pointer; }
+.ac-per100 { padding: 0 0.9rem 0.65rem; font-size: 0.72rem; color: var(--muted); }
