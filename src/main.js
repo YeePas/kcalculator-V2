@@ -570,10 +570,9 @@ async function manualSync() {
 function refreshProductDB() {
   const btn = document.getElementById('refresh-db-btn');
   btn.textContent = '⏳ Laden...'; btn.disabled = true;
-  clearProductCache();
   localStorage.removeItem('eetdagboek_nevo_v1');
   localStorage.removeItem('kcalculator_off_v1');
-  loadNevo().then(() => {
+  clearProductCache().then(loadNevo).then(() => {
     btn.textContent = '✓ Producten geladen'; btn.style.color = 'var(--green)'; btn.disabled = false;
     setTimeout(() => { btn.textContent = '🔄 Vernieuw cache'; btn.style.color = ''; }, 3000);
   });

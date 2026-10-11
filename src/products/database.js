@@ -7,11 +7,12 @@ import {
 } from '../state.js';
 import { loadCustomProducts } from '../storage.js';
 import { applyEnergyCheck } from './nutrition-check.js';
+import { readCachedProducts, writeCachedProducts, clearCachedProducts } from './product-cache.js';
 import { parseQuantity } from './portions.js';
 import { shouldIncludeProductForSupermarketFilters } from './supermarket-filter.js';
 
-const PRODUCTS_CACHE_KEY = 'kcalculator_products_v5';
-const LEGACY_PRODUCTS_CACHE_KEYS = ['kcalculator_products_v4', 'kcalculator_products_v3', 'kcalculator_products_v2', 'kcalculator_products_v1'];
+// Older builds kept the product database in localStorage; it now lives in IndexedDB.
+const LEGACY_PRODUCTS_CACHE_KEYS = ['kcalculator_products_v5', 'kcalculator_products_v4', 'kcalculator_products_v3', 'kcalculator_products_v2', 'kcalculator_products_v1'];
 const OFF_SEARCH_CACHE_KEY = 'kcalculator_off_search_v1';
 const OFF_SEARCH_TTL_MS = 1000 * 60 * 60 * 12;
 const PRODUCT_CHOICE_HISTORY_KEY = 'kcalculator_product_choice_history_v1';
@@ -418,8 +419,8 @@ async function searchOffLive(query, terms, limit = 10) {
   }
 }
 
-export function clearProductCache() {
-  try { localStorage.removeItem(PRODUCTS_CACHE_KEY); } catch {}
+export async function clearProductCache() {
+  await clearCachedProducts();
   try { localStorage.removeItem(OFF_SEARCH_CACHE_KEY); } catch {}
   for (const legacyKey of LEGACY_PRODUCTS_CACHE_KEYS) {
     try { localStorage.removeItem(legacyKey); } catch {}
@@ -441,11 +442,8 @@ export async function loadNevo() {
     try { localStorage.removeItem(legacyKey); } catch {}
   }
 
-  let cached = null;
-  try {
-    const parsed = JSON.parse(localStorage.getItem(PRODUCTS_CACHE_KEY) || 'null');
-    if (parsed?.items?.length > 5000) cached = parsed;
-  } catch {}
+  const stored = await readCachedProducts();
+  const cached = stored?.items?.length > 5000 ? stored : null;
 
   // Use the cached copy while it matches the version this build ships with.
   if (cached && (!PRODUCTS_VERSION || cached.version === PRODUCTS_VERSION)) {
@@ -458,7 +456,7 @@ export async function loadNevo() {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     useProductData(data, cached ? 'Bijgewerkt' : 'Geladen');
-    try { localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(data)); } catch (e) { console.warn('[DB] Cache te groot:', e); }
+    await writeCachedProducts(data);
   } catch (e) {
     // Offline or failed: an outdated copy beats no product database.
     if (cached) useProductData(cached, 'Verouderde cache gebruikt');
