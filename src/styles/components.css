@@ -779,3 +779,10 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* Weight card on the day view: value left, compact button right */
+.weight-card { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.7rem 0.9rem; }
+.weight-card-info { min-width: 0; }
+.weight-card-label { font-size: 0.72rem; color: var(--muted); }
+.weight-card-value { font-size: 1.1rem; font-weight: 600; font-family: var(--font-display); white-space: nowrap; }
+.weight-card .weight-card-btn { flex: 0 0 auto; width: auto; padding: 0.45rem 0.95rem; font-size: 0.8rem; }
