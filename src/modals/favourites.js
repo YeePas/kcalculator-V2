@@ -15,7 +15,10 @@ import { renderQuickFavs } from '../ui/misc.js';
 import { searchNevo } from '../products/database.js';
 import { buildMealItem } from '../products/matcher.js';
 import { ICON_EDIT, ICON_DELETE, ICON_CLOSE } from '../ui/icons.js';
-import { parseIngredientAmount, nutritionPerUnit, scaleIngredient, sumIngredients } from './recipe-amounts.js';
+import {
+  parseIngredientAmount, nutritionPerUnit, scaleIngredient, sumIngredients,
+  buildRecipeFavourite, updateRecipeFavourite,
+} from './recipe-amounts.js';
 import { submit } from '../input/submit.js';
 import { openSmartImportPage } from '../pages/smart-import.js';
 
@@ -149,20 +152,7 @@ export function saveMealAsRecipe(meal) {
   const naam = prompt('Naam voor dit gerecht:', defaultName);
   if (!naam) return;
 
-  const totals = { kcal: 0, koolhydraten_g: 0, vezels_g: 0, vetten_g: 0, eiwitten_g: 0, ml: 0 };
-  for (const it of selectedItems) {
-    totals.kcal += it.kcal || 0; totals.koolhydraten_g += it.koolhydraten_g || 0;
-    totals.vezels_g += it.vezels_g || 0; totals.vetten_g += it.vetten_g || 0;
-    totals.eiwitten_g += it.eiwitten_g || 0; totals.ml += it.ml || 0;
-  }
-
-  const fav = {
-    naam, tekst: selectedItems.map(it => it.naam).join(', '), maaltijd: meal, isRecipe: true,
-    items: selectedItems.map(it => ({ ...it })),
-    item: { naam, portie: `${selectedItems.length} ingrediënten`, ...totals },
-    uses: 0,
-    createdAt: Date.now(),
-  };
+  const fav = buildRecipeFavourite(naam, meal, selectedItems);
 
   const favs = loadFavs();
   favs.push(fav);
@@ -403,27 +393,21 @@ export function initEditFavModalListeners() {
     const f = favs[editFavIdx];
     if (!f) return;
 
-    f.naam = document.getElementById('editfav-naam').value.trim() || f.naam;
+    const naam = document.getElementById('editfav-naam').value;
+    // The totals form may hold hand-adjusted values; they win over the summed ingredients.
+    const totals = {
+      kcal: parseFloat(document.getElementById('editfav-kcal').value) || 0,
+      koolhydraten_g: parseFloat(document.getElementById('editfav-carbs').value) || 0,
+      vezels_g: parseFloat(document.getElementById('editfav-fiber').value) || 0,
+      vetten_g: parseFloat(document.getElementById('editfav-fat').value) || 0,
+      eiwitten_g: parseFloat(document.getElementById('editfav-prot').value) || 0,
+    };
 
-    // Update sub-items if recipe
     if (f.isRecipe && f.items) {
-      f.items = readEditFavRows();
-      const totals = sumIngredients(f.items);
-      f.item = { naam: f.naam, portie: `${f.items.length} ingrediënten`, ...totals };
-    }
-
-    // Update totals from fields (for single items, or manual override for recipes)
-    if (!f.item) f.item = {};
-    f.item.naam = f.naam;
-    f.item.kcal = parseFloat(document.getElementById('editfav-kcal').value) || 0;
-    f.item.koolhydraten_g = parseFloat(document.getElementById('editfav-carbs').value) || 0;
-    f.item.vezels_g = parseFloat(document.getElementById('editfav-fiber').value) || 0;
-    f.item.vetten_g = parseFloat(document.getElementById('editfav-fat').value) || 0;
-    f.item.eiwitten_g = parseFloat(document.getElementById('editfav-prot').value) || 0;
-
-    // Update tekst
-    if (f.isRecipe && f.items) {
-      f.tekst = f.items.map(it => it.naam).join(', ');
+      favs[editFavIdx] = updateRecipeFavourite(f, { naam, items: readEditFavRows(), totals });
+    } else {
+      f.naam = naam.trim() || f.naam;
+      f.item = { ...(f.item || {}), ...totals, naam: f.naam };
     }
 
     saveFavs(favs);

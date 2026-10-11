@@ -51,3 +51,38 @@ export function sumIngredients(items) {
   for (const key of ['koolhydraten_g', 'vezels_g', 'vetten_g', 'eiwitten_g']) totals[key] = r1(totals[key]);
   return totals;
 }
+
+// A saved dish ("gerecht") built from meal items: copies of the items plus a summary item.
+export function buildRecipeFavourite(naam, meal, items, now = Date.now()) {
+  const copies = items.map(it => ({ ...it }));
+  return {
+    naam,
+    tekst: copies.map(it => it.naam).join(', '),
+    maaltijd: meal,
+    isRecipe: true,
+    items: copies,
+    item: { naam, portie: `${copies.length} ingrediënten`, ...sumIngredients(copies) },
+    uses: 0,
+    createdAt: now,
+  };
+}
+
+// Apply an edit to a saved dish. totals are the (possibly hand-adjusted) values from the form;
+// without them the totals follow the ingredients.
+export function updateRecipeFavourite(fav, { naam, items, totals } = {}) {
+  const nextName = String(naam || '').trim() || fav.naam;
+  const nextItems = (items || fav.items || []).map(it => ({ ...it }));
+  const summed = sumIngredients(nextItems);
+  return {
+    ...fav,
+    naam: nextName,
+    items: nextItems,
+    tekst: nextItems.map(it => it.naam).join(', '),
+    item: {
+      naam: nextName,
+      portie: `${nextItems.length} ingrediënten`,
+      ...summed,
+      ...(totals || {}),
+    },
+  };
+}
