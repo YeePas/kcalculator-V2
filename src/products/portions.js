@@ -13,7 +13,7 @@ export const GROEP_PORTIES = {
   3:  [{ t:'gram', g:100 }],                                                   // Diversen
   4:  [{ t:'stuk', g:60, l:'ei' },{ t:'gram', g:100 }],                       // Eieren
   5:  [{ t:'ml', g:100 }],                                                     // Flesvoeding
-  6:  [{ t:'stuk', g:130, l:'stuk' },{ t:'gram', g:100 }],                    // Fruit
+  6:  [{ t:'portie', g:125, l:'portie' },{ t:'gram', g:100 }],                // Fruit (sizes differ too much for a generic 'stuk')
   7:  [{ t:'stuk', g:40, l:'stuk' },{ t:'gram', g:100 }],                     // Gebak & koek
   8:  [{ t:'portie', g:75, l:'portie (droog)' },{ t:'gram', g:100 }],         // Graan
   9:  [{ t:'portie', g:100, l:'portie' },{ t:'gram', g:100 }],                // Groente
@@ -43,7 +43,7 @@ export const PRODUCT_PORTIES = [
   [/\bappel\b/i,      [{ t:'klein', g:110, l:'kleine' },{ t:'stuk', g:140, l:'appel' },{ t:'groot', g:190, l:'grote' },{ t:'gram', g:100 }]],
   [/\bpeer\b/i,       [{ t:'klein', g:110, l:'kleine' },{ t:'stuk', g:160, l:'peer' },{ t:'gram', g:100 }]],
   [/\bsinaasappel/i,   [{ t:'stuk', g:150, l:'sinaasappel' },{ t:'gram', g:100 }]],
-  [/\bmandarijn/i,     [{ t:'stuk', g:70, l:'mandarijn' },{ t:'gram', g:100 }]],
+  [/\bmandarijn|\bclementine/i, [{ t:'stuk', g:70, l:'stuk' },{ t:'gram', g:100 }]],
   [/\bkiwi/i,          [{ t:'stuk', g:75, l:'kiwi' },{ t:'gram', g:100 }]],
   [/\bperzik/i,        [{ t:'stuk', g:120, l:'perzik' },{ t:'gram', g:100 }]],
   [/\bnectarine/i,     [{ t:'stuk', g:120, l:'nectarine' },{ t:'gram', g:100 }]],
@@ -54,9 +54,21 @@ export const PRODUCT_PORTIES = [
   [/\bframboos|\bframbozen/i, [{ t:'bakje', g:125, l:'bakje' },{ t:'handje', g:60, l:'handje' },{ t:'gram', g:100 }]],
   [/\bbosbes|\bblauwe\s*bes/i, [{ t:'bakje', g:125, l:'bakje' },{ t:'handje', g:60, l:'handje' },{ t:'gram', g:100 }]],
   [/\bdruif|\bdruiven/i, [{ t:'tros', g:150, l:'trosje' },{ t:'handje', g:80, l:'handje' },{ t:'gram', g:100 }]],
-  [/\bwatermeloen/i,   [{ t:'plak', g:200, l:'plak' },{ t:'gram', g:100 }]],
-  [/\bmeloen\b/i,     [{ t:'plak', g:150, l:'plak' },{ t:'gram', g:100 }]],
-  [/\bananas/i,        [{ t:'stuk', g:120, l:'ananas (ring)' },{ t:'gram', g:100 }]],
+  // Melons: edible fruit, without rind
+  [/\bwatermeloen/i,   [{ t:'partje', g:250, l:'partje' },{ t:'blokjes', g:150, l:'bakje blokjes' },{ t:'gram', g:100 }]],
+  [/\bmeloen\b|\bcantaloupe/i, [{ t:'partje', g:150, l:'partje' },{ t:'half', g:350, l:'halve meloen' },{ t:'gram', g:100 }]],
+  [/\bananas/i,        [{ t:'ring', g:40, l:'ring (blik)' },{ t:'plak', g:80, l:'plak vers' },{ t:'gram', g:100 }]],
+  [/\bkers\b|\bkersen\b/i, [{ t:'stuk', g:8, l:'kers' },{ t:'handje', g:80, l:'handje' },{ t:'gram', g:100 }]],
+  [/\bbes\b|\bbessen\b|\bbraam|\bbramen|\bcranberr/i, [{ t:'handje', g:60, l:'handje' },{ t:'bakje', g:125, l:'bakje' },{ t:'gram', g:100 }]],
+  [/\bmedjool/i,       [{ t:'stuk', g:20, l:'dadel' },{ t:'gram', g:100 }]],
+  [/\bdadel/i,         [{ t:'stuk', g:8, l:'dadel' },{ t:'gram', g:100 }]],
+  [/\blychee|\blitchi/i, [{ t:'stuk', g:10, l:'lychee' },{ t:'handje', g:80, l:'handje' },{ t:'gram', g:100 }]],
+  [/\bvijg/i,          [{ t:'stuk', g:50, l:'vijg' },{ t:'gram', g:100 }]],
+  [/\bpassievrucht|\bmarakuja/i, [{ t:'stuk', g:20, l:'passievrucht' },{ t:'gram', g:100 }]],
+  [/\bgranaatappel/i,  [{ t:'half', g:75, l:'halve' },{ t:'stuk', g:150, l:'granaatappel' },{ t:'gram', g:100 }]],
+  [/\babrikoos|\babrikozen/i, [{ t:'stuk', g:40, l:'abrikoos' },{ t:'gram', g:100 }]],
+  [/\bpapaja|\bpapaya/i, [{ t:'half', g:200, l:'halve' },{ t:'stuk', g:400, l:'papaja' },{ t:'gram', g:100 }]],
+  [/\bkokos/i,         [{ t:'stukje', g:30, l:'stukje' },{ t:'eetlepel', g:8, l:'eetlepel (rasp)' },{ t:'gram', g:100 }]],
   [/\bgrapefruit/i,    [{ t:'stuk', g:200, l:'grapefruit' },{ t:'half', g:100, l:'halve' },{ t:'gram', g:100 }]],
   [/\bcherry.*tomaat|\btomaat.*cherry|\bsnoeptomat/i, [{ t:'handje', g:75, l:'handje' },{ t:'stuk', g:15, l:'tomaatje' },{ t:'gram', g:100 }]],
   [/\btomaat\b|\btomaten\b/i, [{ t:'klein', g:60, l:'kleine' },{ t:'stuk', g:100, l:'tomaat' },{ t:'gram', g:100 }]],
@@ -76,6 +88,9 @@ export const PRODUCT_PORTIES = [
   [/\baubergine/i,     [{ t:'stuk', g:250, l:'aubergine' },{ t:'gram', g:100 }]],
   [/\bknolselderij/i,  [{ t:'stuk', g:500, l:'knolselderij' },{ t:'gram', g:100 }]],
   [/\bsperzieboon|\bsperziebonen/i, [{ t:'portie', g:150, l:'portie' },{ t:'gram', g:100 }]],
+  [/\bradijs/i,        [{ t:'stuk', g:8, l:'radijsje' },{ t:'handje', g:50, l:'handje' },{ t:'gram', g:100 }]],
+  [/\bpompoen\b/i,    [{ t:'portie', g:200, l:'portie' },{ t:'gram', g:100 }]],
+  [/\bolijf\b|\bolijven\b/i, [{ t:'stuk', g:4, l:'olijf' },{ t:'handje', g:30, l:'handje' },{ t:'gram', g:100 }]],
   [/\bmaïs\b|\bmais\b/i, [{ t:'kolf', g:200, l:'kolf' },{ t:'opscheplepel', g:50, l:'opscheplepel' },{ t:'gram', g:100 }]],
 
   // ═══ BROOD & BAKKERIJ ═══
@@ -185,6 +200,10 @@ export const PRODUCT_PORTIES = [
   [/\bhoning/i,        [{ t:'theelepel', g:8, l:'theelepel' },{ t:'eetlepel', g:20, l:'eetlepel' },{ t:'gram', g:100 }]],
 ];
 
+// Dried fruit is much lighter per piece than fresh, so it wins over the fruit itself
+// ("Mango gedroogd" is a handful, not a whole mango).
+const DRIED_FRUIT = [/\brozijn|\bkrent|\bgedroogd/i, [{ t:'handje', g:25, l:'handje' },{ t:'eetlepel', g:10, l:'eetlepel' },{ t:'gram', g:100 }]];
+
 // Find portion options for a product
 export function findPortie(productName, groepId, servingGrams) {
   const name = productName || '';
@@ -195,12 +214,21 @@ export function findPortie(productName, groepId, servingGrams) {
     result.push({ t:'portie', g: servingGrams, l: 'verpakking (' + servingGrams + 'g)' });
   }
 
-  // 1) Product-specifieke match (regex, word boundary)
-  for (const [pattern, porties] of PRODUCT_PORTIES) {
-    if (pattern.test(name)) {
-      result.push(...porties.filter(p => p.g !== servingGrams)); // avoid duplicate
-      return result.length ? result : porties;
+  // 1) Product-specifieke match: the rule that matches earliest in the name wins
+  //    ("Watermeloen & aardbei" is a melon), on a tie the longest match
+  //    ("Chocolademelk" is a drink, not a bar).
+  let best = null;
+  if (DRIED_FRUIT[0].test(name)) best = { index: -1, length: 0, porties: DRIED_FRUIT[1] };
+  for (const [pattern, porties] of best ? [] : PRODUCT_PORTIES) {
+    const match = pattern.exec(name);
+    if (!match) continue;
+    if (!best || match.index < best.index || (match.index === best.index && match[0].length > best.length)) {
+      best = { index: match.index, length: match[0].length, porties };
     }
+  }
+  if (best) {
+    result.push(...best.porties.filter(p => p.g !== servingGrams)); // avoid duplicate
+    return result.length ? result : best.porties;
   }
 
   // 2) Groep-gebaseerde portie
