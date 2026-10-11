@@ -33,9 +33,9 @@ const NAME_FALLBACK_MATCHERS = [
   { category: 'zuivel', names: /\b(skyr|kwark|yoghurt|melk|karnemelk|kaas|cottage cheese|huttenkase|mozzarella|ricotta|sojadrink|sojamelk|sojayoghurt)\b/ },
   { category: 'groente', names: /\b(groente|broccoli|spinazie|sla|komkommer|paprika|tomaat|wortel|courgette|bloemkool|boerenkool|andijvie|prei|sperziebonen|snijbonen|aubergine)\b/ },
   { category: 'fruit', names: /\b(fruit|appel|peer|banaan|kiwi|blauwe bes|aardbei|druif|druiven|mandarijn|sinaasappel|mango|perzik|pruim|nectarine|ananas|meloen)\b/ },
-  { category: 'volkoren', names: /\b(volkoren|wholegrain|whole grain|havermout|rogge|muesli|quinoa|zilvervlies|zilvervliesrijst|bruine rijst|brown rice|brown basmati|wholegrain basmati|whole grain basmati|volkoren basmati|aardappel|aardappelen|pieper|krieltje|bulgur|boekweit|spelt)\b/ },
+  { category: 'volkoren', names: /\b(volkoren|wholegrain|whole grain|havermout|brinta|rogge|muesli|quinoa|zilvervlies|zilvervliesrijst|bruine rijst|brown rice|brown basmati|wholegrain basmati|whole grain basmati|volkoren basmati|aardappel|aardappelen|pieper|krieltje|bulgur|boekweit|spelt)\b/ },
   { category: 'eiwit', names: /\b(ei|eieren|kip|kipfilet|vis|zalm|tonijn|tofu|tempeh|tempe|linzen|bonen|kikkererwten|garnalen|mosselen|forel|sardine|makreel|kabeljauw|schol|tilapia)\b/ },
-  { category: 'onverzadigd_vet', names: /\b(olijfolie|noten|amandel|walnoot|cashew|avocado|pinda|halvarine|margarine|zonnebloemolie)\b/ },
+  { category: 'onverzadigd_vet', names: /\b(olijfolie|noten|walnoten|amandelen|cashewnoten|hazelnoten|amandel|walnoot|cashew|avocado|pinda|halvarine|margarine|zonnebloemolie)\b/ },
 ];
 
 const OUTSIDE_GROUPS = new Set([
@@ -61,6 +61,10 @@ const DIRECT_CATEGORY_OVERRIDES = [
   { category: 'eiwit', names: /\b(kipdijfilet|kipdij|kipfilet|kippenborst)\b/ },
   { category: 'onverzadigd_vet', names: /\b(chia|chiazaad|chiazaadjes|lijnzaad)\b/ },
 ];
+
+// What the user logged says it is refined, even when the closest product match is a mixed one
+// ("Tarwemaisbrood wit" matching "Tarwebrood gem v bruin en volkoren").
+const REFINED_NAME_PATTERN = /\bwit\b|\bwitte\b|witbrood|\bwit brood/;
 
 const matchCache = new Map();
 let categoryAliasCache = null;
@@ -194,8 +198,13 @@ function classifyDirectOverride(itemName) {
   return null;
 }
 
+function productGroup(product) {
+  if (product?.g !== undefined && Array.isArray(nevoData?.groups)) return nevoData.groups[product.g] || '';
+  return String(product?._group || '').trim();
+}
+
 function classifyMatchedProduct(product, itemName) {
-  const group = String(product?._group || '').trim();
+  const group = productGroup(product);
   const name = normalizeName(product?.n || itemName);
 
   if (!name || EXCLUDE_NAME_PATTERN.test(name)) return { type: 'ignored' };
@@ -211,6 +220,7 @@ function classifyMatchedProduct(product, itemName) {
     if (matcher.category === 'zuivel' && SWEET_DAIRY_PATTERN.test(name)) return { type: 'outside', group };
     if (matcher.category === 'onverzadigd_vet' && SALTED_NUTS_PATTERN.test(name)) return { type: 'outside', group };
     if (matcher.category === 'onverzadigd_vet' && HARD_FAT_PATTERN.test(name)) return { type: 'outside', group };
+    if (matcher.category === 'volkoren' && REFINED_NAME_PATTERN.test(normalizeName(itemName))) return { type: 'ignored' };
     return { type: 'category', category: matcher.category, group };
   }
 
@@ -223,10 +233,10 @@ function classifyNameFallback(itemName) {
   const name = normalizeName(itemName);
   if (!name || EXCLUDE_NAME_PATTERN.test(name)) return { type: 'ignored' };
 
+  // Whole words only: "tarwemaisbrood" is not "mais", and "havermout" is not "pap havermout melk"
+  const padded = ` ${name} `;
   const categoryAlias = getCategoryAliasMatches().find(entry =>
-    name === entry.alias
-    || name.includes(entry.alias)
-    || entry.alias.includes(name)
+    name === entry.alias || padded.includes(` ${entry.alias} `)
   );
   if (categoryAlias) return { type: 'category', category: categoryAlias.category, inferred: 'category-alias' };
 
