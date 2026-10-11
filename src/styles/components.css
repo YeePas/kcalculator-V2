@@ -259,8 +259,6 @@
 .fav-item:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); transform: translateY(-1px); background: var(--surface-strong); }
 .fav-item-name { font-size: 0.88rem; font-weight: 500; }
 .fav-item-sub  { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
-.fav-item-del  { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 0.2rem 0.4rem; border-radius: 4px; flex-shrink: 0; }
-.fav-item-del:hover { color: var(--danger); }
 .save-recipe-entry { margin-top: 0.6rem; }
 .save-recipe-btn { display: block; width: 100%; margin-top: 0.6rem; padding: 0.68rem; background: transparent; border: 1px dashed var(--border-strong); border-radius: calc(var(--radius-md) + 2px); font-size: 0.78rem; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: var(--font-body); }
 .save-recipe-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--surface-soft); }
@@ -329,8 +327,6 @@
 .fav-subitem-name { }
 .fav-subitem-macros { color: var(--tertiary); font-size: 0.7rem; }
 .fav-expand-btn { background: none; border: none; font-size: 0.72rem; color: var(--accent); cursor: pointer; padding: 0; margin-top: 0.2rem; }
-.fav-item-edit { background: none; border: none; cursor: pointer; font-size: 0.8rem; padding: 0.15rem 0.2rem; opacity: 0.5; transition: opacity 0.15s; }
-.fav-item-edit:hover { opacity: 1; }
 .fav-empty { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.85rem; font-style: italic; }
 .editfav-items-head { display: flex; justify-content: space-between; margin: 0.6rem 0 0.4rem; padding-right: 6.2rem; font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 /* name | amount + unit | kcal | remove */
@@ -346,7 +342,6 @@
 .editfav-si-gram::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .editfav-si-unit { width: 1.4rem; font-size: 0.74rem; color: var(--muted); }
 .editfav-si-kcal { font-size: 0.78rem; color: var(--muted); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.editfav-subitem .item-delete { font-size: 0.8rem; }
 .editfav-add-btn { width: 100%; margin-top: 0.45rem; padding: 0.55rem; border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 10px; background: transparent; color: var(--accent); font-family: var(--font-body); font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: background 0.15s; }
 .editfav-add-btn:hover { background: var(--accent-light); }
 /* Phones: product name on its own line, amount / kcal / remove underneath */

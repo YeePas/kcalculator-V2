@@ -14,6 +14,7 @@ import { _renderDayUI } from '../ui/render.js';
 import { renderQuickFavs } from '../ui/misc.js';
 import { searchNevo } from '../products/database.js';
 import { buildMealItem } from '../products/matcher.js';
+import { ICON_EDIT, ICON_DELETE, ICON_CLOSE } from '../ui/icons.js';
 import { parseIngredientAmount, nutritionPerUnit, scaleIngredient, sumIngredients } from './recipe-amounts.js';
 import { submit } from '../input/submit.js';
 import { openSmartImportPage } from '../pages/smart-import.js';
@@ -88,8 +89,8 @@ export function renderFavList() {
     return `<div class="fav-item" style="flex-wrap:wrap" data-action="add" data-idx="${i}">
       <div style="flex:1;min-width:0"><div class="fav-item-name">${esc(naam)}${badge}</div>${macros}${expandBtn}</div>
       <div style="display:flex;gap:0.2rem;align-items:center;flex-shrink:0">
-        <button class="fav-item-edit" data-action="edit" data-idx="${i}" title="Bewerken">✏️</button>
-        <button class="fav-item-del" data-action="delete" data-idx="${i}" title="Verwijder">✕</button>
+        <button class="icon-action fav-item-edit" data-action="edit" data-idx="${i}" title="Bewerken" aria-label="Bewerken">${ICON_EDIT}</button>
+        <button class="icon-action is-danger fav-item-del" data-action="delete" data-idx="${i}" title="Verwijderen" aria-label="Verwijderen">${ICON_DELETE}</button>
       </div>
       ${subItems}
     </div>`;
@@ -237,7 +238,7 @@ function editFavRowHtml(item, siIdx) {
       <span class="editfav-si-unit">${unit}</span>
     </label>
     <span class="editfav-si-kcal">${Math.round(item.kcal || 0)} kcal</span>
-    <button type="button" class="item-delete" data-action="remove-subitem" title="Verwijder ingrediënt" aria-label="Verwijder ingrediënt">✕</button>
+    <button type="button" class="icon-action is-danger item-delete" data-action="remove-subitem" title="Verwijder ingrediënt" aria-label="Verwijder ingrediënt">${ICON_CLOSE}</button>
   </div>`;
 }
 

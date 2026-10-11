@@ -14,6 +14,7 @@ import {
 } from '../utils.js';
 import { loadDay } from '../supabase/data.js';
 import { renderSummary } from './summary.js';
+import { ICON_EDIT, ICON_DELETE, ICON_STAR } from './icons.js';
 import { renderWeekSpark } from './charts.js';
 import { renderHistory, deleteItem, deleteRecipeGroup } from './misc.js';
 import { openEditModal, openEditRecipeGroupModal } from '../modals/edit.js';
@@ -199,8 +200,8 @@ export function renderMealItems(items, meal) {
         </div>
         <div style="display:flex;align-items:center;gap:0.5rem">
           <div class="recipe-group-info">${g.items.length} items · ${r1(totKcal)} kcal</div>
-          <button class="item-edit" data-action="edit-group" data-meal="${meal}" data-group="${esc(g.groupId)}" title="Gerecht bewerken">✏️</button>
-          <button class="item-delete" data-action="delete-group" data-meal="${meal}" data-group="${esc(g.groupId)}">✕</button>
+          <button class="icon-action item-edit" data-action="edit-group" data-meal="${meal}" data-group="${esc(g.groupId)}" title="Gerecht bewerken" aria-label="Gerecht bewerken">${ICON_EDIT}</button>
+          <button class="icon-action is-danger item-delete" data-action="delete-group" data-meal="${meal}" data-group="${esc(g.groupId)}" title="Gerecht verwijderen" aria-label="Gerecht verwijderen">${ICON_DELETE}</button>
         </div>
       </div>
       <div class="recipe-group-items">
@@ -235,9 +236,9 @@ export function renderItem(item, meal, idx) {
             <input type="checkbox" ${isSelectedForRecipe ? 'checked' : ''} data-action="toggle-recipe-item" data-meal="${meal}" data-idx="${idx}">
             <span>Opslaan</span>
           </label>`
-        : `<button class="item-fav" data-action="fav" data-meal="${meal}" data-idx="${idx}" title="Als favoriet opslaan">⭐</button>
-      <button class="item-edit" data-action="edit" data-meal="${meal}" data-idx="${idx}" title="Bewerken">✏️</button>
-      <button class="item-delete" data-action="delete" data-meal="${meal}" data-idx="${idx}">✕</button>`}
+        : `<button class="icon-action is-fav item-fav" data-action="fav" data-meal="${meal}" data-idx="${idx}" title="Als favoriet opslaan" aria-label="Als favoriet opslaan">${ICON_STAR}</button>
+      <button class="icon-action item-edit" data-action="edit" data-meal="${meal}" data-idx="${idx}" title="Bewerken" aria-label="Bewerken">${ICON_EDIT}</button>
+      <button class="icon-action is-danger item-delete" data-action="delete" data-meal="${meal}" data-idx="${idx}" title="Verwijderen" aria-label="Verwijderen">${ICON_DELETE}</button>`}
     </div>
   </div>`;
 }

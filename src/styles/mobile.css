@@ -110,8 +110,8 @@
   .match-item-actions { display: grid; grid-template-columns: 1fr; }
   .match-manual-btn { width: 100%; white-space: normal; overflow-wrap: anywhere; }
 
-  /* Meal items - bigger delete button */
-  .item-delete { width: 32px; height: 32px; font-size: 0.9rem; }
+  /* Slightly larger touch targets for the icon buttons */
+  .icon-action { width: 34px; height: 34px; }
   .save-recipe-action-row { flex-direction: column; }
   .meal-item.recipe-select-mode {
     align-items: flex-start;
@@ -227,13 +227,6 @@
     padding-bottom: 0.56rem;
     padding-left: 0.68rem;
     padding-right: 0.68rem;
-  }
-  .smart-manage-actions {
-    width: 100%;
-    justify-content: stretch;
-  }
-  .smart-manage-actions button {
-    flex: 1 1 calc(50% - 0.15rem);
   }
   .mobile-tab {
     font-size: 0.58rem;

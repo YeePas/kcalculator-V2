@@ -4,6 +4,7 @@ import { esc, r1 } from '../utils.js';
 import { loadCustomProducts, saveCustomProducts, loadFavs, saveFavs } from '../storage.js';
 import { syncCustomProductsToSupabase, syncFavoritesToSupabase } from '../supabase/sync.js';
 import { renderQuickFavs } from '../ui/misc.js';
+import { ICON_EDIT, ICON_DELETE } from '../ui/icons.js';
 
 const COLLAPSED_KEY = 'kcal_manage_collapsed_v1';
 const MANAGE_GROUPS = [
@@ -27,8 +28,8 @@ function renderProductItem(c, origIdx) {
     + '<span>' + Math.round(c.k || 0) + ' kcal · ' + r1(c.e || 0) + 'e · ' + r1(c.kh || 0) + 'kh · ' + r1(c.v || 0) + 'v · ' + r1(c.vz || 0) + 'vz /100g</span>'
     + '</div>'
     + '<div class="smart-manage-actions">'
-    + '<button class="btn-secondary smart-manage-edit" data-idx="' + origIdx + '" title="Bewerken" aria-label="Bewerken">✏️</button>'
-    + '<button class="btn-secondary smart-manage-delete" data-idx="' + origIdx + '" title="Verwijderen" aria-label="Verwijderen">🗑️</button>'
+    + '<button class="icon-action smart-manage-edit" data-idx="' + origIdx + '" title="Bewerken" aria-label="Bewerken">' + ICON_EDIT + '</button>'
+    + '<button class="icon-action is-danger smart-manage-delete" data-idx="' + origIdx + '" title="Verwijderen" aria-label="Verwijderen">' + ICON_DELETE + '</button>'
     + '</div></div>';
 }
 
@@ -43,8 +44,8 @@ function renderFavItem(f, origIdx, isRecipe) {
     + '<span>' + esc(macroLabel) + '</span>'
     + '</div>'
     + '<div class="smart-manage-actions">'
-    + '<button class="btn-secondary smart-manage-fav-edit" data-fav-idx="' + origIdx + '" title="Bewerken" aria-label="Bewerken">✏️</button>'
-    + '<button class="btn-secondary smart-manage-fav-delete" data-fav-idx="' + origIdx + '" title="Verwijderen" aria-label="Verwijderen">🗑️</button>'
+    + '<button class="icon-action smart-manage-fav-edit" data-fav-idx="' + origIdx + '" title="Bewerken" aria-label="Bewerken">' + ICON_EDIT + '</button>'
+    + '<button class="icon-action is-danger smart-manage-fav-delete" data-fav-idx="' + origIdx + '" title="Verwijderen" aria-label="Verwijderen">' + ICON_DELETE + '</button>'
     + '</div></div>';
 }
 
