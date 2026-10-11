@@ -106,7 +106,7 @@ De deploy draait `node scripts/validate_products.mjs --check` en stopt als het b
 
 Voor automatische pull requests moet in GitHub aan staan: *Settings → Actions → General → Allow GitHub Actions to create and approve pull requests*. Staat dat uit, dan zet de workflow een link naar de branch in de samenvatting van de run.
 
-**Nieuwe NEVO-versie:** download de dataset via [NEVO-online](https://www.rivm.nl/nederlands-voedingsstoffenbestand) (je gaat dan akkoord met de gebruiksvoorwaarden) en draai `python3 scripts/build_nevo.py pad/naar/NEVO….csv data/nevo-2025.json`. NEVO-gegevens worden ongewijzigd overgenomen, met bronvermelding; het controlescript laat NEVO-producten met rust.
+**Nieuwe NEVO-versie:** download de dataset via [NEVO-online](https://www.rivm.nl/nederlands-voedingsstoffenbestand) (je gaat dan akkoord met de gebruiksvoorwaarden) en draai `python3 scripts/build_nevo.py pad/naar/NEVO….csv data/nevo-2025.json`. NEVO-gegevens worden ongewijzigd overgenomen, met bronvermelding; het controlescript laat NEVO-producten met rust. Het script zet de NEVO-groepen op alfabetische volgorde: de standaardporties per groep (`GROEP_PORTIES` in `src/products/portions.js`) gebruiken die volgorde, en een test bewaakt dat.
 
 **Fouten melden en verbeteren:** gebruikers kunnen bij elk product op "Klopt niet?" tikken. In de beheerpagina (`/admin`, tab Issues) staat bij zo'n melding een knop die een correctieregel kopieert. Plak die in `data/product-corrections.json`, pas de waarden aan naar de verpakking en draai het script. Mogelijke regels:
 
@@ -122,6 +122,23 @@ Voor automatische pull requests moet in GitHub aan staan: *Settings → Actions 
 ```
 
 Een `add`-regel voegt een product toe dat in de bronnen ontbreekt of daar geen voedingswaarden heeft. Zodra de bron het product zelf heeft (zelfde streepjescode of naam + merk), slaat het script de toevoeging over en meldt dat de regel weg kan. Waarden per 100 g; `sg` is één portie in gram. Beter nog: vul het product ook aan op [Open Food Facts](https://world.openfoodfacts.org), zodat iedereen er iets aan heeft.
+
+## Porties en Schijf van Vijf
+
+- **Porties** (`src/products/portions.js`): eerst een productregel op naam (de regel die het vroegst in de naam staat wint, bij gelijkspel de langste), anders de standaardportie van de NEVO-groep, anders 100 g. Een portie van de verpakking (Open Food Facts) staat bovenaan. Maten staan van klein naar groot; de app kiest vooraf de middelste.
+- **Gram of ml** (`src/products/density.js`): dranken, olie en sauzen in ml, maar wat *in* olie, water of zoetzuur zit (tonijn, augurken) in gram.
+- **Schijf van Vijf** (`src/pages/schijf.js`): een gelogd item wordt gekoppeld aan een product; de NEVO-groep plus de naam bepalen de categorie. Lukt dat niet, dan wordt op hele woorden gezocht in de naam. Wit brood en witte rijst tellen niet als volkoren.
+
+Voorbeelden van beide staan in `tests/unit/portions.test.js` en `tests/unit/schijf.test.js`; voeg daar een regel toe als je een fout vindt.
+
+## AI-modellen
+
+De modellen per provider staan op één plek: `PROVIDER_MODELS` in `src/constants.js`. Het eerste model is de standaard. Het instellingenscherm en de modelkeuzes lezen die lijst. Bij een nieuw model:
+
+1. Pas `PROVIDER_MODELS` aan.
+2. Zet oude modelnamen om in `normalizeStoredAiModel` (`src/storage.js`), zodat opgeslagen keuzes van gebruikers meeverhuizen.
+3. Controleer in `supabase/functions/ai-proxy/index.ts` of de request-parameters nog kloppen (bijv. `max_completion_tokens` en `reasoning_effort` bij nieuwe OpenAI-modellen, `thinkingConfig` bij Gemini 3) en deploy de functie.
+4. Werk de modelnamen bij in `public/handleiding.html`.
 
 ## Omgevingsvariabelen
 
