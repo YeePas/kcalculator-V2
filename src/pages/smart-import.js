@@ -20,7 +20,10 @@ import {
 import { hasAiProxyConfig, hasLocalSessionAi } from '../ai/providers.js';
 import { handleUrlImport } from './smart-import-url.js';
 import { handleRecipePhotoUpload } from './smart-import-photo.js';
-import { renderManageList, openEditProduct, deleteProduct, deleteFavoriteFromManage } from './smart-import-manage.js';
+import {
+  renderManageList, openEditProduct, deleteProduct, deleteFavoriteFromManage,
+  onManageSectionToggle, toggleAllManageSections,
+} from './smart-import-manage.js';
 import { openEditFavModal } from '../modals/favourites.js';
 
 let activeTab = 'dish_name';
@@ -1003,6 +1006,11 @@ export function initSmartImportListeners() {
   });
 
   document.getElementById('smart-manage-search')?.addEventListener('input', e => renderManageList(e.target.value));
+  document.getElementById('smart-manage-fold-btn')?.addEventListener('click', toggleAllManageSections);
+  // 'toggle' does not bubble, so listen in the capture phase.
+  document.getElementById('smart-manage-list')?.addEventListener('toggle', e => {
+    if (e.target.matches?.('details.smart-manage-section')) onManageSectionToggle(e.target);
+  }, true);
   document.getElementById('smart-manage-list')?.addEventListener('click', e => {
     const eb = e.target.closest('.smart-manage-edit');
     if (eb) return openEditProduct(Number(eb.dataset.idx), switchSmartImportTab);
