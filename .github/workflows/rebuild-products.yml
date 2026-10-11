@@ -1,0 +1,95 @@
+name: Rebuild product database
+
+# Monthly: rebuild public/products.json from NEVO (data/nevo-2025.json) and the latest Open
+# Food Facts export, validate it and offer it as a pull request. Nothing goes live until that
+# pull request is merged.
+on:
+  schedule:
+    - cron: '0 4 1 * *' # first day of the month, 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      max_off:
+        description: Maximum number of Open Food Facts products
+        default: '20000'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: rebuild-products
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install DuckDB
+        run: pip install duckdb==1.4.5
+
+      - name: Download Open Food Facts export
+        run: |
+          df -h . | tail -1
+          curl -L --fail --retry 5 --retry-delay 30 -o "$RUNNER_TEMP/food.parquet" \
+            https://huggingface.co/datasets/openfoodfacts/product-database/resolve/main/food.parquet
+          ls -lh "$RUNNER_TEMP/food.parquet"
+
+      - name: Build products.json
+        run: |
+          python scripts/build_products.py "$RUNNER_TEMP/food.parquet" \
+            --max-off "${{ github.event.inputs.max_off || '20000' }}" \
+            --report build/products-report.md
+
+      - name: Validate products.json
+        run: |
+          node scripts/validate_products.mjs | tee build/validate.txt
+          node scripts/validate_products.mjs --check
+          {
+            cat build/products-report.md
+            echo
+            echo '### Validatie'
+            echo '```'
+            cat build/validate.txt
+            echo '```'
+            echo
+            echo "Grootte na validatie: $(du -h public/products.json | cut -f1)"
+          } > build/pr-body.md
+          cat build/pr-body.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- public/products.json; then
+            echo "No changes to products.json." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          branch="products/rebuild-$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add public/products.json
+          git commit -m "Rebuild product database ($(date -u +%Y-%m-%d))"
+          git push --force origin "$branch"
+          # Needs "Allow GitHub Actions to create and approve pull requests" in the repo settings;
+          # without it, link to the compare page instead.
+          if ! gh pr create --base main --head "$branch" \
+               --title "Productdatabase bijgewerkt ($(date -u +%Y-%m-%d))" \
+               --body-file build/pr-body.md; then
+            url="${{ github.server_url }}/${{ github.repository }}/compare/main...$branch?expand=1"
+            echo "Pull request kon niet automatisch worden geopend. Open hem hier: $url" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi

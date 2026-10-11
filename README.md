@@ -102,6 +102,12 @@ Dat script:
 
 De deploy draait `node scripts/validate_products.mjs --check` en stopt als het bestand niet is genormaliseerd.
 
+**Maandelijks opnieuw opbouwen:** de workflow [rebuild-products.yml](.github/workflows/rebuild-products.yml) downloadt elke eerste van de maand de Open Food Facts-export, bouwt met `scripts/build_products.py` een nieuwe `products.json` (NEVO uit `data/nevo-2025.json` plus de Nederlandse producten van Open Food Facts, met streepjescode, suiker, verzadigd vet en zout), valideert die en zet hem klaar als pull request met een rapport. Pas na het mergen gaat hij live. Handmatig starten kan via de Actions-tab ("Run workflow").
+
+Voor automatische pull requests moet in GitHub aan staan: *Settings → Actions → General → Allow GitHub Actions to create and approve pull requests*. Staat dat uit, dan zet de workflow een link naar de branch in de samenvatting van de run.
+
+**Nieuwe NEVO-versie:** download de dataset via [NEVO-online](https://www.rivm.nl/nederlands-voedingsstoffenbestand) (je gaat dan akkoord met de gebruiksvoorwaarden) en draai `python3 scripts/build_nevo.py pad/naar/NEVO….csv data/nevo-2025.json`. NEVO-gegevens worden ongewijzigd overgenomen, met bronvermelding; het controlescript laat NEVO-producten met rust.
+
 **Fouten melden en verbeteren:** gebruikers kunnen bij elk product op "Klopt niet?" tikken. In de beheerpagina (`/admin`, tab Issues) staat bij zo'n melding een knop die een correctieregel kopieert. Plak die in `data/product-corrections.json`, pas de waarden aan naar de verpakking en draai het script. Mogelijke regels:
 
 ```json
