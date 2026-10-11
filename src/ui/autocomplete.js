@@ -168,6 +168,7 @@ export function selectAcItem(idx) {
     <div class="ac-per100">
       <strong>Per 100${useMl ? 'ml' : 'g'}:</strong> ${item.k} kcal · ${item.kh}g koolh · ${item.vz}g vezel · ${item.v}g vet · ${item.e}g eiwit
     </div>
+    ${item.w ? '<div class="ac-warn" role="note"><strong>Let op:</strong> de kcal past niet bij de macro\'s van dit product. Controleer de verpakking.</div>' : ''}
   `;
   updateAcAmount();
   dd.classList.add('open');

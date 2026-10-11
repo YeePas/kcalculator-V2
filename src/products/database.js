@@ -6,6 +6,7 @@ import {
   cfg, authUser,
 } from '../state.js';
 import { loadCustomProducts } from '../storage.js';
+import { applyEnergyCheck } from './nutrition-check.js';
 import { parseQuantity } from './portions.js';
 import { shouldIncludeProductForSupermarketFilters } from './supermarket-filter.js';
 
@@ -352,7 +353,8 @@ export function mapOffApiProduct(product) {
   const n = String(product.product_name_nl || product.product_name || '').trim();
   if (!n) return null;
   const nutriments = product.nutriments || {};
-  return {
+  // Same kJ-in-kcal fix and plausibility flag as the bundled database.
+  return applyEnergyCheck({
     n,
     b: String(product.brands || '').trim(),
     k: offKcalPer100(nutriments),
@@ -364,7 +366,7 @@ export function mapOffApiProduct(product) {
     src: 'off-api',
     _group: 'Open Food Facts (live)',
     _offCode: String(product.code || '').trim(),
-  };
+  });
 }
 
 function readOffSearchCache() {
@@ -424,50 +426,43 @@ export function clearProductCache() {
   }
 }
 
+// Version of public/products.json this build ships with (see vite.config.js).
+const PRODUCTS_VERSION = typeof __PRODUCTS_VERSION__ === 'string' ? __PRODUCTS_VERSION__ : '';
+
+function useProductData(data, label) {
+  setNevoData(data);
+  setNevoReady(true);
+  setOffReady(true);
+  console.log(`[DB] ${label}:`, data.items.length, 'producten', data.version || '');
+}
+
 export async function loadNevo() {
   for (const legacyKey of LEGACY_PRODUCTS_CACHE_KEYS) {
     try { localStorage.removeItem(legacyKey); } catch {}
   }
 
-  // Try cache first
+  let cached = null;
   try {
-    const cached = localStorage.getItem(PRODUCTS_CACHE_KEY);
-    if (cached) {
-      const data = JSON.parse(cached);
-      if (data && data.items && data.items.length > 5000) {
-        setNevoData(data);
-        setNevoReady(true);
-        setOffReady(true);
-        console.log('[DB] Geladen uit cache:', data.items.length, 'producten');
-        return;
-      }
-    }
+    const parsed = JSON.parse(localStorage.getItem(PRODUCTS_CACHE_KEY) || 'null');
+    if (parsed?.items?.length > 5000) cached = parsed;
   } catch {}
 
-  // Fetch fresh
+  // Use the cached copy while it matches the version this build ships with.
+  if (cached && (!PRODUCTS_VERSION || cached.version === PRODUCTS_VERSION)) {
+    useProductData(cached, 'Geladen uit cache');
+    return;
+  }
+
   try {
-    console.log('[DB] Laden van products.json...');
     const r = await fetch('products.json', { cache: 'no-store' });
-    if (r.ok) {
-      const data = await r.json();
-      setNevoData(data);
-      setNevoReady(true);
-      setOffReady(true);
-      try { localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(data)); } catch(e) { console.warn('[DB] Cache te groot:', e); }
-      console.log('[DB] Geladen:', data.items.length, 'producten');
-    } else {
-      console.error('[DB] Fetch mislukt:', r.status);
-      // Fallback: try old nevo.json
-      const r2 = await fetch('nevo.json', { cache: 'no-store' });
-      if (r2.ok) {
-        const data = await r2.json();
-        setNevoData(data);
-        setNevoReady(true);
-        console.log('[DB] Fallback nevo.json geladen:', data.items.length);
-      }
-    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    useProductData(data, cached ? 'Bijgewerkt' : 'Geladen');
+    try { localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(data)); } catch (e) { console.warn('[DB] Cache te groot:', e); }
   } catch (e) {
-    console.error('[DB] Kon niet laden:', e);
+    // Offline or failed: an outdated copy beats no product database.
+    if (cached) useProductData(cached, 'Verouderde cache gebruikt');
+    else console.error('[DB] Kon niet laden:', e);
   }
 }
 

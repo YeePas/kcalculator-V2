@@ -124,3 +124,5 @@ body:has(.modal-overlay.open) .ac-dropdown {
 .ac-amount-total { font-size: 0.85rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 .ac-amount-foot .ac-portie-add { margin-left: auto; padding: 0.5rem 1.1rem; border-radius: 999px; font-weight: 700; cursor: pointer; }
 .ac-per100 { padding: 0 0.9rem 0.65rem; font-size: 0.72rem; color: var(--muted); }
+
+.ac-warn { margin: 0 0.9rem 0.75rem; padding: 0.5rem 0.7rem; border-radius: 10px; border: 1px solid color-mix(in srgb, #d99a1e 35%, transparent); background: color-mix(in srgb, #d99a1e 10%, transparent); color: var(--text); font-size: 0.74rem; line-height: 1.45; }
