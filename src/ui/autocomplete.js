@@ -9,7 +9,7 @@ import { buildMealItem } from '../products/matcher.js';
 import { isLiquidLike } from '../products/density.js';
 import { buildBugReportButton } from './bug-report.js';
 import { ICON_SAVE } from './icons.js';
-import { buildAmountUnits, defaultCount, amountGrams, amountLabel, stepCount } from '../products/portion-amount.js';
+import { buildAmountUnits, defaultUnitIndex, defaultCount, amountGrams, amountLabel, stepCount } from '../products/portion-amount.js';
 import { localData, currentDate, cfg } from '../state.js';
 import { loadCustomProducts, saveCustomProducts, loadFavs, saveFavs } from '../storage.js';
 import { syncCustomProductsToSupabase, syncFavoritesToSupabase } from '../supabase/sync.js';
@@ -145,7 +145,8 @@ export function selectAcItem(idx) {
     : '';
 
   const units = buildAmountUnits(porties, useMl);
-  acAmount = { units, unitIdx: 0, count: defaultCount(units[0]), useMl };
+  const unitIdx = defaultUnitIndex(units);
+  acAmount = { units, unitIdx, count: defaultCount(units[unitIdx]), useMl };
 
   dd.innerHTML = `
     <div class="ac-hint"><span class="ac-hint-badge">${esc(badge)}</span> <span class="ac-hint-name">${esc(item.n)}</span> ${importBtn}${bugBtn}</div>
@@ -156,7 +157,7 @@ export function selectAcItem(idx) {
         <button type="button" class="ac-step" data-action="step" data-dir="1" aria-label="Meer">+</button>
       </div>
       <div class="ac-units" role="group" aria-label="Eenheid">
-        ${units.map((u, i) => `<button type="button" class="ac-unit${i === 0 ? ' is-active' : ''}" data-action="unit" data-unit="${i}" aria-pressed="${i === 0}">${esc(u.label)}${u.isBase ? '' : ` <span class="ac-unit-g">${u.g}${useMl ? 'ml' : 'g'}</span>`}</button>`).join('')}
+        ${units.map((u, i) => `<button type="button" class="ac-unit${i === unitIdx ? ' is-active' : ''}" data-action="unit" data-unit="${i}" aria-pressed="${i === unitIdx}">${esc(u.label)}${u.isBase ? '' : ` <span class="ac-unit-g">${u.g}${useMl ? 'ml' : 'g'}</span>`}</button>`).join('')}
       </div>
     </div>
     <div class="ac-amount-foot">

@@ -11,10 +11,17 @@ export function buildAmountUnits(porties, useMl) {
     const key = `${label}|${p.g}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    units.push({ label, g: p.g });
+    units.push({ label, g: p.g, t: p.t });
   }
   units.push({ label: useMl ? 'ml' : 'gram', g: 1, isBase: true });
   return units;
+}
+
+// Preselect the normal size when a product lists small/normal/large variants.
+const NORMAL_SIZE_TYPES = ['stuk', 'snee', 'M'];
+export function defaultUnitIndex(units) {
+  const idx = (units || []).findIndex(u => NORMAL_SIZE_TYPES.includes(u.t));
+  return idx >= 0 ? idx : 0;
 }
 
 export function defaultCount(unit) {

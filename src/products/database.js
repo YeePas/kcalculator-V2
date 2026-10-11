@@ -577,14 +577,22 @@ export async function searchNevoHybrid(query, limit = 12) {
   const terms = normalizedQuery.split(/\s+/).filter(t => t.length >= 2);
   if (!terms.length) return localResults.slice(0, limit);
 
-  const liveOff = applyChoiceRanking(await searchOffLive(query, terms, limit * 2), query);
+  // Live products whose name holds the search words come before ones that only match on
+  // brand (e.g. fish from the brand "Appel" when searching "appel").
+  const nameMatches = item => terms.every(t => normalizeSearchText(item.n).includes(normalizeSearchText(t)));
+  const liveRanked = applyChoiceRanking(await searchOffLive(query, terms, limit * 2), query);
+  const liveOff = [...liveRanked.filter(nameMatches), ...liveRanked.filter(item => !nameMatches(item))];
   if (!liveOff.length) return localResults.slice(0, limit);
 
   const reservedLiveCount = Math.min(4, Math.max(3, Math.floor(limit / 3)));
   const localPrimaryCount = Math.max(4, limit - reservedLiveCount);
   const primaryLocal = localResults.slice(0, localPrimaryCount);
   const overflowLocal = localResults.slice(localPrimaryCount);
-  const strongLocalCount = primaryLocal.filter(item => Number(item?._score || 0) >= 55).length;
+  // A local result whose name starts with a one-word query scores roughly 45+. For longer
+  // queries every result that holds all words counts (partial matches sit far below 0).
+  // With too few of those, live results go first.
+  const strongScore = terms.length > 1 ? 0 : 40;
+  const strongLocalCount = primaryLocal.filter(item => Number(item?._score || 0) >= strongScore).length;
   const prioritizeLive = localResults.length <= reservedLiveCount || strongLocalCount <= 2;
   const mergeOrder = prioritizeLive
     ? [...liveOff, ...primaryLocal, ...overflowLocal]

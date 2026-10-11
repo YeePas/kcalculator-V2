@@ -1,6 +1,8 @@
 /* ── Portion Definitions ───────────────────────────────────── */
 // Porties op basis van RIVM-groep + product-specifieke overrides
 // Format: { t: type, g: gram, l: label }
+// Size variants are listed small → normal → large; the picker preselects the normal one
+// (t 'stuk', 'snee' or 'M'), see defaultUnitIndex in portion-amount.js.
 import { parseQuantity as parseSharedQuantity } from './quantity-parser.js';
 
 // Standaard porties per RIVM-groep (numeric ID)
@@ -38,8 +40,8 @@ export const GROEP_PORTIES = {
 export const PRODUCT_PORTIES = [
   // ═══ FRUIT ═══
   [/\bbanaan/i,        [{ t:'stuk', g:120, l:'banaan' },{ t:'half', g:60, l:'halve' },{ t:'gram', g:100 }]],
-  [/\bappel\b/i,      [{ t:'klein', g:85, l:'kleine' },{ t:'stuk', g:150, l:'appel' },{ t:'groot', g:180, l:'grote' },{ t:'gram', g:100 }]],
-  [/\bpeer\b/i,       [{ t:'stuk', g:160, l:'peer' },{ t:'klein', g:100, l:'kleine' },{ t:'gram', g:100 }]],
+  [/\bappel\b/i,      [{ t:'klein', g:110, l:'kleine' },{ t:'stuk', g:140, l:'appel' },{ t:'groot', g:190, l:'grote' },{ t:'gram', g:100 }]],
+  [/\bpeer\b/i,       [{ t:'klein', g:110, l:'kleine' },{ t:'stuk', g:160, l:'peer' },{ t:'gram', g:100 }]],
   [/\bsinaasappel/i,   [{ t:'stuk', g:150, l:'sinaasappel' },{ t:'gram', g:100 }]],
   [/\bmandarijn/i,     [{ t:'stuk', g:70, l:'mandarijn' },{ t:'gram', g:100 }]],
   [/\bkiwi/i,          [{ t:'stuk', g:75, l:'kiwi' },{ t:'gram', g:100 }]],
@@ -57,13 +59,13 @@ export const PRODUCT_PORTIES = [
   [/\bananas/i,        [{ t:'stuk', g:120, l:'ananas (ring)' },{ t:'gram', g:100 }]],
   [/\bgrapefruit/i,    [{ t:'stuk', g:200, l:'grapefruit' },{ t:'half', g:100, l:'halve' },{ t:'gram', g:100 }]],
   [/\bcherry.*tomaat|\btomaat.*cherry|\bsnoeptomat/i, [{ t:'handje', g:75, l:'handje' },{ t:'stuk', g:15, l:'tomaatje' },{ t:'gram', g:100 }]],
-  [/\btomaat\b|\btomaten\b/i, [{ t:'stuk', g:100, l:'tomaat' },{ t:'klein', g:60, l:'kleine' },{ t:'gram', g:100 }]],
+  [/\btomaat\b|\btomaten\b/i, [{ t:'klein', g:60, l:'kleine' },{ t:'stuk', g:100, l:'tomaat' },{ t:'gram', g:100 }]],
 
   // ═══ GROENTE ═══
   [/\bwortel\b/i,     [{ t:'stuk', g:80, l:'wortel' },{ t:'groot', g:120, l:'grote' },{ t:'gram', g:100 }]],
   [/\bkomkommer/i,     [{ t:'stuk', g:400, l:'komkommer' },{ t:'kwart', g:100, l:'kwart' },{ t:'gram', g:100 }]],
   [/\bpaprika\b/i,    [{ t:'stuk', g:160, l:'paprika' },{ t:'gram', g:100 }]],
-  [/\bui\b|\buien\b/i, [{ t:'stuk', g:100, l:'ui' },{ t:'klein', g:60, l:'kleine' },{ t:'gram', g:100 }]],
+  [/\bui\b|\buien\b/i, [{ t:'klein', g:60, l:'kleine' },{ t:'stuk', g:100, l:'ui' },{ t:'gram', g:100 }]],
   [/\bcourgette/i,     [{ t:'stuk', g:200, l:'courgette' },{ t:'gram', g:100 }]],
   [/\bchampignon/i,    [{ t:'stuk', g:15, l:'champignon' },{ t:'handje', g:60, l:'handje' },{ t:'gram', g:100 }]],
   [/\bbroccoli/i,      [{ t:'portie', g:150, l:'portie' },{ t:'roosje', g:10, l:'roosje' },{ t:'gram', g:100 }]],
@@ -78,7 +80,7 @@ export const PRODUCT_PORTIES = [
 
   // ═══ BROOD & BAKKERIJ ═══
   // Also compounds such as "meergranenbrood" and "volkorenbrood", but not "stokbrood" or "broodje"
-  [/\bboterham|(?<!stok)brood\b/i, [{ t:'snee', g:35, l:'snee' },{ t:'dun', g:25, l:'dunne snee' },{ t:'dik', g:45, l:'dikke snee' },{ t:'gram', g:100 }]],
+  [/\bboterham|(?<!stok)brood\b/i, [{ t:'dun', g:25, l:'dunne snee' },{ t:'snee', g:35, l:'snee' },{ t:'dik', g:45, l:'dikke snee' },{ t:'gram', g:100 }]],
   [/\bcroissant/i,     [{ t:'stuk', g:60, l:'croissant' },{ t:'mini', g:25, l:'mini' },{ t:'gram', g:100 }]],
   [/\bbeschuit/i,      [{ t:'stuk', g:10, l:'beschuit' },{ t:'gram', g:100 }]],
   [/\bcracker/i,       [{ t:'stuk', g:10, l:'cracker' },{ t:'gram', g:100 }]],
