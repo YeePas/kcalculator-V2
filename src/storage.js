@@ -199,6 +199,9 @@ export function normalizeStoredAiModel(model) {
     'claude-sonnet-4-5-20250514': 'claude-sonnet-5-5',
     'claude-sonnet-4-5-20250929': 'claude-sonnet-5-5',
     'claude-sonnet-4-5': 'claude-sonnet-5-5',
+    'gpt-4o-mini': 'gpt-6-luna',
+    'gpt-4o': 'gpt-6.1-sol',
+    'gemini-2.5-flash': 'gemini-3.6-flash',
   };
   return legacyMap[value] || value;
 }

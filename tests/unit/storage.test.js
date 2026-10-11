@@ -176,8 +176,14 @@ describe('normalizeStoredAiModel', () => {
     expect(normalizeStoredAiModel('claude-sonnet-4-5')).toBe('claude-sonnet-5-5');
   });
 
+  it('moves GPT-4o and Gemini 2.5 Flash to their successors', () => {
+    expect(normalizeStoredAiModel('gpt-4o-mini')).toBe('gpt-6-luna');
+    expect(normalizeStoredAiModel('gpt-4o')).toBe('gpt-6.1-sol');
+    expect(normalizeStoredAiModel('gemini-2.5-flash')).toBe('gemini-3.6-flash');
+  });
+
   it('keeps other models untouched', () => {
-    expect(normalizeStoredAiModel('gpt-4o-mini')).toBe('gpt-4o-mini');
+    expect(normalizeStoredAiModel('gemini-2.5-pro')).toBe('gemini-2.5-pro');
     expect(normalizeStoredAiModel('')).toBe('');
   });
 });

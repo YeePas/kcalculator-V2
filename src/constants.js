@@ -43,17 +43,15 @@ export const PROVIDER_MODELS = {
     { id: 'claude-haiku-5-5', label: 'Haiku 5.5 (snel)', name: 'Claude Haiku', hint: 'Haiku 5.5 — snel & goedkoop' },
     { id: 'claude-sonnet-5-5', label: 'Sonnet 5.5 (slim)', name: 'Claude Sonnet', hint: 'Sonnet 5.5 — slimmer, ~20× duurder' },
   ],
+  // Gemini 2.5 is only served to accounts that used it before, so new keys need 3.x Flash.
+  // No stable 3.x Pro yet; 2.5 Pro stays for accounts that still have it.
   gemini: [
-    { id: 'gemini-2.5-flash', label: '2.5 Flash (snel)', name: 'Gemini Flash (gratis)', hint: 'Gemini 2.5 Flash — gratis' },
-    { id: 'gemini-2.5-pro', label: '2.5 Pro (slim)', name: 'Gemini Pro', hint: 'Gemini 2.5 Pro — betaald, slimmer' },
-    // Gemini 2.5 is only served to accounts that used it before; new keys need 3.x.
-    { id: 'gemini-3.6-flash', label: '3.6 Flash (nieuw)', name: 'Gemini 3.6 Flash (nieuw)', hint: 'Gemini 3.6 Flash — nieuw, voor nieuwe sleutels' },
+    { id: 'gemini-3.6-flash', label: '3.6 Flash (snel)', name: 'Gemini Flash', hint: 'Gemini 3.6 Flash — snel' },
+    { id: 'gemini-2.5-pro', label: '2.5 Pro (slim)', name: 'Gemini Pro', hint: 'Gemini 2.5 Pro — slimmer (alleen bestaande accounts)' },
   ],
   openai: [
-    { id: 'gpt-4o-mini', label: 'GPT-4o mini (snel)', name: 'GPT-4o mini', hint: 'GPT-4o mini — goedkoop' },
-    { id: 'gpt-4o', label: 'GPT-4o (slim)', name: 'GPT-4o', hint: 'GPT-4o — slimmer, ~6× duurder' },
-    { id: 'gpt-6-luna', label: 'GPT-6 Luna (nieuw)', name: 'GPT-6 Luna (nieuw)', hint: 'GPT-6 Luna — nieuw, goedkoopst' },
-    { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol (nieuw)', name: 'GPT-6.1 Sol (nieuw)', hint: 'GPT-6.1 Sol — nieuw, slimmer' },
+    { id: 'gpt-6-luna', label: 'GPT-6 Luna (snel)', name: 'GPT-6 Luna', hint: 'GPT-6 Luna — snel & goedkoop' },
+    { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol (slim)', name: 'GPT-6.1 Sol', hint: 'GPT-6.1 Sol — slimmer, ~20× duurder' },
   ],
 };
 

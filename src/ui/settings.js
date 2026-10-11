@@ -94,7 +94,7 @@ async function runDirectGeminiKeyTest(apiKey) {
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: 'Antwoord alleen met OK.' }] }],
       generationConfig: {
-        maxOutputTokens: 12,
+        maxOutputTokens: 256,
       },
     }),
   });

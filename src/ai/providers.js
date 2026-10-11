@@ -47,6 +47,8 @@ async function callGeminiDirect(model, system, user, maxTokens, useWebSearch) {
       contents: [{ role: 'user', parts: [{ text: user }] }],
       generationConfig: {
         maxOutputTokens: maxTokens,
+        // Gemini 3.x thinks by default and that counts towards maxOutputTokens.
+        ...(/^gemini-3/.test(model) ? { thinkingConfig: { thinkingLevel: 'low' } } : {}),
       },
       ...(useWebSearch ? { tools: [{ googleSearch: {} }] } : {}),
     }),
@@ -57,6 +59,7 @@ async function callGeminiDirect(model, system, user, maxTokens, useWebSearch) {
 
   const text = (payload?.candidates || [])
     .flatMap(candidate => candidate?.content?.parts || [])
+    .filter(part => !part?.thought)
     .map(part => part?.text || '')
     .join('')
     .trim();
