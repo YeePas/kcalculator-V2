@@ -7,8 +7,10 @@
 
 /* ── Database Autocomplete ────────────────────────────────── */
 
-.input-with-ac { position: relative; flex: 1; isolation: isolate; z-index: 120; }
-.input-with-ac:has(.ac-dropdown.open) { z-index: 260; }
+/* Stay below the sticky header and modals (both z-index 100); only lift above the
+   page content and mobile tab bar (50) while the dropdown is open. */
+.input-with-ac { position: relative; flex: 1; isolation: isolate; z-index: 1; }
+.input-with-ac:has(.ac-dropdown.open) { z-index: 90; }
 .ac-dropdown {
   display: none; position: absolute; left: 0; right: 0; top: calc(100% + 2px);
   margin-top: 0; width: 100%; box-sizing: border-box;
