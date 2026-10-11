@@ -1,7 +1,7 @@
 /* ── Settings screen, login redirect and AI key tests ─────── */
 
 import { cfg, goals, authUser, setCfg } from '../state.js';
-import { DEFAULT_PROVIDER_MODELS as AI_PROVIDER_DEFAULT_MODELS } from '../constants.js';
+import { DEFAULT_PROVIDER_MODELS as AI_PROVIDER_DEFAULT_MODELS, PROVIDER_MODELS } from '../constants.js';
 import { isLocalDevHost, loadSessionAiKeys, saveCfg, saveSessionAiKey } from '../storage.js';
 import { setAuthUser } from '../supabase/auth.js';
 import { fetchUserAiKeyStatuses, saveUserAiKey } from '../supabase/user-ai-keys.js';
@@ -165,6 +165,11 @@ export function showSetup(panel) {
   const userEl = document.getElementById('setup-user');
   if (authEl) authEl.style.display = 'none';
   if (userEl) userEl.style.display = 'none';
+
+  // Model names come from PROVIDER_MODELS, so the table never names a model the app no longer uses
+  document.querySelectorAll('[data-models]').forEach(el => {
+    el.textContent = (PROVIDER_MODELS[el.dataset.models] || []).map(m => m.label.replace(/\s*\(.*\)$/, '')).join(' · ');
+  });
 
   if (panel === 'user' || authUser) {
     const sessionAiKeys = loadSessionAiKeys();
