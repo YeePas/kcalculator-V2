@@ -13,7 +13,7 @@
 
 /* ── Calorie Ring ─────────────────────────────────────────── */
 
-.cal-ring-wrap { display: flex; align-items: center; gap: 1.2rem; padding: 1.4rem; background: linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 90%, transparent), color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong))); border-radius: calc(var(--radius-lg) - 4px); border: 1px solid var(--border-subtle); margin-bottom: 1rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.68); }
+.cal-ring-wrap { display: flex; align-items: center; gap: 1.2rem; padding: 1.4rem; background: linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 90%, transparent), color-mix(in srgb, var(--surface-soft) 84%, var(--surface-strong))); border-radius: calc(var(--radius-lg) - 4px); border: 1px solid var(--border-subtle); margin-bottom: 1rem; box-shadow: inset 0 1px 0 var(--inset-highlight); }
 .cal-ring { position: relative; flex-shrink: 0; width: 118px; height: 118px; }
 .cal-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .ring-bg   { fill: none; stroke: var(--border); stroke-width: 8; }

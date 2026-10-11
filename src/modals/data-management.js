@@ -99,7 +99,6 @@ function showConfirmArea(message, action) {
   msg.innerHTML = message;
   input.value = '';
   btn.disabled = true;
-  btn.style.opacity = '0.5';
   pendingDeleteAction = action;
   area.style.display = 'block';
   input.focus();
@@ -195,7 +194,6 @@ export function initDataManagement() {
     const ok = this.value.trim().toUpperCase() === 'VERWIJDER';
     const btn = document.getElementById('delete-confirm-exec');
     btn.disabled = !ok;
-    btn.style.opacity = ok ? '1' : '0.5';
   });
 
   // ── Typed confirmation: execute ──

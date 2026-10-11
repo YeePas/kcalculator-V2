@@ -1,7 +1,12 @@
 /* ── Design Tokens & Theme ─────────────────────────────────── */
 
 :root {
+  color-scheme: light;
   --bg: #eff3f0;
+  --bg-top: #fbfcfb;
+  --bg-bottom: #eaf0eb;
+  /* Top-edge highlight on cards and inputs; nearly invisible in dark mode */
+  --inset-highlight: rgba(255, 255, 255, 0.7);
   --surface: rgba(255, 255, 255, 0.82);
   --surface-strong: #ffffff;
   --surface-soft: #edf3ee;
@@ -38,7 +43,11 @@
 }
 
 body.dark {
+  color-scheme: dark;
   --bg: #09100c;
+  --bg-top: #0c1510;
+  --bg-bottom: #060a08;
+  --inset-highlight: rgba(255, 255, 255, 0.04);
   --surface: rgba(17, 26, 20, 0.76);
   --surface-strong: #101814;
   --surface-soft: #151f19;

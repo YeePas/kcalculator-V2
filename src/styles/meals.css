@@ -1,7 +1,7 @@
 /* ── Day Navigation ────────────────────────────────────────── */
 
 .day-nav { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 1.45rem; padding: 0.45rem; background: color-mix(in srgb, var(--surface-strong) 72%, transparent); border: 1px solid var(--border); border-radius: 999px; box-shadow: var(--shadow-sm); }
-.day-nav button { background: color-mix(in srgb, var(--surface-strong) 92%, transparent); border: 1px solid var(--border); border-radius: 999px; width: 42px; height: 42px; cursor: pointer; color: var(--muted); font-size: 1.12rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.72); }
+.day-nav button { background: color-mix(in srgb, var(--surface-strong) 92%, transparent); border: 1px solid var(--border); border-radius: 999px; width: 42px; height: 42px; cursor: pointer; color: var(--muted); font-size: 1.12rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; box-shadow: inset 0 1px 0 var(--inset-highlight); }
 .day-nav button:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); color: var(--accent); background: var(--surface-strong); transform: translateY(-1px); }
 #today-btn { width: auto; min-width: 92px; padding: 0 1rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 #copy-day-btn { width: 42px; min-width: 42px; padding: 0; font-size: 0.78rem; font-weight: 700; }
@@ -19,7 +19,7 @@
 .day-progress-total { margin-left: auto; font-size: 0.74rem; font-variant-numeric: tabular-nums; }
 .day-progress-bar { display: block; height: 6px; margin-top: 0.4rem; border-radius: 999px; background: color-mix(in srgb, var(--border) 70%, transparent); overflow: hidden; }
 .day-progress-fill { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #22c15d, #179846); transition: width 0.3s ease; }
-.meal-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 0.42rem; width: 100%; margin-bottom: 1rem; padding: 0.42rem; background: color-mix(in srgb, var(--surface-strong) 76%, var(--surface-soft)); border: 1px solid var(--border); border-radius: 30px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.75); }
+.meal-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 0.42rem; width: 100%; margin-bottom: 1rem; padding: 0.42rem; background: color-mix(in srgb, var(--surface-strong) 76%, var(--surface-soft)); border: 1px solid var(--border); border-radius: 30px; box-shadow: inset 0 1px 0 var(--inset-highlight); }
 .meal-btn { width: 100%; min-height: 44px; padding: 0.52rem 0.95rem; border-radius: 999px; border: 1px solid transparent; background: transparent; font-family: var(--font-body); font-size: 0.79rem; cursor: pointer; color: var(--muted); transition: all 0.15s; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; justify-content: flex-start; text-align: left; }
 .meal-btn.active { background: linear-gradient(135deg, #22c15d, #179846); border-color: transparent; color: white; box-shadow: 0 10px 20px rgba(29, 185, 84, 0.24); }
 .meal-btn.drink-btn.active { background: linear-gradient(135deg, #2ba8d4, #1e8fb2); box-shadow: 0 10px 20px rgba(32, 151, 168, 0.22); }
@@ -30,7 +30,7 @@
 textarea#food-input { width: 100%; padding: 0.85rem 0; border: none; background: transparent; font-size: 1.03rem; font-family: var(--font-body); color: var(--text); outline: none; resize: none; letter-spacing: -0.01em; line-height: 1.45; }
 textarea#food-input:focus { border: none; box-shadow: none; }
 textarea#food-input::placeholder { color: var(--tertiary); }
-.search-bar { display: flex; align-items: center; gap: 0.7rem; padding: 0.48rem 0.55rem 0.48rem 1.2rem; border: 1px solid var(--border); border-radius: 28px; background: color-mix(in srgb, var(--surface-strong) 96%, transparent); transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 14px 34px rgba(16,25,20,0.06); }
+.search-bar { display: flex; align-items: center; gap: 0.7rem; padding: 0.48rem 0.55rem 0.48rem 1.2rem; border: 1px solid var(--border); border-radius: 28px; background: color-mix(in srgb, var(--surface-strong) 96%, transparent); transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; box-shadow: inset 0 1px 0 var(--inset-highlight), 0 14px 34px rgba(16,25,20,0.06); }
 .search-bar:focus-within { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); box-shadow: 0 0 0 4px var(--accent-light), 0 18px 38px rgba(29,185,84,0.1); transform: translateY(-1px); }
 .search-bar-btn { flex-shrink: 0; background: linear-gradient(135deg, #21bd5b, #189746); color: white; border: none; border-radius: 999px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s, transform 0.1s, box-shadow 0.15s; box-shadow: 0 16px 30px rgba(29,185,84,0.28); }
 .search-bar-btn:hover { background: var(--accent-hover); box-shadow: 0 20px 34px rgba(29,185,84,0.3); }
@@ -45,7 +45,7 @@ textarea#food-input::placeholder { color: var(--tertiary); }
 .input-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 0.55rem; }
 .status-msg { font-size: 0.8rem; color: var(--muted); }
 .status-msg.error { color: var(--danger); }
-.fav-save-btn { background: color-mix(in srgb, var(--surface-strong) 80%, transparent); border: 1px solid var(--border); border-radius: 999px; font-size: 0.76rem; font-weight: 700; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 0.35rem; padding: 0.48rem 0.78rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); }
+.fav-save-btn { background: color-mix(in srgb, var(--surface-strong) 80%, transparent); border: 1px solid var(--border); border-radius: 999px; font-size: 0.76rem; font-weight: 700; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 0.35rem; padding: 0.48rem 0.78rem; box-shadow: inset 0 1px 0 var(--inset-highlight); }
 .fav-save-btn:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); background: var(--surface-strong); }
 
 /* ── Quick Favorieten Chips ───────────────────────────────── */
@@ -68,7 +68,7 @@ textarea#food-input::placeholder { color: var(--tertiary); }
   font-family: var(--font-body); font-size: 0.76rem;
   cursor: pointer; color: var(--text); transition: all 0.15s;
   white-space: nowrap; max-width: 170px; overflow: hidden; text-overflow: ellipsis;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+  box-shadow: inset 0 1px 0 var(--inset-highlight);
 }
 .quick-fav-chip:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); color: var(--accent); background: var(--surface-strong); transform: translateY(-1px); }
 .quick-favs-empty { font-size: 0.75rem; color: var(--muted); font-style: italic; }
@@ -108,7 +108,7 @@ textarea#food-input::placeholder { color: var(--tertiary); }
   color: var(--muted);
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), var(--shadow-sm);
+  box-shadow: inset 0 1px 0 var(--inset-highlight), var(--shadow-sm);
   transition: color 0.15s, border-color 0.15s, transform 0.15s, background 0.15s;
 }
 .meal-fold-btn:hover {
