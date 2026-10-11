@@ -14,6 +14,7 @@ import { _renderDayUI } from '../ui/render.js';
 import { renderQuickFavs } from '../ui/misc.js';
 import { searchNevo } from '../products/database.js';
 import { buildMealItem } from '../products/matcher.js';
+import { parseIngredientAmount, nutritionPerUnit, scaleIngredient, sumIngredients } from './recipe-amounts.js';
 import { submit } from '../input/submit.js';
 import { openSmartImportPage } from '../pages/smart-import.js';
 
@@ -223,18 +224,49 @@ export async function addFavToMeal(idx) {
 /* ── Edit Favourite Modal ─────────────────────────────────── */
 let editFavIdx = null;
 
-function setEditFavRowNutrition(row, item) {
-  if (!row || !item) return;
-  row.dataset.kcal = item.kcal || 0;
-  row.dataset.carbs = item.koolhydraten_g || 0;
-  row.dataset.fiber = item.vezels_g || 0;
-  row.dataset.fat = item.vetten_g || 0;
-  row.dataset.prot = item.eiwitten_g || 0;
-  row.dataset.ml = item.ml || 0;
-  row.dataset.portie = item.portie || '';
-  row.dataset.gram = item._gram || '';
-  const kcalInput = row.querySelector('.editfav-si-kcal');
-  if (kcalInput) kcalInput.value = Math.round(item.kcal || 0);
+// Each ingredient row keeps its state on row._ing: { item, perUnit, unit }.
+function editFavRowHtml(item, siIdx) {
+  const { amount, unit } = parseIngredientAmount(item);
+  return `<div class="editfav-subitem" data-si="${siIdx}">
+    <div class="editfav-si-search">
+      <input type="text" class="editfav-si-naam" value="${esc(item.naam || '')}" placeholder="Zoek product…" autocomplete="off" aria-label="Ingrediënt">
+      <div class="editfav-si-dropdown"></div>
+    </div>
+    <label class="editfav-si-amount">
+      <input type="number" class="editfav-si-gram" value="${amount ?? ''}" min="0" step="any" inputmode="decimal" aria-label="Hoeveelheid">
+      <span class="editfav-si-unit">${unit}</span>
+    </label>
+    <span class="editfav-si-kcal">${Math.round(item.kcal || 0)} kcal</span>
+    <button type="button" class="item-delete" data-action="remove-subitem" title="Verwijder ingrediënt" aria-label="Verwijder ingrediënt">✕</button>
+  </div>`;
+}
+
+function initEditFavRow(row, item) {
+  const { amount, unit } = parseIngredientAmount(item);
+  row._ing = { item: { ...item }, perUnit: nutritionPerUnit(item, amount), unit };
+}
+
+function updateEditFavRow(row) {
+  const ing = row._ing;
+  if (!ing) return;
+  row.querySelector('.editfav-si-kcal').textContent = `${Math.round(ing.item.kcal || 0)} kcal`;
+  row.querySelector('.editfav-si-unit').textContent = ing.unit;
+}
+
+function readEditFavRows() {
+  return [...document.querySelectorAll('.editfav-subitem')]
+    .map(row => row._ing && { ...row._ing.item, naam: row.querySelector('.editfav-si-naam')?.value.trim() || row._ing.item.naam })
+    .filter(item => item && (item.naam || item.kcal));
+}
+
+function addEditFavIngredient() {
+  const container = document.getElementById('editfav-items-list');
+  if (!container) return;
+  const empty = { naam: '', kcal: 0, koolhydraten_g: 0, vezels_g: 0, vetten_g: 0, eiwitten_g: 0, ml: 0, portie: '100g' };
+  container.insertAdjacentHTML('beforeend', editFavRowHtml(empty, 'new'));
+  const row = container.lastElementChild;
+  initEditFavRow(row, empty);
+  row.querySelector('.editfav-si-naam')?.focus();
 }
 
 function renderEditFavSearchResults(row, query) {
@@ -273,16 +305,15 @@ function applyEditFavSearchSelection(row, resultIdx) {
   const result = results[resultIdx];
   if (!row || !result) return;
 
-  const currentGram = parseFloat(row.dataset.gram) || 100;
-  const currentPortie = row.dataset.portie || (currentGram === 100 ? '100g' : `${currentGram}g`);
-  const mapped = buildMealItem(result.n, result, currentGram, false);
-  mapped.portie = currentPortie;
-  mapped._gram = currentGram;
+  const amount = parseFloat(row.querySelector('.editfav-si-gram')?.value) || 100;
+  const mapped = buildMealItem(result.n, result, amount, false);
+  const { unit } = parseIngredientAmount(mapped);
+  row._ing = { item: scaleIngredient(mapped, nutritionPerUnit(mapped, amount), amount, unit), perUnit: nutritionPerUnit(mapped, amount), unit };
 
   const nameInput = row.querySelector('.editfav-si-naam');
   if (nameInput) nameInput.value = mapped.naam;
-  setEditFavRowNutrition(row, mapped);
   row.querySelector('.editfav-si-dropdown')?.classList.remove('open');
+  updateEditFavRow(row);
   recalcEditFavTotals();
 }
 
@@ -299,18 +330,10 @@ export function openEditFavModal(idx) {
 
   if (isRecipe) {
     // Show editable sub-items
-    container.innerHTML = `<label style="display:block;font-size:0.72rem;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem;margin-top:0.5rem">Ingrediënten</label>` +
-      f.items.map((si, i) => `<div class="editfav-subitem" data-si="${i}" data-kcal="${si.kcal || 0}" data-carbs="${si.koolhydraten_g || 0}" data-fiber="${si.vezels_g || 0}" data-fat="${si.vetten_g || 0}" data-prot="${si.eiwitten_g || 0}" data-ml="${si.ml || 0}" data-portie="${esc(si.portie || '')}" data-gram="${si._gram || ''}">
-        <div style="display:flex;gap:0.4rem;align-items:flex-start;margin-bottom:0.3rem">
-          <div class="editfav-si-search">
-            <input type="text" class="editfav-si-naam" value="${esc(si.naam || '')}" autocomplete="off" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:0.35rem 0.5rem;font-size:0.82rem;font-family:var(--font-body);background:var(--bg);color:var(--text)">
-            <div class="editfav-si-dropdown"></div>
-          </div>
-          <input type="number" class="editfav-si-kcal" value="${si.kcal || 0}" min="0" style="width:70px;border:1.5px solid var(--border);border-radius:6px;padding:0.35rem 0.5rem;font-size:0.82rem;text-align:right;font-family:var(--font-body);background:var(--bg);color:var(--text)" title="kcal">
-          <span style="font-size:0.7rem;color:var(--muted)">kcal</span>
-          <button class="item-delete" data-action="remove-subitem" title="Verwijder ingrediënt" style="font-size:0.8rem">✕</button>
-        </div>
-      </div>`).join('');
+    container.innerHTML = '<div class="editfav-items-head"><span>Ingrediënten</span><span>Hoeveelheid</span></div>'
+      + '<div id="editfav-items-list">' + f.items.map((si, i) => editFavRowHtml(si, i)).join('') + '</div>'
+      + '<button type="button" class="editfav-add-btn" data-action="add-subitem">+ Ingrediënt toevoegen</button>';
+    container.querySelectorAll('.editfav-subitem').forEach(row => initEditFavRow(row, f.items[Number(row.dataset.si)]));
     container.style.display = '';
   } else {
     container.innerHTML = '';
@@ -329,21 +352,12 @@ export function openEditFavModal(idx) {
 }
 
 export function recalcEditFavTotals() {
-  const items = document.querySelectorAll('.editfav-subitem');
-  let totalKcal = 0, totalCarbs = 0, totalFiber = 0, totalFat = 0, totalProt = 0;
-  items.forEach(el => {
-    const kcalVal = parseFloat(el.querySelector('.editfav-si-kcal')?.value);
-    totalKcal += Number.isFinite(kcalVal) ? kcalVal : (parseFloat(el.dataset.kcal) || 0);
-    totalCarbs += parseFloat(el.dataset.carbs) || 0;
-    totalFiber += parseFloat(el.dataset.fiber) || 0;
-    totalFat += parseFloat(el.dataset.fat) || 0;
-    totalProt += parseFloat(el.dataset.prot) || 0;
-  });
-  document.getElementById('editfav-kcal').value = Math.round(totalKcal);
-  document.getElementById('editfav-carbs').value = r1(totalCarbs);
-  document.getElementById('editfav-fiber').value = r1(totalFiber);
-  document.getElementById('editfav-fat').value = r1(totalFat);
-  document.getElementById('editfav-prot').value = r1(totalProt);
+  const totals = sumIngredients(readEditFavRows());
+  document.getElementById('editfav-kcal').value = totals.kcal;
+  document.getElementById('editfav-carbs').value = totals.koolhydraten_g;
+  document.getElementById('editfav-fiber').value = totals.vezels_g;
+  document.getElementById('editfav-fat').value = totals.vetten_g;
+  document.getElementById('editfav-prot').value = totals.eiwitten_g;
 }
 
 const FAV_MODAL_ACTIONS = {
@@ -367,6 +381,10 @@ export function initFavModalListeners() {
 
 export function initEditFavModalListeners() {
   document.getElementById('editfav-items-container')?.addEventListener('click', e => {
+    if (e.target.closest('[data-action="add-subitem"]')) {
+      addEditFavIngredient();
+      return;
+    }
     const btn = e.target.closest('[data-action="remove-subitem"]');
     if (!btn) return;
     btn.closest('.editfav-subitem').remove();
@@ -388,35 +406,8 @@ export function initEditFavModalListeners() {
 
     // Update sub-items if recipe
     if (f.isRecipe && f.items) {
-      const subEls = document.querySelectorAll('.editfav-subitem');
-      const newItems = [];
-      subEls.forEach((el, i) => {
-        const origItem = f.items[parseInt(el.dataset.si)] || {};
-        newItems.push({
-          ...origItem,
-          naam: el.querySelector('.editfav-si-naam')?.value.trim() || origItem.naam,
-          kcal: parseFloat(el.querySelector('.editfav-si-kcal')?.value) || 0,
-          koolhydraten_g: parseFloat(el.dataset.carbs) || 0,
-          vezels_g: parseFloat(el.dataset.fiber) || 0,
-          vetten_g: parseFloat(el.dataset.fat) || 0,
-          eiwitten_g: parseFloat(el.dataset.prot) || 0,
-          ml: parseFloat(el.dataset.ml) || 0,
-          portie: el.dataset.portie || origItem.portie,
-          _gram: parseFloat(el.dataset.gram) || origItem._gram,
-        });
-      });
-      f.items = newItems;
-
-      // Recalculate totals from sub-items
-      const totals = { kcal: 0, koolhydraten_g: 0, vezels_g: 0, vetten_g: 0, eiwitten_g: 0, ml: 0 };
-      for (const it of f.items) {
-        totals.kcal += it.kcal || 0;
-        totals.koolhydraten_g += it.koolhydraten_g || 0;
-        totals.vezels_g += it.vezels_g || 0;
-        totals.vetten_g += it.vetten_g || 0;
-        totals.eiwitten_g += it.eiwitten_g || 0;
-        totals.ml += it.ml || 0;
-      }
+      f.items = readEditFavRows();
+      const totals = sumIngredients(f.items);
       f.item = { naam: f.naam, portie: `${f.items.length} ingrediënten`, ...totals };
     }
 
@@ -456,8 +447,14 @@ export function initEditFavModalListeners() {
     if (e.target.classList.contains('editfav-si-naam')) {
       renderEditFavSearchResults(row, e.target.value);
     }
-    if (e.target.classList.contains('editfav-si-kcal')) {
-      row.dataset.kcal = e.target.value || '0';
+    if (e.target.classList.contains('editfav-si-gram') && row._ing) {
+      const amount = parseFloat(e.target.value);
+      if (!(amount >= 0)) return;
+      const ing = row._ing;
+      // A row saved with an unknown or zero amount has no per-unit values yet: keep its nutrition.
+      ing.item = scaleIngredient(ing.item, ing.perUnit, amount, ing.unit);
+      if (!ing.perUnit) ing.perUnit = nutritionPerUnit(ing.item, amount);
+      updateEditFavRow(row);
       recalcEditFavTotals();
     }
   });
