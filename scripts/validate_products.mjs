@@ -7,6 +7,12 @@
 //
 // The version is a hash of the items; the app compares it with its cached copy and
 // downloads the database again when it changed.
+//
+// Hand corrections live in data/product-corrections.json and are applied on every run, so
+// they survive rebuilding the database. Each entry matches on name (and brand if given):
+//   { "n": "Product", "b": "Merk", "set": { "k": 250, "e": 9 }, "note": "verpakking" }
+//   { "n": "Product", "verified": true, "note": "kcal klopt, ondanks afwijking" }
+//   { "n": "Product", "remove": true, "note": "dubbel / onzin" }
 
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -15,6 +21,8 @@ import { applyEnergyCheck, checkEnergy, macroEnergy } from '../src/products/nutr
 const checkOnly = process.argv.includes('--check');
 const filePath = process.argv.find(arg => arg.endsWith('.json')) || 'public/products.json';
 const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+const CORRECTIONS_PATH = 'data/product-corrections.json';
+const corrections = fs.existsSync(CORRECTIONS_PATH) ? JSON.parse(fs.readFileSync(CORRECTIONS_PATH, 'utf8')) : [];
 
 if (!Array.isArray(data.items) || !Array.isArray(data.groups)) {
   console.error('Expected { groups: [], items: [] }');
@@ -34,11 +42,24 @@ const clampNoise = item => {
   return next;
 };
 
-const stats = { total: data.items.length, kjFixed: 0, flagged: 0, removed: 0 };
+const norm = value => String(value || '').trim().toLowerCase();
+const correctionFor = item => corrections.find(c =>
+  norm(c.n) === norm(item.n) && (c.b === undefined || norm(c.b) === norm(item.b)));
+const usedCorrections = new Set();
+
+const stats = { total: data.items.length, kjFixed: 0, flagged: 0, removed: 0, corrected: 0 };
 const removed = [];
 const items = [];
 for (const original of data.items) {
-  const clamped = clampNoise(original);
+  const correction = correctionFor(original);
+  if (correction) usedCorrections.add(correction);
+  if (correction?.remove) {
+    removed.push(original);
+    continue;
+  }
+  const corrected = correction?.set ? { ...original, ...correction.set } : original;
+  if (correction?.set && JSON.stringify(corrected) !== JSON.stringify(original)) stats.corrected += 1;
+  const clamped = clampNoise(corrected);
   if (checkEnergy(clamped).status === 'kj') stats.kjFixed += 1;
   let item = applyEnergyCheck(clamped);
   // Still kJ-like (or above 900) after one conversion, with sane macros: the stated value is
@@ -47,6 +68,10 @@ for (const original of data.items) {
     const { w, ...rest } = item;
     item = { ...rest, k: Math.round(macroEnergy(item)) };
     stats.fromMacros = (stats.fromMacros || 0) + 1;
+  }
+  if (correction?.verified && item.w) {
+    const { w, ...rest } = item;
+    item = rest;
   }
   if (isBroken(item)) {
     removed.push(original);
@@ -65,7 +90,9 @@ console.log(`${filePath}: ${stats.total} items -> ${items.length}, version ${ver
 console.log(`  kJ-in-kcal corrected: ${stats.kjFixed}`);
 console.log(`  kcal derived from macros (unusable kcal): ${stats.fromMacros || 0}`);
 console.log(`  flagged as doubtful (kcal vs macros): ${stats.flagged}`);
-console.log(`  removed as unusable: ${stats.removed}`);
+console.log(`  removed: ${stats.removed}`);
+console.log(`  hand corrections applied: ${usedCorrections.size} of ${corrections.length}`);
+corrections.filter(c => !usedCorrections.has(c)).forEach(c => console.warn(`  ! correction matches no product: ${c.n}${c.b ? ` (${c.b})` : ''}`));
 removed.slice(0, 10).forEach(item => console.log(`    - ${JSON.stringify(item).slice(0, 120)}`));
 
 if (checkOnly) {

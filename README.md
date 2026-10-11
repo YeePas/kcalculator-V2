@@ -85,6 +85,33 @@ Daarna geldt:
 
 Gratis Supabase-projecten pauzeren na 7 dagen zonder databaseactiviteit. De workflow [.github/workflows/supabase-keepalive.yml](.github/workflows/supabase-keepalive.yml) doet daarom elke maandag en donderdag een kleine query. Hij gebruikt de bestaande secrets `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY`, en je kunt hem ook handmatig starten via de Actions-tab.
 
+## Productdatabase onderhouden
+
+`public/products.json` bevat de NEVO-tabel (RIVM) en Nederlandse producten uit OpenFoodFacts. Na elke wijziging aan dat bestand:
+
+```bash
+node scripts/validate_products.mjs
+```
+
+Dat script:
+
+- rekent kJ die in het kcal-veld staat om naar kcal, en vergelijkt kcal met de macro's (4 kcal/g koolhydraten en eiwit, 9 vet, 2 vezel). Twijfelgevallen krijgen `w: 1` en tonen een waarschuwing in de app. Alcohol en suikervrije producten zijn uitgezonderd.
+- verwijdert producten met onmogelijke waarden (bijv. meer dan 100 g macro per 100 g).
+- past de handmatige correcties uit `data/product-corrections.json` toe, zodat die een nieuwe opbouw van de database overleven.
+- zet een `version`. De app downloadt de database opnieuw zodra die versie verandert.
+
+De deploy draait `node scripts/validate_products.mjs --check` en stopt als het bestand niet is genormaliseerd.
+
+**Fouten melden en verbeteren:** gebruikers kunnen bij elk product op "Klopt niet?" tikken. In de beheerpagina (`/admin`, tab Issues) staat bij zo'n melding een knop die een correctieregel kopieert. Plak die in `data/product-corrections.json`, pas de waarden aan naar de verpakking en draai het script. Mogelijke regels:
+
+```json
+[
+  { "n": "Productnaam", "b": "Merk", "set": { "k": 250, "e": 9 }, "note": "verpakking" },
+  { "n": "Productnaam", "verified": true, "note": "klopt ondanks afwijking" },
+  { "n": "Productnaam", "remove": true, "note": "dubbel" }
+]
+```
+
 ## Omgevingsvariabelen
 
 Optioneel kun je tijdens build/deploy deze variabelen meegeven:

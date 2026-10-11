@@ -7,7 +7,7 @@ import { searchNevo, searchNevoHybrid, recordProductSearchChoice } from '../prod
 import { findPortie } from '../products/portions.js';
 import { buildMealItem } from '../products/matcher.js';
 import { isLiquidLike } from '../products/density.js';
-import { buildBugReportButton } from './bug-report.js';
+import { buildBugReportButton, buildProductReportButton } from './bug-report.js';
 import { ICON_SAVE } from './icons.js';
 import { buildAmountUnits, defaultUnitIndex, defaultCount, amountGrams, amountLabel, stepCount } from '../products/portion-amount.js';
 import { localData, currentDate, cfg } from '../state.js';
@@ -167,8 +167,9 @@ export function selectAcItem(idx) {
     <input type="hidden" id="ac-portie-gram">
     <div class="ac-per100">
       <strong>Per 100${useMl ? 'ml' : 'g'}:</strong> ${item.k} kcal · ${item.kh}g koolh · ${item.vz}g vezel · ${item.v}g vet · ${item.e}g eiwit
+      ${item._custom ? '' : buildProductReportButton(item)}
     </div>
-    ${item.w ? '<div class="ac-warn" role="note"><strong>Let op:</strong> de kcal past niet bij de macro\'s van dit product. Controleer de verpakking.</div>' : ''}
+    ${item.w ? '<div class="ac-warn" role="note"><strong>Let op:</strong> de kcal past niet bij de macro\'s van dit product. Controleer de verpakking, en meld het via "Klopt niet?" als het fout is.</div>' : ''}
   `;
   updateAcAmount();
   dd.classList.add('open');

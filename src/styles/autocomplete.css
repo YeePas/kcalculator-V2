@@ -112,3 +112,5 @@ body:has(.modal-overlay.open) .ac-dropdown {
 .ac-per100 { padding: 0 0.9rem 0.65rem; font-size: 0.72rem; color: var(--muted); }
 
 .ac-warn { margin: 0 0.9rem 0.75rem; padding: 0.5rem 0.7rem; border-radius: 10px; border: 1px solid color-mix(in srgb, #d99a1e 35%, transparent); background: color-mix(in srgb, #d99a1e 10%, transparent); color: var(--text); font-size: 0.74rem; line-height: 1.45; }
+.ac-report-link { margin-left: 0.35rem; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.ac-report-link:hover { color: var(--accent-hover); }

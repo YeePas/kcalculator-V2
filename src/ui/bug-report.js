@@ -5,6 +5,10 @@ import { ENABLE_BETA_BUG_REPORT } from '../constants.js';
 
 const LOCAL_ISSUE_KEY = 'kcalculator_issue_reports_local_v1';
 
+// Wrong product values can always be reported; other feedback only in the beta.
+const PRODUCT_CONTEXT = 'product-data';
+const isReportingEnabled = context => ENABLE_BETA_BUG_REPORT || context === PRODUCT_CONTEXT;
+
 function encodePayload(payload) {
   try {
     return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
@@ -22,7 +26,6 @@ function decodePayload(encoded) {
 }
 
 function ensureBugModal() {
-  if (!ENABLE_BETA_BUG_REPORT) return null;
   let modal = document.getElementById('bug-report-modal');
   if (modal) return modal;
 
@@ -81,7 +84,7 @@ function setStatus(message, cls = '') {
 let activePayload = null;
 
 export function buildBugReportButton(context, details = {}) {
-  if (!ENABLE_BETA_BUG_REPORT) return '';
+  if (!isReportingEnabled(context)) return '';
   const payload = {
     context,
     details,
@@ -94,8 +97,28 @@ export function buildBugReportButton(context, details = {}) {
   return `<button class="beta-bug-btn" data-bug-payload="${encoded}" title="Meld een bug voor dit onderdeel" aria-label="Meld bug">🐞</button>`;
 }
 
+// "Klopt niet?" link for a product's nutrition values (portion picker).
+export function buildProductReportButton(item) {
+  const encoded = encodePayload({
+    context: PRODUCT_CONTEXT,
+    details: {
+      product: item.n,
+      brand: item.b || null,
+      source: item.src || null,
+      offCode: item._offCode || null,
+      flagged: Boolean(item.w),
+      per100: { k: item.k, kh: item.kh, v: item.v, e: item.e, vz: item.vz },
+    },
+    date: currentDate,
+    meal: selMeal,
+    path: window.location.pathname,
+  });
+  if (!encoded) return '';
+  return `<button type="button" class="beta-bug-btn ac-report-link" data-bug-payload="${encoded}">Klopt niet?</button>`;
+}
+
 export function openGeneralFeedback(context = 'general-feedback', details = {}) {
-  if (!ENABLE_BETA_BUG_REPORT) return;
+  if (!isReportingEnabled(context)) return;
   const payload = encodePayload({
     context,
     details,
@@ -108,19 +131,31 @@ export function openGeneralFeedback(context = 'general-feedback', details = {}) 
 }
 
 export function openBugReportModal(encodedPayload) {
-  if (!ENABLE_BETA_BUG_REPORT) return;
+  const payload = decodePayload(encodedPayload) || { context: 'unknown', details: {} };
+  if (!isReportingEnabled(payload.context)) return;
   const modal = ensureBugModal();
   if (!modal) return;
-  activePayload = decodePayload(encodedPayload) || { context: 'unknown', details: {} };
+  activePayload = payload;
+  const isProduct = payload.context === PRODUCT_CONTEXT;
+  const title = document.getElementById('bug-report-title');
+  if (title) title.textContent = isProduct ? 'Productgegevens melden' : '💬 Feedback sturen';
 
   const contextEl = document.getElementById('bug-report-context');
   const messageEl = document.getElementById('bug-report-message');
   const severityEl = document.getElementById('bug-report-severity');
 
   if (contextEl) {
-    contextEl.textContent = `Onderdeel: ${activePayload.context || 'onbekend'}`;
+    const product = activePayload.details?.product;
+    contextEl.textContent = isProduct && product
+      ? `${product}${activePayload.details.brand ? ` (${activePayload.details.brand})` : ''}`
+      : `Onderdeel: ${activePayload.context || 'onbekend'}`;
   }
-  if (messageEl) messageEl.value = '';
+  if (messageEl) {
+    messageEl.value = '';
+    messageEl.placeholder = isProduct
+      ? 'Wat klopt er niet? Bijv: op de verpakking staat 250 kcal en 9 g eiwit per 100 g.'
+      : 'Bijv: de TDEE-import is onduidelijk, een knop staat niet logisch, of je mist een handige functie.';
+  }
   if (severityEl) severityEl.value = 'medium';
   setStatus('');
   modal.classList.add('open');
@@ -134,7 +169,7 @@ export function closeBugReportModal() {
 }
 
 export async function submitBugReport() {
-  if (!ENABLE_BETA_BUG_REPORT || !activePayload) return;
+  if (!activePayload || !isReportingEnabled(activePayload.context)) return;
   const messageEl = document.getElementById('bug-report-message');
   const severityEl = document.getElementById('bug-report-severity');
   const btn = document.getElementById('bug-report-submit-btn');

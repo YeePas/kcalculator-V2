@@ -1,5 +1,6 @@
 /* ── Admin Page ─────────────────────────────────────────── */
 
+import { buildCorrectionEntry } from '../products/corrections.js';
 import { authUser } from '../state.js';
 import { cfg } from '../state.js';
 import { sbHeaders } from '../supabase/config.js';
@@ -140,6 +141,7 @@ function renderIssuesList(issues) {
       ? JSON.stringify(issue.details, null, 2)
       : '';
     const nextAction = issue.status === 'resolved' ? 'open' : 'resolved';
+    const correction = issue.context === 'product-data' ? buildCorrectionEntry(issue) : null;
     const actionLabel = issue.status === 'resolved' ? 'Heropen' : 'Markeer opgelost';
 
     return `
@@ -157,6 +159,7 @@ function renderIssuesList(issues) {
           <span>${esc(issue.user_email_hint || issue.user_id || 'onbekende gebruiker')}</span>
           <span>${formatWhen(issue.created_at)}</span>
         </div>
+        ${correction ? `<button class="btn-secondary admin-correction-btn" data-admin-action="copy-correction" data-correction="${esc(JSON.stringify(correction))}">📋 Kopieer correctie voor product-corrections.json</button>` : ''}
         ${details ? `<details class="admin-issue-details"><summary>Details</summary><pre>${esc(details)}</pre></details>` : ''}
       </article>
     `;
@@ -595,6 +598,12 @@ export function initAdminListeners() {
 
     try {
       const action = btn.dataset.adminAction;
+      if (action === 'copy-correction') {
+        const text = JSON.stringify(JSON.parse(btn.dataset.correction), null, 2) + ',';
+        await navigator.clipboard?.writeText(text);
+        btn.textContent = '✓ Gekopieerd: plak in data/product-corrections.json en pas de waarden aan';
+        return;
+      }
       if (action === 'report-test-bug') {
         openGeneralFeedback('admin-report-test', {
           source: 'admin-page',
