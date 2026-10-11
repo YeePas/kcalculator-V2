@@ -35,3 +35,13 @@ describe('findPortie', () => {
     expect(sizes('Olijfolie')[0]).toBe('eetlepel 10');
   });
 });
+
+describe('findPortie bars and package servings', () => {
+  it('treats muesli and nut bars as bars, not muesli', () => {
+    expect(findPortie('AH Mueslireep hazelnoot').map(p => p.l || p.t)).toEqual(['reep', 'gram']);
+  });
+
+  it('labels the Open Food Facts serving as a portion from the package', () => {
+    expect(findPortie('AH Mueslireep hazelnoot', undefined, 25)[0]).toEqual({ t: 'portie', g: 25, l: 'portie (verpakking)' });
+  });
+});

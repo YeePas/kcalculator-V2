@@ -16,6 +16,9 @@
 //   { "n": "Product", "b": "Merk", "set": { "k": 250, "e": 9 }, "note": "verpakking" }
 //   { "n": "Product", "verified": true, "note": "kcal klopt, ondanks afwijking" }
 //   { "n": "Product", "remove": true, "note": "dubbel / onzin" }
+//   { "add": true, "n": "Product", "b": "Merk", "c": "barcode", "k": 367, "kh": 46, "v": 11,
+//     "e": 7.2, "vz": 24, "note": "bron" }   adds a product that is missing from the sources;
+//     skipped once a product with the same barcode (or name + brand) is in the database
 
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -46,7 +49,8 @@ const clampNoise = item => {
 };
 
 const norm = value => String(value || '').trim().toLowerCase();
-const correctionFor = item => corrections.find(c =>
+const additions = corrections.filter(c => c.add);
+const correctionFor = item => corrections.find(c => !c.add &&
   norm(c.n) === norm(item.n) && (c.b === undefined || norm(c.b) === norm(item.b)));
 const usedCorrections = new Set();
 
@@ -99,6 +103,29 @@ for (const original of data.items) {
 }
 stats.removed = removed.length;
 
+// Hand-added products, unless the sources now have them.
+const barcodeKey = code => String(code || '').replace(/^0+/, '');
+stats.added = 0;
+for (const addition of additions) {
+  const { add, note, ...fields } = addition;
+  const present = items.find(item =>
+    (fields.c && item.c && barcodeKey(item.c) === barcodeKey(fields.c))
+    || (norm(item.n) === norm(fields.n) && norm(item.b) === norm(fields.b)));
+  usedCorrections.add(addition);
+  if (present) {
+    // An earlier run's copy is fine; a product from the sources means the entry can go.
+    if (present.src !== 'manual') console.warn(`  ! source now has this product, addition can be removed: ${fields.n}`);
+    continue;
+  }
+  const item = applyEnergyCheck({ ...fields, src: 'manual' });
+  if (isBroken(item)) {
+    console.warn(`  ! addition has impossible values, skipped: ${fields.n}`);
+    continue;
+  }
+  items.push(item);
+  stats.added += 1;
+}
+
 const version = crypto.createHash('sha1').update(JSON.stringify(items)).digest('hex').slice(0, 12);
 const normalised = { version, groups: data.groups, items };
 const changed = JSON.stringify(normalised) !== JSON.stringify(data);
@@ -108,7 +135,7 @@ console.log(`  kJ-in-kcal corrected: ${stats.kjFixed}`);
 console.log(`  kcal derived from macros (unusable kcal): ${stats.fromMacros || 0}`);
 console.log(`  flagged as doubtful (kcal vs macros): ${stats.flagged}`);
 console.log(`  removed: ${stats.removed}`);
-console.log(`  hand corrections applied: ${usedCorrections.size} of ${corrections.length}`);
+console.log(`  hand corrections applied: ${usedCorrections.size} of ${corrections.length} (products added: ${stats.added})`);
 corrections.filter(c => !usedCorrections.has(c)).forEach(c => console.warn(`  ! correction matches no product: ${c.n}${c.b ? ` (${c.b})` : ''}`));
 removed.slice(0, 10).forEach(item => console.log(`    - ${JSON.stringify(item).slice(0, 120)}`));
 

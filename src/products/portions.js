@@ -181,6 +181,8 @@ export const PRODUCT_PORTIES = [
   [/\brijst\b/i,      [{ t:'portie', g:75, l:'portie (droog)' },{ t:'opscheplepel', g:50, l:'opscheplepel (gekookt)' },{ t:'gram', g:100 }]],
   [/\bpasta\b|\bspaghetti|\bmacaroni|\bpenne|\bfusilli|\btaglia/i, [{ t:'portie', g:85, l:'portie (droog)' },{ t:'gram', g:100 }]],
   [/\bhavermout|\boatmeal/i, [{ t:'portie', g:40, l:'portie' },{ t:'eetlepel', g:10, l:'eetlepel' },{ t:'gram', g:100 }]],
+  // Bars ("mueslireep", "notenreep"): the longer match wins over muesli/noten below.
+  [/\w*reep\b|\brepen\b/i, [{ t:'stuk', g:25, l:'reep' },{ t:'gram', g:100 }]],
   [/\bgranola|\bmuesli/i, [{ t:'portie', g:40, l:'portie' },{ t:'gram', g:100 }]],
   [/\bcouscous/i,      [{ t:'portie', g:60, l:'portie (droog)' },{ t:'gram', g:100 }]],
   [/\bquinoa/i,        [{ t:'portie', g:60, l:'portie (droog)' },{ t:'gram', g:100 }]],
@@ -211,7 +213,8 @@ export function findPortie(productName, groepId, servingGrams) {
 
   // 0) If product has serving size from OFF data, add it first
   if (servingGrams && servingGrams > 0 && servingGrams < 2000) {
-    result.push({ t:'portie', g: servingGrams, l: 'verpakking (' + servingGrams + 'g)' });
+    // Open Food Facts serving size: one portion as printed on the package, not the package.
+    result.push({ t:'portie', g: servingGrams, l: 'portie (verpakking)' });
   }
 
   // 1) Product-specifieke match: the rule that matches earliest in the name wins

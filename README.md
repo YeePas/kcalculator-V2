@@ -114,9 +114,14 @@ Voor automatische pull requests moet in GitHub aan staan: *Settings → Actions 
 [
   { "n": "Productnaam", "b": "Merk", "set": { "k": 250, "e": 9 }, "note": "verpakking" },
   { "n": "Productnaam", "verified": true, "note": "klopt ondanks afwijking" },
-  { "n": "Productnaam", "remove": true, "note": "dubbel" }
+  { "n": "Productnaam", "remove": true, "note": "dubbel" },
+  { "add": true, "n": "AH Mueslireep hazelnoot", "b": "Albert Heijn", "c": "8719587013007",
+    "k": 367, "kh": 46, "v": 11, "e": 7.2, "vz": 24, "su": 6.8, "vv": 1.1, "zo": 0.1, "sg": 25,
+    "note": "ah.nl; Open Food Facts heeft geen voedingswaarden" }
 ]
 ```
+
+Een `add`-regel voegt een product toe dat in de bronnen ontbreekt of daar geen voedingswaarden heeft. Zodra de bron het product zelf heeft (zelfde streepjescode of naam + merk), slaat het script de toevoeging over en meldt dat de regel weg kan. Waarden per 100 g; `sg` is één portie in gram. Beter nog: vul het product ook aan op [Open Food Facts](https://world.openfoodfacts.org), zodat iedereen er iets aan heeft.
 
 ## Omgevingsvariabelen
 
