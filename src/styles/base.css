@@ -1,7 +1,8 @@
 /* ── Reset & Base ──────────────────────────────────────────── */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-text-size-adjust: 100%; }
+/* No rubber-band bounce: on iOS it drags the fixed tab bar along */
+html { -webkit-text-size-adjust: 100%; overscroll-behavior-y: none; }
 body {
   font-family: var(--font-body);
   background:
@@ -22,6 +23,9 @@ body {
   position: relative;
   isolation: isolate;
   overflow-x: hidden;
+  /* clip, unlike hidden, does not make body a scroll container, which lets iOS move fixed elements */
+  overflow-x: clip;
+  overscroll-behavior-y: none;
 }
 body::before,
 body::after {
