@@ -8,6 +8,9 @@
 // The version is a hash of the items; the app compares it with its cached copy and
 // downloads the database again when it changed.
 //
+// NEVO items (src "rivm") are passed through untouched: the NEVO conditions of use only allow
+// the data in unchanged form. Checks, corrections and removals apply to the other sources.
+//
 // Hand corrections live in data/product-corrections.json and are applied on every run, so
 // they survive rebuilding the database. Each entry matches on name (and brand if given):
 //   { "n": "Product", "b": "Merk", "set": { "k": 250, "e": 9 }, "note": "verpakking" }
@@ -50,7 +53,21 @@ const usedCorrections = new Set();
 const stats = { total: data.items.length, kjFixed: 0, flagged: 0, removed: 0, corrected: 0 };
 const removed = [];
 const items = [];
+const isNevo = item => item.src === 'rivm';
+const restoredNevo = [];
 for (const original of data.items) {
+  if (isNevo(original)) {
+    // Undo an earlier run that still flagged NEVO items.
+    if (original.w) {
+      const { w, ...rest } = original;
+      items.push(rest);
+      restoredNevo.push(original.n);
+    } else {
+      items.push(original);
+    }
+    if (correctionFor(original)) console.warn(`  ! correction ignored, NEVO data may not be changed: ${original.n}`);
+    continue;
+  }
   const correction = correctionFor(original);
   if (correction) usedCorrections.add(correction);
   if (correction?.remove) {

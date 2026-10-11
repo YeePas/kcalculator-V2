@@ -130,7 +130,8 @@ export function selectAcItem(idx) {
 
   const dd = document.getElementById('ac-dropdown');
   const porties = findPortie(item.n, item.g, item.sg);
-  const badge = item._custom ? 'Eigen' : (item.b ? item.b : 'Database');
+  // NEVO data must be recognisable as such; everything else is an addition (OFF, own products).
+  const badge = item._custom ? 'Eigen' : item.src === 'rivm' ? 'NEVO 2025' : (item.b || 'OpenFoodFacts');
   const defaultGram = porties[0]?.g || 100;
   const bugBtn = buildBugReportButton('autocomplete-product', {
     product: item.n,
