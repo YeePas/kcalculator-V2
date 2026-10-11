@@ -147,7 +147,10 @@ function refreshMealFoldControls() {
   }
   btn.style.display = '';
   const allCollapsed = sections.every(sec => sec.classList.contains('collapsed'));
-  btn.textContent = allCollapsed ? '↕️ Alles uitklappen' : '↕️ Alles inklappen';
+  const label = allCollapsed ? 'Alles uitklappen' : 'Alles inklappen';
+  btn.classList.toggle('is-collapsed', allCollapsed);
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
 }
 
 export function toggleAllMealSections() {
