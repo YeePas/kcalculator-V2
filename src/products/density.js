@@ -2,9 +2,10 @@
 
 const SOLID_OVERRIDE_PATTERNS = [
   /\bstroopwafel/i,
-  /\b(?:op|in)\s+(?:water|olie|sap|siroop|zoetzuur)\b/i,
+  /\b(?:op|in)\s+(?:water|\w*olie|sap|siroop|zoetzuur|pekel|tomatensaus)\b/i,
   /\bein\s+eigen\s+sap\b/i,
   /\bwaterijs\b/i,
+  /augurk/i,
 ];
 
 const LIQUID_LIKE_PATTERN = /\bwater\b|\bthee\b|\bkoffie\b|\bespresso\b|\bcappuccino\b|\blatte\b|\bcola\b|\bpepsi\b|\bfanta\b|\bsprite\b|\bfrisdrank\b|\benergy\b|red\s*bull|\bmonster\b|\bsap\b|\bsmoothie\b|\blimonade\b|\branja\b|\bmelk\b|\bkarnemelk\b|\bchocomel\b|\bfristi\b|\bdrinkyoghurt\b|\byoghurtdrank\b|\bzuiveldrank\b|\bkwarkdrank\b|\bsojadrink\b|\bhavermelk\b|\bamandelmelk\b|\brijstdrink\b|\bwijn\b|\bbier\b|\bbubbels\b|\bcocktail\b|\bvla\b|\bpudding\b|\bcustard\b|pap\b|olie\b|\bolijfolie\b|\bzonnebloemolie\b|\bbouillon\b|\bsoep\b|\bsaus\b|jus\b|\bsiroop\b|\bstroop\b/i;

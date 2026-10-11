@@ -85,6 +85,13 @@ def main() -> None:
             item["m"] = micros
         items.append(item)
 
+    # The app's portion table (GROEP_PORTIES in src/products/portions.js) is keyed by the
+    # index in the alphabetically sorted group list, so keep that order.
+    order = sorted(groups)
+    for item in items:
+        item["g"] = order.index(groups[item["g"]])
+    groups = order
+
     version = rows[0]["NEVO-versie/NEVO-version"].strip() if rows else ""
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"source": SOURCE, "version": version, "groups": groups, "items": items},

@@ -90,6 +90,8 @@ export const PRODUCT_PORTIES = [
   [/\bsperzieboon|\bsperziebonen/i, [{ t:'portie', g:150, l:'portie' },{ t:'gram', g:100 }]],
   [/\bradijs/i,        [{ t:'stuk', g:8, l:'radijsje' },{ t:'handje', g:50, l:'handje' },{ t:'gram', g:100 }]],
   [/\bpompoen\b/i,    [{ t:'portie', g:200, l:'portie' },{ t:'gram', g:100 }]],
+  [/\baugurkje|\bcornichon|\b(?:cocktail|mini)\s*augurk/i, [{ t:'stuk', g:8, l:'augurkje' },{ t:'handje', g:40, l:'handje' },{ t:'gram', g:100 }]],
+  [/augurk/i,          [{ t:'stuk', g:40, l:'augurk' },{ t:'plakjes', g:20, l:'eetlepel plakjes' },{ t:'gram', g:100 }]],
   [/\bolijf\b|\bolijven\b/i, [{ t:'stuk', g:4, l:'olijf' },{ t:'handje', g:30, l:'handje' },{ t:'gram', g:100 }]],
   [/\bmaïs\b|\bmais\b/i, [{ t:'kolf', g:200, l:'kolf' },{ t:'opscheplepel', g:50, l:'opscheplepel' },{ t:'gram', g:100 }]],
 
@@ -127,6 +129,9 @@ export const PRODUCT_PORTIES = [
   [/\bgehakt\b/i,     [{ t:'portie', g:100, l:'portie' },{ t:'gram', g:100 }]],
   [/\bzalm\b/i,       [{ t:'portie', g:125, l:'portie' },{ t:'gram', g:100 }]],
   [/\bkabeljauw|\bvis\b/i, [{ t:'portie', g:125, l:'portie' },{ t:'gram', g:100 }]],
+  // Canned fish: a drained tin, not the oil it is packed in
+  [/\btonijn/i,        [{ t:'blik', g:110, l:'blikje (uitgelekt)' },{ t:'portie', g:50, l:'portie (op brood)' },{ t:'gram', g:100 }]],
+  [/\bsardine|\bmakreel|\bansjovis/i, [{ t:'blik', g:90, l:'blikje (uitgelekt)' },{ t:'stuk', g:25, l:'visje' },{ t:'gram', g:100 }]],
   [/\bgarnaal|\bgarnalen/i, [{ t:'portie', g:100, l:'portie' },{ t:'handje', g:40, l:'handje' },{ t:'gram', g:100 }]],
   [/\bworstje|\bworst\b/i, [{ t:'stuk', g:75, l:'worstje' },{ t:'gram', g:100 }]],
 
@@ -175,7 +180,8 @@ export const PRODUCT_PORTIES = [
   [/\bketchup/i,       [{ t:'eetlepel', g:15, l:'eetlepel' },{ t:'gram', g:100 }]],
   [/\bmosterd/i,       [{ t:'theelepel', g:5, l:'theelepel' },{ t:'gram', g:100 }]],
   [/\bsojasaus/i,      [{ t:'eetlepel', g:15, l:'eetlepel' },{ t:'gram', g:100 }]],
-  [/\bolijfolie|\bolie\b/i, [{ t:'eetlepel', g:10, l:'eetlepel' },{ t:'gram', g:100 }]],
+  // Not for products packed in oil ("Tonijn in olijfolie")
+  [/(?<!\b(?:in|op)\s+\w*)\b\w*olie\b/i, [{ t:'eetlepel', g:10, l:'eetlepel' },{ t:'gram', g:100 }]],
 
   // ═══ GRAAN & PASTA ═══
   [/\brijst\b/i,      [{ t:'portie', g:75, l:'portie (droog)' },{ t:'opscheplepel', g:50, l:'opscheplepel (gekookt)' },{ t:'gram', g:100 }]],
