@@ -64,3 +64,17 @@ describe('matcher recipe aliases', () => {
     expect(matchItemToNevo({ foodName: 'lichtbruine basterdsuiker' })?.n).toMatch(/basterd/i);
   });
 });
+
+describe('buildMealItem micronutrients', () => {
+  it('scales NEVO micronutrients to the portion', async () => {
+    const { buildMealItem } = await import('../../src/products/matcher.js');
+    const milk = { n: 'Melk halfvolle', k: 45, kh: 4.7, v: 1.4, e: 3.4, vz: 0, m: { ca: 123, b12: 0.45, vitd: 0 } };
+    const item = buildMealItem('Kaas jong', milk, 200, false);
+    expect(item._micro).toEqual({ calcium_mg: 246, vitamine_b12_ug: 0.9, vitamine_d_ug: 0 });
+  });
+
+  it('leaves products without micronutrients alone', async () => {
+    const { buildMealItem } = await import('../../src/products/matcher.js');
+    expect(buildMealItem('Iets', { k: 100, kh: 10, v: 1, e: 1, vz: 0 }, 100, false)._micro).toBeUndefined();
+  });
+});

@@ -157,7 +157,14 @@ export function initEditModalListeners() {
     const gram = parseFloat(document.getElementById('edit-gram').value) || 100;
     const targetMeal = document.getElementById('edit-move-meal').value || fromMeal;
     item.naam = document.getElementById('edit-naam').value.trim() || item.naam;
+    // Measured micronutrients follow the new amount.
+    if (item._micro && editBaseGram > 0) {
+      const ratio = gram / editBaseGram;
+      item._micro = Object.fromEntries(Object.entries(item._micro).map(([key, val]) => [key, Math.round(val * ratio * 100) / 100]));
+    }
     item.portie = `${Math.round(gram)}g`;
+    // Keep _gram in step with the portion: the next edit derives per-100 g values from it.
+    item._gram = gram;
     item.kcal = parseFloat(document.getElementById('edit-kcal').value) || 0;
     item.koolhydraten_g = parseFloat(document.getElementById('edit-carbs').value) || 0;
     item.vezels_g = parseFloat(document.getElementById('edit-fiber').value) || 0;

@@ -104,6 +104,13 @@ export function estimateMicroHeuristic(items) {
   for (const key of Object.keys(RDA)) totals[key] = 0;
 
   for (const item of items) {
+    // Measured NEVO values (stored on the item when it was added) beat the estimate below.
+    if (item._micro) {
+      for (const [key, val] of Object.entries(item._micro)) {
+        if (key in totals) totals[key] += val;
+      }
+      continue;
+    }
     const name = (item.naam || '').toLowerCase();
     const gram = estimateGram(item);
     const factor = gram / 100;

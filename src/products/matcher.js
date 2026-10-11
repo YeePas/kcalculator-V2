@@ -216,13 +216,31 @@ export function resolveGram(parsedItem, nevoMatch) {
 }
 
 // ── Build meal item from match ────────────────────────────
+// NEVO micronutrient keys (per 100 g, data/nevo-2025.json) -> keys used by the Micro page.
+const NEVO_MICRO_KEYS = {
+  vitd: 'vitamine_d_ug', fe: 'ijzer_mg', ca: 'calcium_mg', b12: 'vitamine_b12_ug',
+  vitc: 'vitamine_c_mg', zn: 'zink_mg', mg: 'magnesium_mg', fol: 'foliumzuur_ug',
+};
+
+function scaleMicros(micros, factor) {
+  const result = {};
+  for (const [key, value] of Object.entries(micros || {})) {
+    if (NEVO_MICRO_KEYS[key] && Number.isFinite(value)) {
+      result[NEVO_MICRO_KEYS[key]] = Math.round(value * factor * 100) / 100;
+    }
+  }
+  return Object.keys(result).length ? result : null;
+}
+
 export function buildMealItem(naam, src, gram, isDrink) {
   const useMl = isLiquidLike(naam, isDrink);
   const macroGram = toMacroGram(gram, useMl, naam);
   const factor = macroGram / 100;
   const roundedAmount = Math.round(gram);
   const density = resolveDensityForName(naam);
+  const micros = scaleMicros(src.m, factor);
   return {
+    ...(micros ? { _micro: micros } : {}),
     naam,
     kcal: Math.round((src.k || 0) * factor),
     koolhydraten_g: r1((src.kh || 0) * factor),

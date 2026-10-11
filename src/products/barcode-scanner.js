@@ -1,5 +1,6 @@
 /* ── Barcode Scanner ──────────────────────────────────────── */
 
+import { nevoData } from '../state.js';
 import { mapOffApiProduct } from './database.js';
 
 let scannerInstance = null;
@@ -94,8 +95,24 @@ async function startLibraryScanner(container, statusEl, onProductFound) {
   );
 }
 
+// Products in the bundled database carry their barcode (c); a hit there is instant, works
+// offline and has already been through the energy check.
+export function findLocalProductByBarcode(code, items = nevoData?.items || []) {
+  const wanted = String(code || '').replace(/^0+/, '');
+  if (!wanted) return null;
+  return items.find(item => item.c && String(item.c).replace(/^0+/, '') === wanted) || null;
+}
+
 async function handleBarcode(code, statusEl, onProductFound) {
   if (statusEl) statusEl.textContent = `Barcode ${code} gevonden, product opzoeken\u2026`;
+
+  const local = findLocalProductByBarcode(code);
+  if (local) {
+    if (statusEl) statusEl.textContent = `Gevonden: ${local.n}`;
+    closeBarcodeScanner();
+    if (onProductFound) onProductFound({ ...local, _group: local.b || 'Open Food Facts' });
+    return;
+  }
 
   try {
     const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);
