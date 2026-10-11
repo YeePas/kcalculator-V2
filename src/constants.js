@@ -46,10 +46,14 @@ export const PROVIDER_MODELS = {
   gemini: [
     { id: 'gemini-2.5-flash', label: '2.5 Flash (snel)', name: 'Gemini Flash (gratis)', hint: 'Gemini 2.5 Flash — gratis' },
     { id: 'gemini-2.5-pro', label: '2.5 Pro (slim)', name: 'Gemini Pro', hint: 'Gemini 2.5 Pro — betaald, slimmer' },
+    // Gemini 2.5 is only served to accounts that used it before; new keys need 3.x.
+    { id: 'gemini-3.6-flash', label: '3.6 Flash (nieuw)', name: 'Gemini 3.6 Flash (nieuw)', hint: 'Gemini 3.6 Flash — nieuw, voor nieuwe sleutels' },
   ],
   openai: [
     { id: 'gpt-4o-mini', label: 'GPT-4o mini (snel)', name: 'GPT-4o mini', hint: 'GPT-4o mini — goedkoop' },
     { id: 'gpt-4o', label: 'GPT-4o (slim)', name: 'GPT-4o', hint: 'GPT-4o — slimmer, ~6× duurder' },
+    { id: 'gpt-6-luna', label: 'GPT-6 Luna (nieuw)', name: 'GPT-6 Luna (nieuw)', hint: 'GPT-6 Luna — nieuw, goedkoopst' },
+    { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol (nieuw)', name: 'GPT-6.1 Sol (nieuw)', hint: 'GPT-6.1 Sol — nieuw, slimmer' },
   ],
 };
 

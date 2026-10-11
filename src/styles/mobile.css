@@ -77,8 +77,6 @@
   /* Bigger portie quick-select buttons */
   .ac-portie-quicks { gap: 0.4rem; padding: 0.6rem 0.9rem 0.2rem; }
   .ac-portie-quick { padding: 0.5rem 0.8rem; font-size: 0.82rem; min-height: 38px; border-radius: var(--radius-sm); }
-  .ac-portie-manual { padding: 0.4rem 0.9rem 0.6rem; }
-  .ac-portie-input { font-size: 1rem; padding: 0.5rem; min-height: 38px; }
   .ac-portie-add { min-height: 38px; min-width: 44px; font-size: 1.1rem; }
   .match-portie-input,
   .smart-recipe-grams-input,

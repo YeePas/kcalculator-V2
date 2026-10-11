@@ -78,36 +78,50 @@ async function getUserStoredKey(provider: string, authHeader: string) {
   return decryptApiKey(encryptionSecret, row.encrypted_key, row.iv);
 }
 
-async function callGemini(model: string, key: string, prompt: string, maxTokens: number) {
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+// Gemini 3.x thinks by default and thought tokens count towards maxOutputTokens; keep it
+// light for these short tasks. Gemini 2.5 keeps its original request.
+function geminiGenerationConfig(model: string, maxTokens: number, withThinking = true) {
+  const config: Record<string, unknown> = { maxOutputTokens: maxTokens, temperature: 0.2 };
+  if (withThinking && /^gemini-3/.test(model)) config.thinkingConfig = { thinkingLevel: 'low' };
+  return config;
+}
+
+// Retries once without thinkingConfig when the API rejects that field.
+async function geminiRequest(model: string, key: string, parts: unknown[], maxTokens: number) {
+  const send = (withThinking: boolean) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2 },
-    }),
+    body: JSON.stringify({ contents: [{ parts }], generationConfig: geminiGenerationConfig(model, maxTokens, withThinking) }),
   });
-  const payload = await response.json().catch(() => ({}));
+  let response = await send(true);
+  let payload = await response.json().catch(() => ({}));
+  if (!response.ok && response.status === 400 && /thinking/i.test(payload?.error?.message || '') && /^gemini-3/.test(model)) {
+    response = await send(false);
+    payload = await response.json().catch(() => ({}));
+  }
   if (!response.ok) {
     throw new Error(payload?.error?.message || `Gemini fout (${response.status})`);
   }
-  return payload?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  // Skip thought parts; return the answer text.
+  const answer = (payload?.candidates?.[0]?.content?.parts || []).filter((part: { thought?: boolean }) => !part?.thought);
+  return answer.map((part: { text?: string }) => part?.text || '').join('');
+}
+
+async function callGemini(model: string, key: string, prompt: string, maxTokens: number) {
+  return geminiRequest(model, key, [{ text: prompt }], maxTokens);
 }
 
 async function callGeminiVision(model: string, key: string, prompt: string, maxTokens: number, imageData: string, imageMimeType: string) {
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ inlineData: { mimeType: imageMimeType, data: imageData } }, { text: prompt }] }],
-      generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2 },
-    }),
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload?.error?.message || `Gemini fout (${response.status})`);
+  return geminiRequest(model, key, [{ inlineData: { mimeType: imageMimeType, data: imageData } }, { text: prompt }], maxTokens);
+}
+
+// GPT-4o keeps its original parameters. Newer (reasoning) models take max_completion_tokens,
+// which also covers their reasoning tokens, and reasoning_effort instead of temperature.
+function openAIParams(model: string, maxTokens: number, temperature?: number) {
+  if (/^gpt-4/.test(model)) {
+    return temperature === undefined ? { max_tokens: maxTokens } : { max_tokens: maxTokens, temperature };
   }
-  return payload?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return { max_completion_tokens: maxTokens, reasoning_effort: 'low' };
 }
 
 async function callOpenAI(model: string, key: string, system: string | null, user: string, maxTokens: number) {
@@ -119,8 +133,7 @@ async function callOpenAI(model: string, key: string, system: string | null, use
     },
     body: JSON.stringify({
       model,
-      max_tokens: maxTokens,
-      temperature: 0.2,
+      ...openAIParams(model, maxTokens, 0.2),
       messages: system
         ? [{ role: 'system', content: system }, { role: 'user', content: user }]
         : [{ role: 'user', content: user }],
@@ -142,7 +155,7 @@ async function callOpenAIVision(model: string, key: string, user: string, maxTok
     },
     body: JSON.stringify({
       model,
-      max_tokens: maxTokens,
+      ...openAIParams(model, maxTokens),
       messages: [{
         role: 'user',
         content: [

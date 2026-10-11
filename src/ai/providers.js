@@ -118,17 +118,3 @@ export async function claudeCall(prompt, maxTokens = 1400) {
   }
 }
 
-/**
- * Update the inline model select dropdown.
- */
-export function updateInlineModelSelect(provider) {
-  const providerOptions = Object.fromEntries(
-    Object.entries(PROVIDER_MODEL_LIST).map(([p, models]) => [p, models.map(m => ({ value: m.id, label: m.hint }))])
-  );
-  const sel = document.getElementById('inline-model-select');
-  if (!sel) return;
-  const models = providerOptions[provider] || [];
-  sel.innerHTML = models.map(m => `<option value="${m.value}">${m.label}</option>`).join('');
-  const resolvedModel = resolveModel(provider, cfg.model);
-  if (models.some(m => m.value === resolvedModel)) sel.value = resolvedModel;
-}

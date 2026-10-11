@@ -6,7 +6,6 @@ import { isLocalDevHost, loadSessionAiKeys, saveCfg, saveSessionAiKey } from '..
 import { setAuthUser } from '../supabase/auth.js';
 import { fetchUserAiKeyStatuses, saveUserAiKey } from '../supabase/user-ai-keys.js';
 import { SUPERMARKET_OPTIONS, normalizeSupermarketFilters } from '../products/supermarket-filter.js';
-import { updateInlineModelSelect } from '../ai/providers.js';
 import { openAdminPage } from '../pages/admin.js';
 
 export const ALLOW_REGISTRATION = ['true', '1', 'yes', 'on'].includes(String(import.meta.env.VITE_ALLOW_REGISTRATION || '').toLowerCase());
@@ -264,7 +263,6 @@ export function setProviderUI(provider) {
   const radio = document.querySelector(`input[name="default-ai-provider"][value="${provider}"]`);
   if (radio) radio.checked = true;
   syncAiProviderCardSelection();
-  updateInlineModelSelect(provider);
 }
 
 export function setSmartImportProviderUI(provider) {

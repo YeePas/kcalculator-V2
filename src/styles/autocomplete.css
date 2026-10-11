@@ -3,7 +3,6 @@
 .ac-portie-quicks { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.5rem 0.9rem 0; }
 .ac-portie-quick { background: var(--border-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: 0.75rem; color: var(--text); cursor: pointer; font-family: var(--font-body); transition: all 0.15s; }
 .ac-portie-quick:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
-.ac-portie-manual { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; }
 
 /* ── Database Autocomplete ────────────────────────────────── */
 
@@ -50,19 +49,6 @@ body:has(.modal-overlay.open) .ac-dropdown {
   background: var(--green); color: white; font-size: 0.6rem;
   padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600;
 }
-.ac-portie-row {
-  display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.9rem;
-  background: var(--accent-light); border-bottom: 1px solid var(--border);
-  font-size: 0.82rem;
-}
-.ac-portie-row label { color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
-.ac-portie-input {
-  width: 60px; border: 1.5px solid var(--border); border-radius: 6px;
-  padding: 0.3rem 0.5rem; font-size: 0.85rem; text-align: center;
-  background: var(--surface); color: var(--text);
-}
-.ac-portie-input:focus { outline: none; border-color: var(--accent); }
-.ac-portie-unit { color: var(--muted); font-size: 0.75rem; }
 .ac-portie-add {
   margin-left: auto; background: var(--accent); color: white;
   border: none; border-radius: 6px; padding: 0.3rem 0.8rem;

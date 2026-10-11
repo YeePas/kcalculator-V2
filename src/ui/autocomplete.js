@@ -228,11 +228,6 @@ function currentAmountLabel() {
   return amountLabel(acAmount.count, acAmount.units[acAmount.unitIdx], acAmount.useMl);
 }
 
-export function setPortie(gram, label) {
-  document.getElementById('ac-portie-gram').value = gram;
-  addNevoItem(label);
-}
-
 export function addNevoItem(portieLabel) {
   if (!acSelectedItem) return;
 
