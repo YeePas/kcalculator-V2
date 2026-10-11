@@ -368,33 +368,33 @@ body {
     <div class="card-grid">
       <div class="card">
         <div class="card-title"><span class="emoji">🟢</span> Gemini</div>
-        <p><strong>Gratis instapoptie.</strong> In Kcalculator staat Gemini 2.5 Flash als gratis provider genoemd. Handig om te testen en voor lichtere taken.</p>
+        <p><strong>Gratis instapoptie.</strong> Standaard gebruikt Kcalculator <strong>Gemini 3.6 Flash</strong>; met een gratis key uit Google AI Studio kun je meteen aan de slag. Gemini 2.5 Pro is alleen nog beschikbaar voor accounts die het eerder gebruikten.</p>
         <p><a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer">API key aanmaken</a><br><a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener noreferrer">Officiële pricing</a></p>
       </div>
       <div class="card">
         <div class="card-title"><span class="emoji">⚪</span> OpenAI</div>
-        <p><strong>Betaald.</strong> In Kcalculator gebruik je meestal GPT-4o mini of GPT-4o. Dit werkt vaak sterk voor Slimme Import en uitgebreidere analyses.</p>
+        <p><strong>Betaald.</strong> Kies tussen <strong>GPT-6 Luna</strong> (snel en goedkoop, standaard) en <strong>GPT-6.1 Sol</strong> (slimmer). Werkt sterk voor Slimme Import en uitgebreidere analyses.</p>
         <p><a href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key" target="_blank" rel="noopener noreferrer">API key aanmaken</a><br><a href="https://openai.com/api/pricing" target="_blank" rel="noopener noreferrer">Officiële pricing</a></p>
       </div>
       <div class="card">
         <div class="card-title"><span class="emoji">🟠</span> Claude</div>
-        <p><strong>Betaald.</strong> In Kcalculator gebruik je meestal Claude Haiku 4.5 of Sonnet 4.5. Deze werken vaak erg goed voor avondeten en Slimme Import.</p>
+        <p><strong>Betaald.</strong> Kies tussen <strong>Claude Haiku 5.5</strong> (snel en goedkoop, standaard) en <strong>Sonnet 5.5</strong> (slimmer). Werkt erg goed voor avondeten en Slimme Import.</p>
         <p><a href="https://docs.anthropic.com/en/docs/quickstart" target="_blank" rel="noopener noreferrer">API key / quickstart</a><br><a href="https://www.anthropic.com/pricing" target="_blank" rel="noopener noreferrer">Officiële pricing</a></p>
       </div>
     </div>
     <div class="tip"><strong>Kostenindicatie:</strong> onderstaande bedragen zijn grove schattingen voor een normale tekst-call in Kcalculator. Eenvoudige acties kosten meestal minder dan 1 cent, maar foto-analyse, URL-import en lange dag- of weekanalyses kunnen hoger uitvallen doordat er meer input en output wordt verwerkt.</div>
     <div class="card-grid">
       <div class="card">
-        <div class="card-title"><span class="emoji">💸</span> Gemini 2.5 Flash</div>
-        <p>Gratis tier beschikbaar via Google AI Studio. Op de betaalde tier is een eenvoudige call vaak nog steeds ruim onder de 1 cent.</p>
+        <div class="card-title"><span class="emoji">💸</span> Gemini</div>
+        <p>Gratis tier beschikbaar via Google AI Studio. Op de betaalde tier blijft een eenvoudige call met Flash meestal ruim onder de 1 cent.</p>
       </div>
       <div class="card">
         <div class="card-title"><span class="emoji">💸</span> OpenAI</div>
-        <p><strong>GPT-4o mini:</strong> vaak minder dan $0.001 per simpele call.<br><strong>GPT-4o:</strong> vaak rond de $0.01 voor een vergelijkbare call.</p>
+        <p><strong>GPT-6 Luna:</strong> een simpele call kost meestal een fractie van een cent.<br><strong>GPT-6.1 Sol:</strong> zo'n 20× duurder per call; kies hem voor lastige taken.</p>
       </div>
       <div class="card">
         <div class="card-title"><span class="emoji">💸</span> Claude</div>
-        <p><strong>Haiku 4.5:</strong> vaak rond de $0.004 tot $0.005 per simpele call.<br><strong>Sonnet 4.5:</strong> vaak rond de $0.01 tot $0.02 per simpele call.</p>
+        <p><strong>Haiku 5.5:</strong> een simpele call kost meestal minder dan 1 cent.<br><strong>Sonnet 5.5:</strong> zo'n 20× duurder per call; kies hem voor lastige taken.</p>
       </div>
     </div>
   </div>
@@ -448,9 +448,11 @@ body {
     <ol class="steps">
       <li>Klik op een maaltijdtype om het invoerveld te openen.</li>
       <li>Begin met typen — de <strong>autocomplete</strong> zoekt in de RIVM/NEVO- en Open Food Facts-database.</li>
-      <li>Selecteer een product en pas de <strong>hoeveelheid</strong> aan (in grammen of porties).</li>
-      <li>Het item verschijnt in je maaltijdlijst met automatisch berekende macro's.</li>
+      <li>Selecteer een product. Bovenaan zie je de bron: <strong>NEVO 2025</strong>, het merk, of <strong>OpenFoodFacts</strong>.</li>
+      <li>Kies de <strong>hoeveelheid</strong>: zet het aantal met <strong>−</strong> en <strong>+</strong> en kies een eenheid, zoals <em>snee</em>, <em>stuk</em>, <em>handje</em>, <em>eetlepel</em> of een maat (<em>kleine</em>, <em>appel</em>, <em>grote</em>). Met <em>gram</em> (of <em>ml</em> bij dranken) vul je het precies in.</li>
+      <li>Tik op <strong>Toevoegen</strong>. Het item verschijnt in je maaltijdlijst met automatisch berekende macro's.</li>
     </ol>
+    <div class="tip"><strong>Klopt een product niet?</strong> Tik onder de voedingswaarden op <em>Klopt niet?</em> om het te melden. Staat er een waarschuwing bij een product, dan lijken de waarden van de fabrikant niet te kloppen; controleer ze dan even op de verpakking.</div>
     <p>Je kunt simpel invoeren, maar het werkt meestal het beste als je losse onderdelen met een komma scheidt. Denk bijvoorbeeld aan <strong>"kwark, een handje druiven, een halve banaan"</strong> of <strong>"boterham, kaas"</strong>. De app kan vaak ook natuurlijke invoer aan zoals <strong>"kwark met een handje druiven en een halve banaan"</strong>, maar met komma's is de kans op een goede match meestal het grootst.</p>
     <div class="card-grid">
       <div class="card">
@@ -475,7 +477,7 @@ body {
       <li>De huidige dag neemt dan alle maaltijden van die bron-dag over.</li>
     </ol>
     <div class="tip"><strong>Let op:</strong> Als er al maaltijden op de huidige dag staan, vraagt de app eerst om bevestiging voordat die worden vervangen.</div>
-    <div class="tip"><strong>Tip:</strong> Tik op een item om het te bewerken — je kunt de hoeveelheid, macro's en het maaltijdtype aanpassen. Veeg of klik op het prullenbak-icoon om te verwijderen.</div>
+    <div class="tip"><strong>Tip:</strong> Tik op het potlood-icoon bij een item om het te bewerken: je kunt de hoeveelheid, macro's en het maaltijdtype aanpassen. Met het prullenbak-icoon verwijder je het.</div>
   </div>
 </section>
 
@@ -492,7 +494,7 @@ body {
   <div class="section-body">
     <p>Sla veelgebruikte producten en complete maaltijden op als favoriet voor snelle invoer.</p>
     <ol class="steps">
-      <li><strong>Enkel product opslaan</strong> — Tik op het hart-icoon bij een item om het als favoriet te bewaren.</li>
+      <li><strong>Enkel product opslaan</strong> — Tik op het ster-icoon bij een item om het als favoriet te bewaren.</li>
       <li><strong>Recept aanmaken</strong> — Combineer meerdere items tot een maaltijdgroep (bijv. "Pasta Bolognese") en sla het geheel op.</li>
       <li><strong>Snel toevoegen</strong> — Open het favorieten-paneel en tik op een favoriet om het direct aan je huidige maaltijd toe te voegen.</li>
     </ol>
@@ -503,6 +505,13 @@ body {
       <li>Vink minimaal twee items aan die samen je gerecht vormen.</li>
       <li>Tik op <strong>🍽️ Opslaan als gerecht</strong> en geef het gerecht een naam.</li>
       <li>Daarna verschijnt het tussen je favoriete gerechten, zodat je het later snel opnieuw kunt toevoegen.</li>
+    </ol>
+    <p><strong>Gerechten en producten beheren</strong></p>
+    <ol class="steps">
+      <li>Open <strong>Slimme Import → 📦 Beheer</strong> (of <em>Instellingen → Open in Beheer</em>). Eigen producten, eigen gerechten en favorieten staan in aparte groepen die je kunt in- en uitklappen.</li>
+      <li>Tik bij een gerecht op het potlood-icoon om het aan te passen.</li>
+      <li>Wijzig per ingrediënt de hoeveelheid (bijv. havermout van 50 naar 75 gram); de voedingswaarden rekenen automatisch mee.</li>
+      <li>Met <strong>+ Ingrediënt toevoegen</strong> voeg je een product toe aan het gerecht. Een nieuw gerecht opslaan is dus niet nodig.</li>
     </ol>
     <div class="tip"><strong>Tip:</strong> Favorieten worden automatisch gesynchroniseerd als je bent ingelogd. Ze zijn direct beschikbaar op al je apparaten.</div>
   </div>
@@ -605,7 +614,7 @@ body {
     <ol class="steps">
       <li>Tik op het <strong>barcode-icoon</strong> in de invoerbalk.</li>
       <li>Richt je camera op de barcode van het product.</li>
-      <li>Het product wordt automatisch herkend en de voedingswaarden worden ingeladen.</li>
+      <li>Het product wordt automatisch herkend: eerst in de eigen productdatabase, anders live via Open Food Facts.</li>
     </ol>
     <div class="tip"><strong>Tip:</strong> De scanner werkt het best bij goed licht. Zorg dat de barcode scherp in beeld is.</div>
   </div>
@@ -773,6 +782,14 @@ body {
       <div class="card">
         <div class="card-title"><span class="emoji">🤖</span> AI Provider</div>
         <p>Kies je AI-engine: Claude, Gemini of OpenAI. Voer je eigen API-key in voor directe toegang.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🌓</span> Weergave</div>
+        <p>Kies licht, donker of automatisch; bij automatisch volgt de app de instelling van je apparaat.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🔄</span> Productdatabase</div>
+        <p>De productdatabase wordt maandelijks bijgewerkt en de app laadt een nieuwe versie vanzelf. Zie je een product nog niet, tik dan onder <em>Instellingen → Data</em> op <em>Vernieuw cache</em>.</p>
       </div>
       <div class="card">
         <div class="card-title"><span class="emoji">🛒</span> Supermarktfilter</div>
