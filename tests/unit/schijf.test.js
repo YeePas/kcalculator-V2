@@ -96,6 +96,13 @@ describe('Schijf van Vijf 2026', () => {
     ['Havermout', 'volkoren_brood'],
     ['Volkorenbrood', 'volkoren_brood'],
     ['Aardappelen gekookt', 'graan_aardappel'],
+    ['Zilvervliesrijst', 'graan_aardappel'],
+    ['Spaghetti volkoren', 'graan_aardappel'],
+    ['Quinoa', 'graan_aardappel'],
+    ['Zoete aardappel', 'graan_aardappel'],
+    ['Aardappelpuree', 'graan_aardappel'],
+    ['Roggebrood', 'volkoren_brood'],
+    ['Brinta', 'volkoren_brood'],
     ['Augurk zoetzuur', 'groente'],
     ['Banaan', 'fruit'],
     ['Halfvolle melk', 'zuivel_alt'],
@@ -111,7 +118,7 @@ describe('Schijf van Vijf 2026', () => {
     expect(bucketOf(naam)).toBe(bucket);
   });
 
-  it.each(['Broodje kroket', 'Suiker kristal-', "Tony's Chocolonely", 'Mueslireep hazelnoot', 'Cola', 'Roomboter'])(
+  it.each(['Broodje kroket', 'Suiker kristal-', "Tony's Chocolonely", 'Mueslireep hazelnoot', 'Cola', 'Roomboter', 'Witte rijst', 'Spaghetti', 'Tarwemaisbrood wit', 'Wit bolletje'])(
     '%s is outside the Schijf', (naam) => {
       expect(bucketOf(naam)).toBe('outside');
     });

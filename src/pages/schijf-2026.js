@@ -36,8 +36,12 @@ const NUT_PATTERN = /\b(noot|noten|amandel|amandelen|walnoot|walnoten|cashew|cas
 // "Tonijn in olijfolie" is fish, not oil
 const PACKED_IN_OIL_PATTERN = /\b(?:in|op)\s+\w*olie\b/i;
 const FAT_PATTERN = /\b(olijfolie|zonnebloemolie|koolzaadolie|lijnzaadolie|margarine|halvarine|olie)\b/i;
-const WHOLEGRAIN_PATTERN = /\b(volkoren|wholegrain|whole grain|havermout|muesli|rogge|spelt)\b/i;
-const GRAIN_POTATO_PATTERN = /\b(aardappel|aardappelen|krieltje|zilvervlies|bruine rijst|quinoa|bulgur|boekweit|pasta|rijst)\b/i;
+// Bread, grains and potatoes: one Schijf box, split into bread/breakfast ("Volkoren") and the
+// warm-meal part ("Aardappel/graan"). Only wholegrain grain products are in the Schijf.
+const POTATO_PATTERN = /\baardappel|\bkrieltje|\bbataat|\bpuree\b/i;
+const GRAIN_PATTERN = /brood|boterham|bolletje|beschuit|cracker|knackebrod|wrap|tortilla|pita|havermout|muesli|granola|brinta|ontbijtgranen|cornflakes|zilvervlies|(rijst|pasta|spaghetti|macaroni|penne|fusilli|tagliatelle|lasagne|noedels|couscous|quinoa|bulgur|boekweit|gierst|parelgort)\b|\bmie\b/i;
+const WHOLEGRAIN_PATTERN = /volkoren|wholegrain|whole grain|havermout|haver|muesli|brinta|rogge|spelt|zilvervlies|bruine rijst|brown rice|\b(quinoa|bulgur|boekweit|gierst|parelgort)\b/i;
+const BREAD_BREAKFAST_PATTERN = /brood|boterham|bolletje|beschuit|cracker|knackebrod|wrap|tortilla|pita|havermout|muesli|granola|brinta|ontbijtgranen|cornflakes|\bpap\b/i;
 const FRUIT_PATTERN = /\b(appel|peer|banaan|kiwi|aardbei|blauwe bes|druif|druiven|mandarijn|sinaasappel|mango|perzik|pruim|nectarine|ananas|meloen|fruit)\b/i;
 // Fresh herbs are unprocessed plant parts: vegetables in the Schijf (in small amounts).
 // Dried herbs and spices fit the Schijf too, but count toward no box.
@@ -99,6 +103,8 @@ function classifyItem(item) {
   // Hard fats such as roomboter are outside whichever bucket they would land in
   if (schijfOutsideCheck(item.naam, match) || schijfOutsideCheck(item.naam, match, 'vet')) return outside;
   if (WATER_DRINK_PATTERN.test(name) || group === 'Niet-alcoholische dranken') return { ...entry, bucket: 'dranken' };
+  // Potatoes (also sweet potato) before fruit and vegetables: a product match can be off
+  if (POTATO_PATTERN.test(normalizeSchijfName(item.naam))) return { ...entry, bucket: 'graan_aardappel' };
   const herbName = normalizeSchijfName(item.naam);
   if (group === 'Kruiden en specerijen' || FRESH_HERB_PATTERN.test(herbName) || DRIED_HERB_PATTERN.test(herbName)) {
     if (FRESH_HERB_PATTERN.test(herbName) && !DRIED_HERB_PATTERN.test(herbName) && !/pesto|saus|olie|dressing|thee|boter|kaas/.test(herbName)) return { ...entry, bucket: 'groente' };
@@ -117,8 +123,15 @@ function classifyItem(item) {
   if (EGG_PATTERN.test(name) || group === 'Eieren') return { ...entry, bucket: 'eieren', amount: Math.max(1, Math.round((amount || 60) / 60)) };
   if (RED_MEAT_PATTERN.test(name)) return { ...entry, bucket: 'rood_vlees' };
   if (MEAT_PATTERN.test(name) || group === 'Vlees en gevogelte') return { ...entry, bucket: 'vlees' };
-  if (WHOLEGRAIN_PATTERN.test(name) && !REFINED_NAME_PATTERN.test(normalizeSchijfName(item.naam))) return { ...entry, bucket: 'volkoren_brood' };
-  if (group === 'Brood' || group === 'Graanproducten en meelsoorten' || group === 'Aardappelen en knolgewassen' || GRAIN_POTATO_PATTERN.test(name)) return { ...entry, bucket: 'graan_aardappel' };
+  // Wholegrain or not is decided on what was logged: "Pasta" may match "Macaroni volkoren"
+  const loggedName = normalizeSchijfName(item.naam);
+  if (group === 'Aardappelen en knolgewassen' && !GRAIN_PATTERN.test(loggedName)) return { ...entry, bucket: 'graan_aardappel' };
+  if (GRAIN_PATTERN.test(loggedName) || group === 'Brood' || group === 'Graanproducten en meelsoorten') {
+    if (!WHOLEGRAIN_PATTERN.test(loggedName) || REFINED_NAME_PATTERN.test(loggedName)) {
+      return { ...outside, reason: 'Geen volkoren: witte varianten van brood, rijst en pasta vallen buiten de Schijf.' };
+    }
+    return { ...entry, bucket: BREAD_BREAKFAST_PATTERN.test(loggedName) ? 'volkoren_brood' : 'graan_aardappel' };
+  }
   return { ...entry, bucket: 'ignored', reason: match ? 'Geen duidelijke Schijf-categorie gevonden.' : 'Geen betrouwbare productmatch.' };
 }
 
@@ -313,11 +326,14 @@ function portionSuggestions(dayCollected, weekCollected) {
 
 function swapSuggestions(dayCollected, weekCollected) {
   const swaps = [];
-  if ((dayCollected.totals.volkoren_brood || 0) + (dayCollected.totals.graan_aardappel || 0) < 250) swaps.push({ from: 'Wit brood, witte rijst', to: 'volkorenbrood, havermout, zilvervliesrijst of volkoren pasta' });
+  const refined = uniqueNames(dayCollected.items.outside.filter(item => /Geen volkoren/.test(item.reason || '')));
+  if (refined.length) swaps.push({ from: refined.slice(0, 2).join(', '), to: 'de volkoren variant: volkorenbrood, zilvervliesrijst of volkoren pasta' });
+  else if ((dayCollected.totals.volkoren_brood || 0) + (dayCollected.totals.graan_aardappel || 0) < 250) swaps.push({ from: 'Wit brood, witte rijst', to: 'volkorenbrood, havermout, zilvervliesrijst of volkoren pasta' });
   if ((weekCollected.totals.plant_eiwit || 0) < 250) swaps.push({ from: 'Een vleesmoment', to: 'linzen, kikkererwten, tofu of tempeh' });
   if ((dayCollected.totals.noten || 0) < 30) swaps.push({ from: 'Een zoete snack', to: 'een klein handje ongezouten noten' });
   if (isAboveAdvice({ key: 'kaas', boven: 40 }, dayCollected.totals)) swaps.push({ from: 'Een deel van de kaas', to: 'hüttenkäse, hummus of groente op brood' });
-  if (dayCollected.items.outside.length) swaps.push({ from: uniqueNames(dayCollected.items.outside).slice(0, 2).join(', '), to: 'een Schijf-alternatief waar dat kan' });
+  const otherOutside = uniqueNames(dayCollected.items.outside).filter(naam => !refined.includes(naam));
+  if (otherOutside.length) swaps.push({ from: otherOutside.slice(0, 2).join(', '), to: 'een Schijf-alternatief waar dat kan' });
   return swaps.slice(0, 4);
 }
 
