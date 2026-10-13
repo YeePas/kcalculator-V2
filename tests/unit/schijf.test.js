@@ -118,3 +118,12 @@ describe('Schijf van Vijf 2026', () => {
     expect(bucketOf('Tarwemaisbrood wit')).not.toBe('volkoren_brood');
   });
 });
+
+describe('Schijf van Vijf 2026 upper bounds', () => {
+  it('flags cheese, fats and nuts well above the advice', async () => {
+    const { isAboveAdvice } = await import('../../src/pages/schijf-2026.js');
+    expect(isAboveAdvice({ key: 'kaas', boven: 40 }, { kaas: 30 })).toBe(false);
+    expect(isAboveAdvice({ key: 'kaas', boven: 40 }, { kaas: 60 })).toBe(true);
+    expect(isAboveAdvice({ key: 'groente' }, { groente: 900 })).toBe(false);
+  });
+});

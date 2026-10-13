@@ -10,8 +10,8 @@ import { schijfOutsideCheck, schijfProductGroup, REFINED_NAME_PATTERN, normalize
 const DAY_TARGETS_2026 = {
   groente_fruit: { icon: '🥬', naam: 'Groente & fruit', doel: 450, unit: 'g', color: '#1f9e4b', parts: [{ key: 'groente', doel: 250, icon: '🥬', naam: 'Groente' }, { key: 'fruit', doel: 200, icon: '🍎', naam: 'Fruit' }] },
   graan_aardappel: { icon: '🌾', naam: 'Volkoren & aardappel', doel: 400, unit: 'g', color: '#b38a46', parts: [{ key: 'volkoren_brood', doel: 175, icon: '🌾', naam: 'Volkoren' }, { key: 'graan_aardappel', doel: 225, icon: '🥔', naam: 'Aardappel/graan' }] },
-  eiwit_zuivel: { icon: '🥛', naam: 'Zuivel & eiwit', doel: 420, unit: 'g/ml', color: '#4fb58a', parts: [{ key: 'zuivel_alt', doel: 400, icon: '🥛', naam: 'Zuivel' }, { key: 'kaas', doel: 20, icon: '🧀', naam: 'Kaas' }] },
-  vetten_noten: { icon: '🥑', naam: 'Gezonde vetten', doel: 80, unit: 'g', color: '#7fae4d', parts: [{ key: 'vetten_olie', doel: 50, icon: '🥑', naam: 'Vetten/olie' }, { key: 'noten', doel: 30, icon: '🥜', naam: 'Noten' }] },
+  eiwit_zuivel: { icon: '🥛', naam: 'Zuivel & eiwit', doel: 420, unit: 'g/ml', color: '#4fb58a', parts: [{ key: 'zuivel_alt', doel: 400, boven: 800, icon: '🥛', naam: 'Zuivel' }, { key: 'kaas', doel: 20, boven: 40, icon: '🧀', naam: 'Kaas' }] },
+  vetten_noten: { icon: '🥑', naam: 'Gezonde vetten', doel: 80, unit: 'g', color: '#7fae4d', parts: [{ key: 'vetten_olie', doel: 50, boven: 75, icon: '🥑', naam: 'Vetten/olie' }, { key: 'noten', doel: 30, boven: 60, icon: '🥜', naam: 'Noten' }] },
   dranken: { icon: '💧', naam: 'Dranken', doel: 1600, unit: 'ml', color: 'var(--blue)', parts: [{ key: 'dranken', doel: 1600, icon: '💧', naam: 'Water/thee/koffie' }] },
 };
 
@@ -151,10 +151,24 @@ export function collectDay(day) {
   return { totals, items, analysedCalories, outsideCalories, totalCalories: Math.round(dayTotals(day).cals || 0) };
 }
 
+// Advised amounts are a target; for cheese, fats, nuts and dairy far more is not better either.
+// Above `boven` a part loses up to half its score (at twice that amount).
+function partRatio(part, totals) {
+  const amount = totals[part.key] || 0;
+  const ratio = Math.min(amount / part.doel, 1);
+  if (!part.boven || amount <= part.boven) return ratio;
+  return ratio * (1 - Math.min(0.5, (amount - part.boven) / part.boven / 2));
+}
+
+export function isAboveAdvice(part, totals) {
+  return Boolean(part.boven) && (totals[part.key] || 0) > part.boven;
+}
+
 function ratioForMeta(meta, totals) {
   if (meta.parts) {
-    return meta.parts.reduce((sum, part) => sum + Math.min((totals[part.key] || 0) / part.doel, 1), 0) / meta.parts.length;
+    return meta.parts.reduce((sum, part) => sum + partRatio(part, totals), 0) / meta.parts.length;
   }
+  if (meta.boven) return partRatio(meta, totals);
   const ratio = (totals[meta.key] || 0) / meta.doel;
   return meta.max ? (ratio <= 1 ? 1 : Math.max(0, 1 - ((ratio - 1) * 0.7))) : Math.min(ratio, 1);
 }
@@ -203,6 +217,7 @@ function rowsFor(metas) {
     doel: part.doel || meta.doel,
     color: meta.color,
     max: Boolean(meta.max),
+    boven: part.boven || 0,
     unit: part.key === 'dranken' || part.key === 'zuivel_alt' ? 'ml' : (meta.unit === 'st' ? 'st' : 'g'),
   })));
 }
@@ -226,13 +241,14 @@ function renderRowSources(row, items) {
 
 function renderRows(metas, totals, items = {}) {
   return rowsFor(metas).map(row => {
-    const ratio = Math.round(ratioForMeta({ key: row.key, doel: row.doel, max: row.max }, totals) * 100);
-    const tone = ratio >= 80 ? 'ok' : ratio >= 45 ? 'warn' : 'bad';
+    const ratio = Math.round(ratioForMeta({ key: row.key, doel: row.doel, max: row.max, boven: row.boven }, totals) * 100);
+    const above = isAboveAdvice(row, totals);
+    const tone = above ? 'over' : ratio >= 80 ? 'ok' : ratio >= 45 ? 'warn' : 'bad';
     const fill = Math.min(100, Math.round(((totals[row.key] || 0) / row.doel) * 100));
     return `<details class="schijf2026-row-details">
       <summary class="schijf2026-row ${tone}">
         <span class="s26-row-label"><i style="background:${row.color}"></i><em>${esc(row.icon || '')} ${esc(row.naam)}</em></span>
-        <strong>${Math.round(totals[row.key] || 0)}/${amountText(row.doel, row.unit)}${row.max ? ' max' : ''}<b class="s26-chevron" aria-hidden="true"></b></strong>
+        <strong>${above ? '<small class="s26-over">boven advies</small>' : ''}${Math.round(totals[row.key] || 0)}/${amountText(row.doel, row.unit)}${row.max ? ' max' : ''}<b class="s26-chevron" aria-hidden="true"></b></strong>
         <span class="s26-row-bar"><span class="${row.max && fill >= 100 ? 'bad' : tone}" style="width:${fill}%"></span></span>
       </summary>
       ${renderRowSources(row, items)}
@@ -276,6 +292,11 @@ function portionSuggestions(dayCollected, weekCollected) {
   if (plantLeft > 0) suggestions.push({ amount: `${Math.round(plantLeft)}g`, text: 'peulvruchten, tofu of tempé', scope: 'deze week' });
   if (visLeft > 0) suggestions.push({ amount: `${Math.round(visLeft)}g`, text: 'vis', scope: 'deze week' });
   if ((weekCollected.totals.vlees || 0) > 300) suggestions.push({ amount: '−', text: 'vlees zit boven de weekrichtlijn: kies een plantaardige maaltijd als ruil', scope: 'deze week' });
+  for (const part of DAY_TARGETS_2026.eiwit_zuivel.parts.concat(DAY_TARGETS_2026.vetten_noten.parts)) {
+    if (isAboveAdvice(part, dayCollected.totals)) {
+      suggestions.unshift({ amount: `${Math.round(dayCollected.totals[part.key])}${part.key === 'zuivel_alt' ? 'ml' : 'g'}`, over: true, text: `${part.naam.toLowerCase()}: ruim boven de ${part.doel}${part.key === 'zuivel_alt' ? 'ml' : 'g'} die de Schijf adviseert`, scope: 'vandaag' });
+    }
+  }
   return suggestions.slice(0, 5);
 }
 
@@ -284,6 +305,7 @@ function swapSuggestions(dayCollected, weekCollected) {
   if ((dayCollected.totals.volkoren_brood || 0) + (dayCollected.totals.graan_aardappel || 0) < 250) swaps.push({ from: 'Wit brood, witte rijst', to: 'volkorenbrood, havermout, zilvervliesrijst of volkoren pasta' });
   if ((weekCollected.totals.plant_eiwit || 0) < 250) swaps.push({ from: 'Een vleesmoment', to: 'linzen, kikkererwten, tofu of tempeh' });
   if ((dayCollected.totals.noten || 0) < 30) swaps.push({ from: 'Een zoete snack', to: 'een klein handje ongezouten noten' });
+  if (isAboveAdvice({ key: 'kaas', boven: 40 }, dayCollected.totals)) swaps.push({ from: 'Een deel van de kaas', to: 'hüttenkäse, hummus of groente op brood' });
   if (dayCollected.items.outside.length) swaps.push({ from: uniqueNames(dayCollected.items.outside).slice(0, 2).join(', '), to: 'een Schijf-alternatief waar dat kan' });
   return swaps.slice(0, 4);
 }
@@ -318,7 +340,7 @@ function renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsid
       <section class="schijf2026-card s26-insight">
         <h3><span class="s26-icon">🎯</span>Wat mist nog?</h3>
         ${missing.length ? `<ul class="s26-list">${missing.map(item => `<li>
-          <span class="s26-chip">+${esc(item.amount)}</span>
+          <span class="s26-chip${item.over ? ' is-over' : ''}">${item.over ? '' : '+'}${esc(item.amount)}</span>
           <span>${esc(item.text)}<small>${esc(item.scope)}</small></span>
         </li>`).join('')}</ul>` : emptyNote('Geen duidelijke tekorten gevonden.')}
       </section>
