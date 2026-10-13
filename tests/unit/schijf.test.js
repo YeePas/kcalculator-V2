@@ -71,3 +71,49 @@ describe('Schijf van Vijf categories', () => {
     expect(categoryOf('Wit bolletje')).not.toBe('volkoren');
   });
 });
+
+describe('Schijf van Vijf 2026', () => {
+  let collectDay;
+  beforeAll(async () => {
+    setCfg({ supermarketExclusions: [] });
+    setNevoData(products);
+    setNevoReady(true);
+    ({ collectDay } = await import('../../src/pages/schijf-2026.js'));
+  });
+
+  afterAll(() => {
+    setNevoData(null);
+    setNevoReady(false);
+    setCfg({});
+  });
+
+  function bucketOf(naam) {
+    const { items } = collectDay({ ontbijt: [{ naam, kcal: 100, _gram: 100 }] });
+    return Object.entries(items).find(([, list]) => list.some(item => item.naam === naam))?.[0];
+  }
+
+  it.each([
+    ['Havermout', 'volkoren_brood'],
+    ['Volkorenbrood', 'volkoren_brood'],
+    ['Aardappelen gekookt', 'graan_aardappel'],
+    ['Augurk zoetzuur', 'groente'],
+    ['Banaan', 'fruit'],
+    ['Halfvolle melk', 'zuivel_alt'],
+    ['Kaas 45+', 'kaas'],
+    ['Walnoten', 'noten'],
+    ['Olijfolie', 'vetten_olie'],
+    ['Tonijn in Olijfolie', 'vis'],
+    ['Linzen gekookt', 'plant_eiwit'],
+  ])('%s counts as %s', (naam, bucket) => {
+    expect(bucketOf(naam)).toBe(bucket);
+  });
+
+  it.each(['Broodje kroket', 'Suiker kristal-', "Tony's Chocolonely", 'Mueslireep hazelnoot', 'Cola', 'Roomboter'])(
+    '%s is outside the Schijf', (naam) => {
+      expect(bucketOf(naam)).toBe('outside');
+    });
+
+  it('does not count white bread as wholegrain', () => {
+    expect(bucketOf('Tarwemaisbrood wit')).not.toBe('volkoren_brood');
+  });
+});

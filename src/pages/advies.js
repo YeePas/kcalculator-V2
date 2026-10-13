@@ -9,15 +9,16 @@ import { dateKey, emptyDay, r1, formatDate, dayTotals, esc } from '../utils.js';
 import { saveCfg } from '../storage.js';
 import { loadDay } from '../supabase/data.js';
 import { aiCall, hasAiAvailable, hasAiProxyConfig, hasLocalSessionAi } from '../ai/providers.js';
-import { renderSchijfAnalyse, schijfDagScore, SCHIJF_CATEGORY_META } from './schijf.js';
+import { schijfDagScore, SCHIJF_CATEGORY_META } from './schijf.js';
 import { renderSchijf2026Analyse } from './schijf-2026.js';
 import { getMicroAdvies } from './micronutrients.js';
 import { switchMobileView } from '../ui/misc.js';
 
-const LOCAL_ADVIES_TABS = new Set(['schijf', 'schijf2026']);
+const LOCAL_ADVIES_TABS = new Set(['schijf']);
 const AI_ADVIES_TABS = new Set(['avond', 'dag', 'week', 'micro']);
 
 function getSafeAdviesTab(tab) {
+  if (tab === 'schijf2026') return 'schijf'; // former beta tab, now the Schijf van 5 tab
   return LOCAL_ADVIES_TABS.has(tab) || AI_ADVIES_TABS.has(tab) ? tab : 'schijf';
 }
 
@@ -51,8 +52,7 @@ export function showAdviesContent() {
   if (safeTab !== activeAdviesTab) setActiveAdviesTab(safeTab);
 
   if (LOCAL_ADVIES_TABS.has(safeTab)) {
-    if (safeTab === 'schijf') renderSchijfAnalyse();
-    if (safeTab === 'schijf2026') renderSchijf2026Analyse();
+    renderSchijf2026Analyse();
   } else {
     showAdviesPrompt();
   }

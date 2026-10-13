@@ -1,8 +1,7 @@
 /* ── Schijf van Vijf Analysis ─────────────────────────────── */
 
-import { localData, currentDate, goals, nevoData, nevoReady } from '../state.js';
-import { dateKey, dayTotals, r1 } from '../utils.js';
-import { loadDay } from '../supabase/data.js';
+import { goals, nevoData, nevoReady } from '../state.js';
+import { dayTotals, esc } from '../utils.js';
 import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
 import { PORTION_ALIASES, matchItemToNevo } from '../products/matcher.js';
 
@@ -48,7 +47,7 @@ const OUTSIDE_GROUPS = new Set([
   'Vleeswaren',
 ]);
 
-const OUTSIDE_NAME_PATTERN = /chips|koek|cake|taart|gebak|croissant|donut|frisdrank|cola|energy drink|snoep|chocolade|\bijs\b|roomijs|waterijs|milkshake|wijn|bier|cocktail|likeur|salami|bacon|spek|frituur|patat|saus|mayonaise|ketchup|dessert|vla|pudding|worst|hamburger|rookvlees|cervelaat|limo|siroop|leverworst|frikandel|knakworst|shoarma/;
+const OUTSIDE_NAME_PATTERN = /chips|koek|cake|taart|gebak|croissant|donut|frisdrank|cola|energy drink|snoep|chocolade|chocolonely|\w*reep\b|\bijs\b|roomijs|waterijs|milkshake|wijn|bier|cocktail|likeur|salami|bacon|spek|frituur|patat|saus|mayonaise|ketchup|dessert|vla|pudding|worst|hamburger|rookvlees|cervelaat|limo|siroop|leverworst|frikandel|knakworst|shoarma/;
 const EXCLUDE_NAME_PATTERN = /sap|smoothie|supplement|poeder|vitamine|capsule|pil|saus|bouillon|kruidenmix|kruiden|specerijen/;
 const SWEET_DAIRY_PATTERN = /vla|pudding|dessert|choco|vanillevla|room|slagroom|ijs|drinkyoghurt|yoghurtdrink|vruchtenyoghurt|(?<!half)volle melk|volle yoghurt|volle kwark|chocomel|fristi|optimel/;
 const SALTED_NUTS_PATTERN = /gezouten|honing|karamel|choco|borrelnoten|gebrand gezouten|gesuikerd|kokos/;
@@ -203,6 +202,22 @@ function productGroup(product) {
   return String(product?._group || '').trim();
 }
 
+// Shared with the Schijf 2026 analysis (schijf-2026.js).
+// 'outside' for products outside the Schijf van Vijf, else null. kind narrows the
+// unhealthy variants: sweet dairy, salted or sweetened nuts, hard fats.
+export function schijfOutsideCheck(itemName, product, kind = '') {
+  const group = productGroup(product);
+  const names = [normalizeName(itemName), normalizeName(product?.n)].filter(Boolean);
+  if (names.some(name => EXCLUDE_NAME_PATTERN.test(name))) return null;
+  if (OUTSIDE_GROUPS.has(group) || names.some(name => OUTSIDE_NAME_PATTERN.test(name))) return 'outside';
+  if (kind === 'zuivel' && names.some(name => SWEET_DAIRY_PATTERN.test(name))) return 'outside';
+  if (kind === 'noten' && names.some(name => SALTED_NUTS_PATTERN.test(name))) return 'outside';
+  if (kind === 'vet' && names.some(name => HARD_FAT_PATTERN.test(name))) return 'outside';
+  return null;
+}
+
+export { productGroup as schijfProductGroup, REFINED_NAME_PATTERN, normalizeName as normalizeSchijfName };
+
 function classifyMatchedProduct(product, itemName) {
   const group = productGroup(product);
   const name = normalizeName(product?.n || itemName);
@@ -260,30 +275,6 @@ function summarizeItems(items) {
   if (!items.length) return '—';
   const names = [...new Set(items.map(item => item.naam))];
   return names.slice(0, 4).join(', ') + (names.length > 4 ? '…' : '');
-}
-
-function buildCategoryRows(categoryItems, totalen) {
-  return Object.entries(SCHIJF_CATEGORY_META).map(([category, meta]) => {
-    const amount = Math.round(totalen[category] || 0);
-    const ratio = Math.min((totalen[category] || 0) / meta.doel, 1);
-    const pct = Math.round(ratio * 100);
-    const barColor = pct >= 100 ? 'var(--green)' : pct >= 50 ? '#e8a020' : 'var(--danger)';
-    const summary = summarizeItems(categoryItems[category] || []);
-
-    return `<div style="margin-bottom:0.8rem">
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem;margin-bottom:0.22rem;gap:0.5rem">
-        <span>${meta.icon} ${meta.naam}</span>
-        <span style="color:var(--muted);font-size:0.72rem">${amount}${meta.unit} / ${meta.doel}${meta.unit}</span>
-      </div>
-      <div style="background:var(--border);border-radius:999px;height:8px;overflow:hidden">
-        <div style="background:${barColor};height:100%;width:${pct}%;border-radius:999px;transition:width 0.3s"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;gap:0.5rem;margin-top:0.18rem;font-size:0.68rem;color:var(--tertiary)">
-        <span style="min-width:0">${summary}</span>
-        <span style="white-space:nowrap">${pct}%</span>
-      </div>
-    </div>`;
-  }).join('');
 }
 
 export function schijfDagScore(day) {
@@ -405,89 +396,16 @@ export function getAdviesTeksten(schijfResult, dayTot) {
   return tips.slice(0, 3);
 }
 
-function renderItemList(items, emptyText) {
+export function renderItemList(items, emptyText) {
   if (!items.length) {
-    return `<div style="font-size:0.78rem;color:var(--muted)">${emptyText}</div>`;
+    return `<div style="font-size:0.78rem;color:var(--muted)">${esc(emptyText)}</div>`;
   }
 
   return items.map(item => {
     const gramText = item.gram ? `${item.gram}g` : 'portie onbekend';
     return `<div style="display:flex;justify-content:space-between;gap:0.7rem;padding:0.35rem 0;border-bottom:1px solid var(--border-subtle);font-size:0.78rem">
-      <span style="min-width:0">${item.naam} <span style="color:var(--tertiary)">(${item.maaltijdLabel.replace(/^[^\s]+\s/, '')})</span>${item.reason ? `<br><span style="color:var(--muted);font-size:0.72rem">${item.reason}</span>` : ''}${item.matchedName ? `<br><span style="color:var(--tertiary);font-size:0.72rem">Match: ${item.matchedName}</span>` : ''}</span>
+      <span style="min-width:0">${esc(item.naam)} <span style="color:var(--tertiary)">(${esc(item.maaltijdLabel.replace(/^[^\s]+\s/, ''))})</span>${item.reason ? `<br><span style="color:var(--muted);font-size:0.72rem">${esc(item.reason)}</span>` : ''}${item.matchedName ? `<br><span style="color:var(--tertiary);font-size:0.72rem">Match: ${esc(item.matchedName)}</span>` : ''}</span>
       <span style="white-space:nowrap;color:var(--muted)">${gramText}</span>
     </div>`;
   }).join('');
-}
-
-export async function renderSchijfAnalyse() {
-  const body = document.getElementById('advies-body');
-  body.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--muted)">Analyseren...</div>';
-
-  const day = localData[currentDate] || await loadDay(currentDate);
-  const result = schijfDagScore(day);
-  const tot = dayTotals(day);
-  const coveredColor = result.coveredCount >= 4 ? 'var(--green)' : result.coveredCount >= 2 ? '#e8a020' : 'var(--danger)';
-  const confidenceColor = result.confidence >= 0.7 ? 'var(--green)' : result.confidence >= 0.45 ? '#e8a020' : 'var(--danger)';
-  const outsideShare = result.analysedCalories > 0 ? Math.round((result.outsideCalories / result.analysedCalories) * 100) : 0;
-  const tips = getAdviesTeksten(result, tot);
-
-  const goodCategories = Object.entries(SCHIJF_CATEGORY_META).filter(([category]) => result.scores[category] >= 0.6);
-  const missingCategories = Object.entries(SCHIJF_CATEGORY_META).filter(([category]) => result.scores[category] < 0.6);
-
-  body.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.6rem;margin-bottom:1rem">
-      <div style="padding:0.9rem;background:var(--bg);border:1px solid var(--border);border-radius:12px">
-        <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Bouwstenen geraakt</div>
-        <div style="font-size:1.8rem;font-family:var(--font-display);font-weight:700;color:${coveredColor}">${result.coveredCount}/${result.totalCategories}</div>
-      </div>
-      <div style="padding:0.9rem;background:var(--bg);border:1px solid var(--border);border-radius:12px">
-        <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Analyse-dekking</div>
-        <div style="font-size:1.8rem;font-family:var(--font-display);font-weight:700;color:${confidenceColor}">${result.confidencePct}%</div>
-      </div>
-      <div style="padding:0.9rem;background:var(--bg);border:1px solid var(--border);border-radius:12px">
-        <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Buiten Schijf</div>
-        <div style="font-size:1.8rem;font-family:var(--font-display);font-weight:700;color:${outsideShare >= 30 ? 'var(--danger)' : '#e8a020'}">${outsideShare}% </div>
-      </div>
-    </div>
-
-    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem">
-      Analyse voor ${currentDate === dateKey(new Date()) ? 'vandaag' : new Date(currentDate + 'T12:00:00').toLocaleDateString('nl-NL', { weekday:'long', day:'numeric', month:'long' })}.
-      Producten die niet betrouwbaar te plaatsen zijn, laten we bewust buiten deze analyse.
-    </div>
-
-    <div style="margin-bottom:1rem;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px">
-      <div style="font-weight:600;font-size:0.84rem;margin-bottom:0.7rem">📊 Opbouw per Schijf-categorie</div>
-      ${buildCategoryRows(result.catItems, result.totalen)}
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.7rem;margin-bottom:1rem">
-      <div style="padding:0.95rem;background:var(--bg);border:1px solid var(--border);border-radius:12px">
-        <div style="font-weight:600;font-size:0.82rem;margin-bottom:0.45rem;color:var(--green)">✓ Goed vertegenwoordigd</div>
-        ${goodCategories.length
-          ? goodCategories.map(([_, meta]) => `<div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.24rem">${meta.icon} ${meta.naam}</div>`).join('')
-          : '<div style="font-size:0.78rem;color:var(--muted)">Nog geen categorie komt echt goed uit de verf.</div>'}
-      </div>
-      <div style="padding:0.95rem;background:var(--bg);border:1px solid var(--border);border-radius:12px">
-        <div style="font-weight:600;font-size:0.82rem;margin-bottom:0.45rem;color:#e8a020">→ Mist nog</div>
-        ${missingCategories.map(([_, meta]) => `<div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.24rem">${meta.icon} ${meta.naam}</div>`).join('')}
-      </div>
-    </div>
-
-    <div style="margin-bottom:1rem;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px">
-      <div style="font-weight:600;font-size:0.82rem;margin-bottom:0.5rem;color:${result.outsideItems.length ? 'var(--danger)' : 'var(--green)'}">⚠ Buiten Schijf van Vijf</div>
-      ${renderItemList(result.outsideItems, 'Geen duidelijk buiten-Schijf producten gevonden in de herkende set.')}
-    </div>
-
-    <div style="margin-bottom:1rem;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px">
-      <div style="font-weight:600;font-size:0.82rem;margin-bottom:0.5rem">🫥 Niet meegenomen in analyse</div>
-      ${renderItemList(result.ignoredItems, 'Alles wat we herkenden viel in de analyse of buiten-Schijf-set.')}
-    </div>
-
-    <div style="padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:12px">
-      <div style="font-weight:600;font-size:0.82rem;margin-bottom:0.45rem">💡 Praktische focus</div>
-      ${tips.length
-        ? tips.map(tip => `<div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.3rem">• ${tip}</div>`).join('')
-        : '<div style="font-size:0.8rem;color:var(--muted)">Goed bezig. Blijf vooral variëren binnen de categorieën die je al raakt.</div>'}
-    </div>
-  `;
 }

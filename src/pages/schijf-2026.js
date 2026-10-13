@@ -1,10 +1,11 @@
-/* ── Schijf van Vijf 2026 Beta Analysis ───────────────────── */
+/* ── Schijf van Vijf 2026 Analysis ────────────────────────── */
 
 import { currentDate, localData } from '../state.js';
 import { MEAL_LABELS, MEAL_NAMES } from '../constants.js';
 import { dateKey, dayTotals, esc, r1 } from '../utils.js';
 import { loadDay } from '../supabase/data.js';
 import { PORTION_ALIASES, matchItemToNevo } from '../products/matcher.js';
+import { schijfOutsideCheck, schijfProductGroup, REFINED_NAME_PATTERN, normalizeSchijfName, renderItemList } from './schijf.js';
 
 const DAY_TARGETS_2026 = {
   groente_fruit: { icon: '🥬', naam: 'Groente & fruit', doel: 450, unit: 'g', color: '#1f9e4b', parts: [{ key: 'groente', doel: 250, icon: '🥬', naam: 'Groente' }, { key: 'fruit', doel: 200, icon: '🍎', naam: 'Fruit' }] },
@@ -31,7 +32,9 @@ const MEAT_PATTERN = /\b(kip|kalkoen|vlees|rund|biefstuk|gehakt|varken|varkens|h
 const RED_MEAT_PATTERN = /\b(rund|biefstuk|gehakt|varken|varkens|ham|spek|bacon|salami|worst|rookvlees|lams|kalf)\b/i;
 const CHEESE_PATTERN = /\b(kaas|goudse|mozzarella|ricotta|cottage cheese|huttenkase|feta|parmezaan)\b/i;
 const DAIRY_PATTERN = /\b(yoghurt|kwark|skyr|melk|karnemelk|sojadrink|sojamelk|sojayoghurt|erwtendrink|plantaardige yoghurt)\b/i;
-const NUT_PATTERN = /\b(noot|noten|amandel|walnoot|cashew|pistache|hazelnoot|pinda|pompoenpit|zonnebloempit|chia|lijnzaad)\b/i;
+const NUT_PATTERN = /\b(noot|noten|amandel|amandelen|walnoot|walnoten|cashew|cashewnoten|pistache|pistachenoten|hazelnoot|hazelnoten|pinda|pindas|pompoenpit|zonnebloempit|chia|lijnzaad)\b/i;
+// "Tonijn in olijfolie" is fish, not oil
+const PACKED_IN_OIL_PATTERN = /\b(?:in|op)\s+\w*olie\b/i;
 const FAT_PATTERN = /\b(olijfolie|zonnebloemolie|koolzaadolie|lijnzaadolie|margarine|halvarine|olie)\b/i;
 const WHOLEGRAIN_PATTERN = /\b(volkoren|wholegrain|whole grain|havermout|muesli|rogge|spelt)\b/i;
 const GRAIN_POTATO_PATTERN = /\b(aardappel|aardappelen|krieltje|zilvervlies|bruine rijst|quinoa|bulgur|boekweit|pasta|rijst)\b/i;
@@ -74,13 +77,9 @@ function parseLoggedItemAmount(item, matchedProduct) {
   return null;
 }
 
-function matchedGroup(product) {
-  return String(product?._group || '').trim();
-}
-
 function classifyItem(item) {
   const match = matchItemToNevo({ foodName: item.naam, gram: null, count: 1, unit: null });
-  const group = matchedGroup(match);
+  const group = schijfProductGroup(match);
   const name = normalizeName(`${item.naam} ${match?.n || ''}`);
   const amount = parseLoggedItemAmount(item, match);
   const entry = {
@@ -91,29 +90,32 @@ function classifyItem(item) {
     group,
   };
 
-  if (SUGAR_DRINK_PATTERN.test(name)) return { ...entry, bucket: 'outside', reason: 'Drank met suiker/alcohol telt niet mee.' };
+  const outside = { ...entry, bucket: 'outside' };
+  if (SUGAR_DRINK_PATTERN.test(name)) return { ...outside, reason: 'Drank met suiker/alcohol telt niet mee.' };
+  // Hard fats such as roomboter are outside whichever bucket they would land in
+  if (schijfOutsideCheck(item.naam, match) || schijfOutsideCheck(item.naam, match, 'vet')) return outside;
   if (WATER_DRINK_PATTERN.test(name) || group === 'Niet-alcoholische dranken') return { ...entry, bucket: 'dranken' };
   if (group === 'Groente' || VEG_PATTERN.test(name)) return { ...entry, bucket: 'groente' };
   if (group === 'Fruit' || FRUIT_PATTERN.test(name)) return { ...entry, bucket: 'fruit' };
   if (CHEESE_PATTERN.test(name) || group === 'Kaas') return { ...entry, bucket: 'kaas' };
-  if (DAIRY_PATTERN.test(name) || group === 'Melk en melkproducten') return { ...entry, bucket: 'zuivel_alt' };
-  if (NUT_PATTERN.test(name) || group === 'Noten en zaden') return { ...entry, bucket: 'noten' };
-  if (FAT_PATTERN.test(name) || group === 'Vetten en oliën') return { ...entry, bucket: 'vetten_olie' };
+  if (DAIRY_PATTERN.test(name) || group === 'Melk en melkproducten') return schijfOutsideCheck(item.naam, match, 'zuivel') ? outside : { ...entry, bucket: 'zuivel_alt' };
+  if (NUT_PATTERN.test(name) || group === 'Noten en zaden') return schijfOutsideCheck(item.naam, match, 'noten') ? outside : { ...entry, bucket: 'noten' };
+  if ((FAT_PATTERN.test(name) && !PACKED_IN_OIL_PATTERN.test(name)) || group === 'Vetten en oliën') return schijfOutsideCheck(item.naam, match, 'vet') ? outside : { ...entry, bucket: 'vetten_olie' };
   if (PLANT_PROTEIN_PATTERN.test(name) || group === 'Peulvruchten') return { ...entry, bucket: 'plant_eiwit' };
   if (FISH_PATTERN.test(name) || group === 'Vis, schaal- en schelpdieren') return { ...entry, bucket: 'vis' };
   if (EGG_PATTERN.test(name) || group === 'Eieren') return { ...entry, bucket: 'eieren', amount: Math.max(1, Math.round((amount || 60) / 60)) };
   if (RED_MEAT_PATTERN.test(name)) return { ...entry, bucket: 'rood_vlees' };
   if (MEAT_PATTERN.test(name) || group === 'Vlees en gevogelte') return { ...entry, bucket: 'vlees' };
-  if (WHOLEGRAIN_PATTERN.test(name)) return { ...entry, bucket: 'volkoren_brood' };
+  if (WHOLEGRAIN_PATTERN.test(name) && !REFINED_NAME_PATTERN.test(normalizeSchijfName(item.naam))) return { ...entry, bucket: 'volkoren_brood' };
   if (group === 'Brood' || group === 'Graanproducten en meelsoorten' || group === 'Aardappelen en knolgewassen' || GRAIN_POTATO_PATTERN.test(name)) return { ...entry, bucket: 'graan_aardappel' };
-  return { ...entry, bucket: 'ignored', reason: match ? 'Niet scherp genoeg te plaatsen in Schijf 2026.' : 'Geen betrouwbare productmatch.' };
+  return { ...entry, bucket: 'ignored', reason: match ? 'Geen duidelijke Schijf-categorie gevonden.' : 'Geen betrouwbare productmatch.' };
 }
 
 function emptyTotals(keys) {
   return Object.fromEntries(keys.map(key => [key, 0]));
 }
 
-function collectDay(day) {
+export function collectDay(day) {
   const dayKeys = ['groente', 'fruit', 'volkoren_brood', 'graan_aardappel', 'zuivel_alt', 'kaas', 'vetten_olie', 'noten', 'dranken'];
   const weekKeys = Object.keys(WEEK_TARGETS_2026);
   const totals = emptyTotals([...dayKeys, ...weekKeys]);
@@ -141,7 +143,8 @@ function collectDay(day) {
         outsideCalories += classified.kcal || 0;
         analysedCalories += classified.kcal || 0;
       } else {
-        items.ignored.push(classified);
+        items.ignored.push(classified.bucket === 'ignored' ? classified
+          : { ...classified, reason: 'Wel herkend, maar zonder hoeveelheid niet mee te tellen.' });
       }
     }
   }
@@ -186,7 +189,7 @@ function renderSchijfVisual(metas, totals, score) {
       }).join('')}
       <circle cx="110" cy="110" r="45" fill="var(--surface-strong)" stroke="var(--border)" stroke-width="1"></circle>
       <text x="110" y="106" text-anchor="middle" class="schijf2026-score">${score}%</text>
-      <text x="110" y="126" text-anchor="middle" class="schijf2026-score-label">beta</text>
+      <text x="110" y="126" text-anchor="middle" class="schijf2026-score-label">score</text>
     </svg>
   </div>`;
 }
@@ -273,7 +276,7 @@ function renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsid
     <div class="schijf2026-insight-grid">
       <section class="schijf2026-card">
         <h3>Wat mist nog?</h3>
-        ${renderSuggestionList(portionSuggestions(dayCollected, weekCollected), 'Voor deze beta zijn er geen duidelijke tekorten gevonden.')}
+        ${renderSuggestionList(portionSuggestions(dayCollected, weekCollected), 'Geen duidelijke tekorten gevonden.')}
       </section>
       <section class="schijf2026-card">
         <h3>Ruilsuggesties</h3>
@@ -330,10 +333,14 @@ function bestNextStep(dayCollected, weekCollected) {
   return 'Blijf variëren binnen de vakken; vooral volkoren, groente en plantaardige eiwitten zijn goede ankers.';
 }
 
+function listEntry(item) {
+  return { ...item, gram: item.bucket === 'eieren' ? null : item.amount };
+}
+
 export async function renderSchijf2026Analyse() {
   const body = document.getElementById('advies-body');
   if (!body) return;
-  body.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--muted)">Schijf 2026 beta analyseren...</div>';
+  body.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--muted)">Schijf van Vijf analyseren...</div>';
 
   const day = localData[currentDate] || await loadDay(currentDate);
   const dayCollected = collectDay(day);
@@ -363,7 +370,7 @@ export async function renderSchijf2026Analyse() {
       </div>
     </div>
     <div class="setup-hint" style="margin-bottom:1rem">
-      Beta op basis van de vernieuwde Schijf van Vijf 2026. Eerste profiel: volwassenen 18-50 met vlees en vis. Weekadviezen worden over maandag t/m zondag berekend.
+      Op basis van de vernieuwde Schijf van Vijf (2026), profiel volwassenen 18-50 met vlees en vis. Weekadviezen worden over maandag t/m zondag berekend. Producten die niet betrouwbaar te plaatsen zijn, laten we bewust buiten de analyse.
     </div>
     <section class="schijf2026-info">
       <h3>Waarom dag en week verschillen</h3>
@@ -389,5 +396,13 @@ export async function renderSchijf2026Analyse() {
       <a class="schijf2026-source-link" href="https://www.voedingscentrum.nl/nl/gezond-eten-met-de-schijf-van-vijf.aspx" target="_blank" rel="noopener noreferrer">Bekijk de Schijf van Vijf bij het Voedingscentrum</a>
     </section>
     ${renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsideShare)}
+    <section class="schijf2026-card">
+      <h3 style="color:${dayCollected.items.outside.length ? 'var(--danger)' : 'var(--green)'}">⚠ Buiten Schijf van Vijf</h3>
+      ${renderItemList(dayCollected.items.outside.map(listEntry), 'Geen duidelijk buiten-Schijf producten gevonden in de herkende set.')}
+    </section>
+    <section class="schijf2026-card">
+      <h3>🫥 Niet meegenomen in analyse</h3>
+      ${renderItemList(dayCollected.items.ignored.map(listEntry), 'Alles wat we herkenden viel in de analyse of buiten-Schijf-set.')}
+    </section>
   `;
 }
