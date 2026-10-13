@@ -101,6 +101,7 @@ describe('Schijf van Vijf 2026', () => {
     ['Halfvolle melk', 'zuivel_alt'],
     ['Kaas 45+', 'kaas'],
     ['Walnoten', 'noten'],
+    ['Chiazaad', 'noten'],
     ['Olijfolie', 'vetten_olie'],
     ['Tonijn in Olijfolie', 'vis'],
     ['Linzen gekookt', 'plant_eiwit'],

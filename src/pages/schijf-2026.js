@@ -32,7 +32,7 @@ const MEAT_PATTERN = /\b(kip|kalkoen|vlees|rund|biefstuk|gehakt|varken|varkens|h
 const RED_MEAT_PATTERN = /\b(rund|biefstuk|gehakt|varken|varkens|ham|spek|bacon|salami|worst|rookvlees|lams|kalf)\b/i;
 const CHEESE_PATTERN = /\b(kaas|goudse|mozzarella|ricotta|cottage cheese|huttenkase|feta|parmezaan)\b/i;
 const DAIRY_PATTERN = /\b(yoghurt|kwark|skyr|melk|karnemelk|sojadrink|sojamelk|sojayoghurt|erwtendrink|plantaardige yoghurt)\b/i;
-const NUT_PATTERN = /\b(noot|noten|amandel|amandelen|walnoot|walnoten|cashew|cashewnoten|pistache|pistachenoten|hazelnoot|hazelnoten|pinda|pindas|pompoenpit|zonnebloempit|chia|lijnzaad)\b/i;
+const NUT_PATTERN = /\b(noot|noten|amandel|amandelen|walnoot|walnoten|cashew|cashewnoten|pistache|pistachenoten|hazelnoot|hazelnoten|pinda|pindas|pompoenpit|pompoenpitten|zonnebloempit|zonnebloempitten|chia|chiazaad|lijnzaad|zaden)\b/i;
 // "Tonijn in olijfolie" is fish, not oil
 const PACKED_IN_OIL_PATTERN = /\b(?:in|op)\s+\w*olie\b/i;
 const FAT_PATTERN = /\b(olijfolie|zonnebloemolie|koolzaadolie|lijnzaadolie|margarine|halvarine|olie)\b/i;
@@ -396,12 +396,12 @@ export async function renderSchijf2026Analyse() {
       <a class="schijf2026-source-link" href="https://www.voedingscentrum.nl/nl/gezond-eten-met-de-schijf-van-vijf.aspx" target="_blank" rel="noopener noreferrer">Bekijk de Schijf van Vijf bij het Voedingscentrum</a>
     </section>
     ${renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsideShare)}
-    <section class="schijf2026-card">
-      <h3 style="color:${dayCollected.items.outside.length ? 'var(--danger)' : 'var(--green)'}">⚠ Buiten Schijf van Vijf</h3>
+    <section class="schijf2026-card schijf2026-list">
+      <h3 style="color:${dayCollected.items.outside.length ? 'var(--danger)' : 'var(--green)'}">Buiten Schijf van Vijf</h3>
       ${renderItemList(dayCollected.items.outside.map(listEntry), 'Geen duidelijk buiten-Schijf producten gevonden in de herkende set.')}
     </section>
-    <section class="schijf2026-card">
-      <h3>🫥 Niet meegenomen in analyse</h3>
+    <section class="schijf2026-card schijf2026-list">
+      <h3>Niet meegenomen in analyse</h3>
       ${renderItemList(dayCollected.items.ignored.map(listEntry), 'Alles wat we herkenden viel in de analyse of buiten-Schijf-set.')}
     </section>
   `;

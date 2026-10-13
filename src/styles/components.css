@@ -221,6 +221,13 @@
   font-size: 0.82rem;
   font-weight: 600;
 }
+.schijf2026-list { margin-top: 0.7rem; }
+.schijf2026-list h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.schijf2026-list > div:last-child { border-bottom: none !important; }
 .schijf2026-suggestion,
 .schijf2026-empty {
   padding: 0.35rem 0;
