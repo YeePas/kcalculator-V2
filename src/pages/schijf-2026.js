@@ -201,14 +201,34 @@ function rowValue(meta, totals, key) {
   return `${Math.round(totals[key] || 0)}/${meta.doel}`;
 }
 
-function renderRows(metas, totals) {
+// What a row is based on: the logged products per part, with amount and the matched product
+function renderRowSources(meta, key, items) {
+  const parts = meta.parts || [{ key, naam: meta.naam, icon: meta.icon }];
+  const blocks = parts.map(part => {
+    const list = items[part.key] || [];
+    const rows = list.length
+      ? list.map(item => `<li>
+          <span>${esc(item.naam)} <small>${esc([item.dag, String(item.maaltijdLabel || '').replace(/^[^\s]+\s/, '')].filter(Boolean).join(' · '))}</small>
+          ${item.matchedName && item.matchedName !== item.naam ? `<small class="s26-match">→ ${esc(item.matchedName)}</small>` : ''}</span>
+          <strong>${Math.round(item.amount || 0)}${part.key === 'eieren' ? ' st' : (part.key === 'dranken' ? 'ml' : 'g')}</strong>
+        </li>`).join('')
+      : '<li class="s26-none">Nog niets</li>';
+    return `${parts.length > 1 ? `<div class="s26-part">${esc(part.icon || '')} ${esc(part.naam)}</div>` : ''}<ul class="s26-sources">${rows}</ul>`;
+  }).join('');
+  return `<div class="s26-row-sources">${blocks}<p class="s26-hint">Hoeveelheden zoals ingevoerd. Hoort een product niet in dit vak? Meld het via de knop "Klopt niet?" bij het product.</p></div>`;
+}
+
+function renderRows(metas, totals, items = {}) {
   return Object.entries(metas).map(([key, meta]) => {
     const ratio = Math.round(ratioForMeta({ ...meta, key }, totals) * 100);
     const tone = ratio >= 80 ? 'ok' : ratio >= 45 ? 'warn' : 'bad';
-    return `<div class="schijf2026-row ${tone}">
-      <span><i style="background:${meta.color}"></i>${esc(meta.icon || '')} ${esc(meta.naam)}</span>
-      <strong>${rowValue(meta, totals, key)} ${esc(meta.unit)}</strong>
-    </div>`;
+    return `<details class="schijf2026-row-details">
+      <summary class="schijf2026-row ${tone}">
+        <span class="s26-row-label"><i style="background:${meta.color}"></i><em>${esc(meta.icon || '')} ${esc(meta.naam)}</em></span>
+        <strong>${rowValue(meta, totals, key)} ${esc(meta.unit)}<b class="s26-chevron" aria-hidden="true"></b></strong>
+      </summary>
+      ${renderRowSources(meta, key, items)}
+    </details>`;
   }).join('');
 }
 
@@ -336,10 +356,11 @@ async function loadWeekCollections() {
   const items = Object.fromEntries([...Object.keys(WEEK_TARGETS_2026), 'outside', 'ignored'].map(key => [key, []]));
   let analysedCalories = 0;
   let outsideCalories = 0;
-  days.forEach(day => {
+  days.forEach((day, idx) => {
     const collected = collectDay(day);
+    const dag = new Date(keys[idx] + 'T12:00:00').toLocaleDateString('nl-NL', { weekday: 'short' });
     Object.keys(totals).forEach(key => { totals[key] += collected.totals[key] || 0; });
-    Object.keys(items).forEach(key => { items[key].push(...(collected.items[key] || [])); });
+    Object.keys(items).forEach(key => { items[key].push(...(collected.items[key] || []).map(item => ({ ...item, dag }))); });
     analysedCalories += collected.analysedCalories;
     outsideCalories += collected.outsideCalories;
   });
@@ -402,12 +423,12 @@ export async function renderSchijf2026Analyse() {
       <section class="schijf2026-card">
         <div class="schijf2026-head"><h3>Vandaag</h3><span>${esc(currentDate)}</span></div>
         ${renderSchijfVisual(DAY_TARGETS_2026, dayCollected.totals, dayScore)}
-        ${renderRows(DAY_TARGETS_2026, dayCollected.totals)}
+        ${renderRows(DAY_TARGETS_2026, dayCollected.totals, dayCollected.items)}
       </section>
       <section class="schijf2026-card">
         <div class="schijf2026-head"><h3>Deze week</h3><span>${esc(weekCollected.keys[0])} t/m ${esc(weekCollected.keys[6])}</span></div>
         ${renderSchijfVisual(WEEK_TARGETS_2026, weekCollected.totals, weekScore)}
-        ${renderRows(WEEK_TARGETS_2026, weekCollected.totals)}
+        ${renderRows(WEEK_TARGETS_2026, weekCollected.totals, weekCollected.items)}
       </section>
     </div>
     <section class="schijf2026-card schijf2026-focus">
