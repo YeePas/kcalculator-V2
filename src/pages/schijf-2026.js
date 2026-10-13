@@ -234,6 +234,7 @@ function countVariety(itemsByKey, keys) {
   return uniqueNames(keys.flatMap(key => itemsByKey[key] || [])).length;
 }
 
+// Missing amounts: { amount, text, scope } so the amount can be shown as a chip
 function portionSuggestions(dayCollected, weekCollected) {
   const suggestions = [];
   const groenteLeft = Math.max(0, 250 - (dayCollected.totals.groente || 0));
@@ -241,57 +242,77 @@ function portionSuggestions(dayCollected, weekCollected) {
   const drinkLeft = Math.max(0, 1600 - (dayCollected.totals.dranken || 0));
   const plantLeft = Math.max(0, 250 - (weekCollected.totals.plant_eiwit || 0));
   const visLeft = Math.max(0, 100 - (weekCollected.totals.vis || 0));
-  if (groenteLeft > 0) suggestions.push(`+${Math.round(groenteLeft)}g groente: extra rauwkost, roerbakgroente of soep.`);
-  if (fruitLeft > 0) suggestions.push(`+${Math.round(fruitLeft)}g fruit: meestal 1-2 stuks.`);
-  if (drinkLeft > 0) suggestions.push(`+${Math.round(drinkLeft)}ml water, thee of koffie zonder suiker.`);
-  if (plantLeft > 0) suggestions.push(`Deze week nog +${Math.round(plantLeft)}g peulvruchten, tofu of tempé.`);
-  if (visLeft > 0) suggestions.push(`Deze week nog ongeveer +${Math.round(visLeft)}g vis.`);
-  if ((weekCollected.totals.vlees || 0) > 300) suggestions.push('Vlees zit boven de weekrichtlijn: kies een plantaardige maaltijd als ruil.');
+  if (groenteLeft > 0) suggestions.push({ amount: `${Math.round(groenteLeft)}g`, text: 'groente: extra rauwkost, roerbakgroente of soep', scope: 'vandaag' });
+  if (fruitLeft > 0) suggestions.push({ amount: `${Math.round(fruitLeft)}g`, text: 'fruit: meestal 1-2 stuks', scope: 'vandaag' });
+  if (drinkLeft > 0) suggestions.push({ amount: `${Math.round(drinkLeft)}ml`, text: 'water, thee of koffie zonder suiker', scope: 'vandaag' });
+  if (plantLeft > 0) suggestions.push({ amount: `${Math.round(plantLeft)}g`, text: 'peulvruchten, tofu of tempé', scope: 'deze week' });
+  if (visLeft > 0) suggestions.push({ amount: `${Math.round(visLeft)}g`, text: 'vis', scope: 'deze week' });
+  if ((weekCollected.totals.vlees || 0) > 300) suggestions.push({ amount: '−', text: 'vlees zit boven de weekrichtlijn: kies een plantaardige maaltijd als ruil', scope: 'deze week' });
   return suggestions.slice(0, 5);
 }
 
 function swapSuggestions(dayCollected, weekCollected) {
   const swaps = [];
-  if ((dayCollected.totals.volkoren_brood || 0) + (dayCollected.totals.graan_aardappel || 0) < 250) swaps.push('Kies volkorenbrood, havermout, zilvervliesrijst of volkoren pasta in plaats van witte varianten.');
-  if ((weekCollected.totals.plant_eiwit || 0) < 250) swaps.push('Ruil een vleesmoment voor linzen, kikkererwten, tofu of tempeh.');
-  if ((dayCollected.totals.noten || 0) < 30) swaps.push('Ruil een zoete snack voor een klein handje ongezouten noten.');
-  if (dayCollected.items.outside.length) swaps.push(`Bekijk buiten-Schijf producten zoals ${esc(uniqueNames(dayCollected.items.outside).slice(0, 2).join(', '))} en kies waar mogelijk een Schijf-alternatief.`);
+  if ((dayCollected.totals.volkoren_brood || 0) + (dayCollected.totals.graan_aardappel || 0) < 250) swaps.push({ from: 'Wit brood, witte rijst', to: 'volkorenbrood, havermout, zilvervliesrijst of volkoren pasta' });
+  if ((weekCollected.totals.plant_eiwit || 0) < 250) swaps.push({ from: 'Een vleesmoment', to: 'linzen, kikkererwten, tofu of tempeh' });
+  if ((dayCollected.totals.noten || 0) < 30) swaps.push({ from: 'Een zoete snack', to: 'een klein handje ongezouten noten' });
+  if (dayCollected.items.outside.length) swaps.push({ from: uniqueNames(dayCollected.items.outside).slice(0, 2).join(', '), to: 'een Schijf-alternatief waar dat kan' });
   return swaps.slice(0, 4);
 }
 
-function renderSuggestionList(items, emptyText) {
-  if (!items.length) return `<div class="schijf2026-empty">${esc(emptyText)}</div>`;
-  return items.map(item => `<div class="schijf2026-suggestion">${esc(item)}</div>`).join('');
+function emptyNote(text) {
+  return `<div class="schijf2026-empty">${esc(text)}</div>`;
+}
+
+function statBar(label, pct, tone) {
+  const width = Math.max(0, Math.min(100, pct));
+  return `<div class="s26-bar">
+    <div class="s26-bar-head"><span>${esc(label)}</span><strong>${pct}%</strong></div>
+    <div class="s26-bar-track"><div class="s26-bar-fill ${tone}" style="width:${width}%"></div></div>
+  </div>`;
 }
 
 function renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsideShare) {
   const dayVariety = countVariety(dayCollected.items, ['groente', 'fruit', 'volkoren_brood', 'graan_aardappel', 'zuivel_alt', 'kaas', 'vetten_olie', 'noten']);
   const weekVariety = countVariety(weekCollected.items, ['plant_eiwit', 'vis', 'eieren', 'vlees']);
   const dayCoverage = dayCollected.totalCalories ? Math.round((dayCollected.analysedCalories / dayCollected.totalCalories) * 100) : 0;
+  const dayOutside = Math.round(dayOutsideShare * 100);
+  const weekOutside = Math.round(weekOutsideShare * 100);
   const weekLimitNotes = [];
   if ((weekCollected.totals.vlees || 0) > 300) weekLimitNotes.push(`Vlees totaal: ${Math.round(weekCollected.totals.vlees)}g / max. 300g.`);
   if ((weekCollected.totals.rood_vlees || 0) > 100) weekLimitNotes.push(`Rood vlees: ${Math.round(weekCollected.totals.rood_vlees)}g / max. 100g.`);
+  const missing = portionSuggestions(dayCollected, weekCollected);
+  const swaps = swapSuggestions(dayCollected, weekCollected);
+  const outsideTone = pct => pct >= 30 ? 'bad' : pct >= 15 ? 'warn' : 'ok';
 
   return `
     <div class="schijf2026-insight-grid">
-      <section class="schijf2026-card">
-        <h3>Wat mist nog?</h3>
-        ${renderSuggestionList(portionSuggestions(dayCollected, weekCollected), 'Geen duidelijke tekorten gevonden.')}
+      <section class="schijf2026-card s26-insight">
+        <h3><span class="s26-icon">🎯</span>Wat mist nog?</h3>
+        ${missing.length ? `<ul class="s26-list">${missing.map(item => `<li>
+          <span class="s26-chip">+${esc(item.amount)}</span>
+          <span>${esc(item.text)}<small>${esc(item.scope)}</small></span>
+        </li>`).join('')}</ul>` : emptyNote('Geen duidelijke tekorten gevonden.')}
       </section>
-      <section class="schijf2026-card">
-        <h3>Ruilsuggesties</h3>
-        ${renderSuggestionList(swapSuggestions(dayCollected, weekCollected), 'Geen logische ruilsuggesties gevonden op basis van de huidige invoer.')}
+      <section class="schijf2026-card s26-insight">
+        <h3><span class="s26-icon">🔄</span>Ruilsuggesties</h3>
+        ${swaps.length ? `<ul class="s26-list s26-swaps">${swaps.map(swap => `<li>
+          <span><span class="s26-from">${esc(swap.from)}</span><span class="s26-arrow" aria-hidden="true">→</span>${esc(swap.to)}</span>
+        </li>`).join('')}</ul>` : emptyNote('Geen ruilsuggesties op basis van de huidige invoer.')}
       </section>
-      <section class="schijf2026-card">
-        <h3>Variatie</h3>
-        <div class="schijf2026-suggestion">Vandaag ${dayVariety} verschillende Schijf-producten herkend.</div>
-        <div class="schijf2026-suggestion">Deze week ${weekVariety} verschillende week-eiwitbronnen herkend.</div>
+      <section class="schijf2026-card s26-insight">
+        <h3><span class="s26-icon">🌈</span>Variatie</h3>
+        <div class="s26-stats">
+          <div class="s26-stat"><strong>${dayVariety}</strong><span>Schijf-producten vandaag</span></div>
+          <div class="s26-stat"><strong>${weekVariety}</strong><span>eiwitbronnen deze week</span></div>
+        </div>
       </section>
-      <section class="schijf2026-card">
-        <h3>Betrouwbaarheid</h3>
-        <div class="schijf2026-suggestion">${dayCoverage}% van dagens calorieën kon worden meegenomen.</div>
-        <div class="schijf2026-suggestion">Buiten-Schijf aandeel: vandaag ${Math.round(dayOutsideShare * 100)}%, week ${Math.round(weekOutsideShare * 100)}%.</div>
-        ${weekLimitNotes.length ? renderSuggestionList(weekLimitNotes, '') : '<div class="schijf2026-suggestion">Weeklimieten voor vlees/rood vlees zijn nog niet overschreden.</div>'}
+      <section class="schijf2026-card s26-insight">
+        <h3><span class="s26-icon">📏</span>Betrouwbaarheid</h3>
+        ${statBar('Calorieën meegenomen', dayCoverage, dayCoverage >= 70 ? 'ok' : dayCoverage >= 45 ? 'warn' : 'bad')}
+        ${statBar('Buiten Schijf vandaag', dayOutside, outsideTone(dayOutside))}
+        ${statBar('Buiten Schijf deze week', weekOutside, outsideTone(weekOutside))}
+        <div class="s26-note ${weekLimitNotes.length ? 'bad' : ''}">${weekLimitNotes.length ? weekLimitNotes.map(esc).join('<br>') : '✓ Weeklimieten vlees en rood vlees niet overschreden'}</div>
       </section>
     </div>`;
 }
