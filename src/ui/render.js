@@ -192,24 +192,24 @@ export function renderMealItems(items, meal) {
     const totProt = g.items.reduce((s, x) => s + (x.item.eiwitten_g || 0), 0);
     const uid = g.groupId.replace(/[^a-zA-Z0-9]/g, '_');
 
+    const totFiber = g.items.reduce((s, x) => s + (x.item.vezels_g || 0), 0);
+
+    // Same layout as a single item: name, macro chips, kcal and actions; ingredients fold out below
     return `<div class="recipe-group${isRecipeSelectionActive ? '' : ' collapsed'}" id="rg-${uid}">
-      <div class="recipe-group-header" data-action="toggle-group">
-        <div class="recipe-group-name">
-          <span class="recipe-group-toggle">▾</span>
-          🍽️ ${esc(g.name)}
+      <div class="meal-item recipe-group-header" data-action="toggle-group" role="button" aria-label="Ingrediënten tonen of verbergen">
+        <div style="flex:1;min-width:0">
+          <div class="item-name">${esc(g.name)} <span class="recipe-group-count">(gerecht · ${g.items.length} items)</span><span class="recipe-group-toggle" aria-hidden="true"></span></div>
+          <div class="item-macros"><span class="macro"><span class="macro-dot dot-c"></span>${r1(totCarbs)}g kh</span><span class="macro"><span class="macro-dot dot-v"></span>${r1(totFat)}g vet</span><span class="macro"><span class="macro-dot dot-e"></span>${r1(totProt)}g eiwit</span>${totFiber > 0 ? `<span class="macro" style="opacity:0.6">${r1(totFiber)}g vezel</span>` : ''}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:0.5rem">
-          <div class="recipe-group-info">${g.items.length} items · ${r1(totKcal)} kcal</div>
+        <div style="display:flex;align-items:center;gap:0.15rem;flex-shrink:0">
+          <span class="item-cals">${Math.round(totKcal)} kcal</span>
+          <span class="icon-action icon-action-spacer" aria-hidden="true">${ICON_STAR}</span>
           <button class="icon-action item-edit" data-action="edit-group" data-meal="${meal}" data-group="${esc(g.groupId)}" title="Gerecht bewerken" aria-label="Gerecht bewerken">${ICON_EDIT}</button>
           <button class="icon-action is-danger item-delete" data-action="delete-group" data-meal="${meal}" data-group="${esc(g.groupId)}" title="Gerecht verwijderen" aria-label="Gerecht verwijderen">${ICON_DELETE}</button>
         </div>
       </div>
       <div class="recipe-group-items">
         ${g.items.map(x => renderItem(x.item, meal, x.idx)).join('')}
-        <div style="display:flex;justify-content:space-between;padding:0.3rem 0.25rem;font-size:0.75rem;font-weight:500;border-top:1px solid var(--border);color:var(--muted)">
-          <span>Totaal</span>
-          <span>${r1(totKcal)} kcal · ${r1(totCarbs)}g kh · ${r1(totFat)}g vet · ${r1(totProt)}g eiwit</span>
-        </div>
       </div>
     </div>`;
   }).join('');

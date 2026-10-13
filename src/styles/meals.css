@@ -201,10 +201,19 @@ textarea#food-input::placeholder { color: var(--tertiary); }
   accent-color: var(--accent);
   cursor: pointer;
 }
-.recipe-group { border: 1px solid var(--border); border-radius: calc(var(--radius-md) + 2px); margin: 0.4rem 0; overflow: hidden; background: color-mix(in srgb, var(--surface-strong) 84%, var(--surface-soft)); }
-.recipe-group-header { padding: 0.75rem 0.85rem; background: transparent; }
-.recipe-group-header:hover { background: color-mix(in srgb, var(--surface-strong) 90%, var(--surface-soft)); }
-.recipe-group-info { font-size: 0.72rem; color: var(--muted); }
+/* A dish is a row like any item; its ingredients fold out below, indented */
+.recipe-group { border-top: 1px solid var(--border-subtle); }
+.meal-items > .recipe-group:first-child { border-top: none; }
+.recipe-group-header { border-top: none; cursor: pointer; user-select: none; }
+.icon-action-spacer { visibility: hidden; pointer-events: none; }
+.recipe-group-header:hover .item-name { color: var(--accent); }
+.recipe-group-count { font-weight: 300; color: var(--muted); font-size: 0.8rem; }
+.recipe-group-toggle { display: inline-block; width: 0.42rem; height: 0.42rem; margin-left: 0.45rem; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg) translateY(-3px); transition: transform 0.15s; }
+.recipe-group.collapsed .recipe-group-toggle { transform: rotate(-45deg) translateY(-1px); }
+.recipe-group-items { margin: 0 0 0.45rem 0.35rem; padding-left: 0.75rem; border-left: 2px solid color-mix(in srgb, var(--accent) 35%, var(--border)); }
+.recipe-group.collapsed .recipe-group-items { display: none; }
+.recipe-group-items .meal-item { padding: 0.32rem 0; }
+.recipe-group-items .item-name { font-size: 0.8rem; font-weight: 600; }
 .over-val { color: var(--danger); }
 
 /* ── Status Message ───────────────────────────────────────── */
