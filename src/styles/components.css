@@ -195,7 +195,11 @@
 .s26-chevron { display: inline-block; flex-shrink: 0; width: 0.45rem; height: 0.45rem; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg) translateY(-2px); transition: transform 0.15s; }
 .schijf2026-row-details[open] .s26-chevron { transform: rotate(-135deg) translateY(-1px); }
 .s26-row-sources { padding: 0.15rem 0 0.7rem 1.35rem; }
-.s26-part { font-size: 0.72rem; font-weight: 700; color: var(--muted); margin: 0.45rem 0 0.2rem; }
+.schijf2026-row-details > summary .s26-row-bar { display: block; flex-basis: 100%; height: 4px; margin-left: 1.3rem; border-radius: 999px; background: var(--border); overflow: hidden; }
+.s26-row-bar > span { display: block; height: 100%; border-radius: 999px; }
+.s26-row-bar .ok { background: var(--green); }
+.s26-row-bar .warn { background: #e8a020; }
+.s26-row-bar .bad { background: var(--danger); }
 .s26-sources { list-style: none; margin: 0; padding: 0; }
 .s26-sources li { display: flex; justify-content: space-between; gap: 0.6rem; padding: 0.3rem 0; border-top: 1px dashed var(--border-subtle); font-size: 0.76rem; }
 .s26-sources li:first-child { border-top: none; }

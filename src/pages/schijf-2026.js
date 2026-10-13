@@ -194,42 +194,50 @@ function renderSchijfVisual(metas, totals, score) {
   </div>`;
 }
 
-function rowValue(meta, totals, key) {
-  if (meta.parts) {
-    return meta.parts.map(part => `${part.icon || ''} ${Math.round(totals[part.key] || 0)}/${part.doel}`).join(' · ');
-  }
-  return `${Math.round(totals[key] || 0)}/${meta.doel}`;
+// One row per part ("Groente" and "Fruit" separately), coloured like their box in the pie
+function rowsFor(metas) {
+  return Object.entries(metas).flatMap(([key, meta]) => (meta.parts || [{ key }]).map(part => ({
+    key: part.key,
+    naam: part.naam || meta.naam,
+    icon: part.icon || meta.icon,
+    doel: part.doel || meta.doel,
+    color: meta.color,
+    max: Boolean(meta.max),
+    unit: part.key === 'dranken' || part.key === 'zuivel_alt' ? 'ml' : (meta.unit === 'st' ? 'st' : 'g'),
+  })));
 }
 
-// What a row is based on: the logged products per part, with amount and the matched product
-function renderRowSources(meta, key, items) {
-  const parts = meta.parts || [{ key, naam: meta.naam, icon: meta.icon }];
-  const blocks = parts.map(part => {
-    const list = items[part.key] || [];
-    const rows = list.length
-      ? list.map(item => `<li>
-          <span>${esc(item.naam)} <small>${esc([item.dag, String(item.maaltijdLabel || '').replace(/^[^\s]+\s/, '')].filter(Boolean).join(' · '))}</small>
-          ${item.matchedName && item.matchedName !== item.naam ? `<small class="s26-match">→ ${esc(item.matchedName)}</small>` : ''}</span>
-          <strong>${Math.round(item.amount || 0)}${part.key === 'eieren' ? ' st' : (part.key === 'dranken' ? 'ml' : 'g')}</strong>
-        </li>`).join('')
-      : '<li class="s26-none">Nog niets</li>';
-    return `${parts.length > 1 ? `<div class="s26-part">${esc(part.icon || '')} ${esc(part.naam)}</div>` : ''}<ul class="s26-sources">${rows}</ul>`;
-  }).join('');
-  return `<div class="s26-row-sources">${blocks}<p class="s26-hint">Hoeveelheden zoals ingevoerd. Hoort een product niet in dit vak? Meld het via de knop "Klopt niet?" bij het product.</p></div>`;
+function amountText(amount, unit) {
+  return `${Math.round(amount || 0)}${unit === 'st' ? ' st' : unit}`;
+}
+
+// What a row is based on: the logged products, with amount, meal and the matched product
+function renderRowSources(row, items) {
+  const list = items[row.key] || [];
+  const rows = list.length
+    ? list.map(item => `<li>
+        <span>${esc(item.naam)} <small>${esc([item.dag, String(item.maaltijdLabel || '').replace(/^[^\s]+\s/, '')].filter(Boolean).join(' · '))}</small>
+        ${item.matchedName && item.matchedName !== item.naam ? `<small class="s26-match">→ ${esc(item.matchedName)}</small>` : ''}</span>
+        <strong>${amountText(item.amount, row.unit)}</strong>
+      </li>`).join('')
+    : '<li class="s26-none">Nog niets</li>';
+  return `<div class="s26-row-sources"><ul class="s26-sources">${rows}</ul></div>`;
 }
 
 function renderRows(metas, totals, items = {}) {
-  return Object.entries(metas).map(([key, meta]) => {
-    const ratio = Math.round(ratioForMeta({ ...meta, key }, totals) * 100);
+  return rowsFor(metas).map(row => {
+    const ratio = Math.round(ratioForMeta({ key: row.key, doel: row.doel, max: row.max }, totals) * 100);
     const tone = ratio >= 80 ? 'ok' : ratio >= 45 ? 'warn' : 'bad';
+    const fill = Math.min(100, Math.round(((totals[row.key] || 0) / row.doel) * 100));
     return `<details class="schijf2026-row-details">
       <summary class="schijf2026-row ${tone}">
-        <span class="s26-row-label"><i style="background:${meta.color}"></i><em>${esc(meta.icon || '')} ${esc(meta.naam)}</em></span>
-        <strong>${rowValue(meta, totals, key)} ${esc(meta.unit)}<b class="s26-chevron" aria-hidden="true"></b></strong>
+        <span class="s26-row-label"><i style="background:${row.color}"></i><em>${esc(row.icon || '')} ${esc(row.naam)}</em></span>
+        <strong>${Math.round(totals[row.key] || 0)}/${amountText(row.doel, row.unit)}${row.max ? ' max' : ''}<b class="s26-chevron" aria-hidden="true"></b></strong>
+        <span class="s26-row-bar"><span class="${row.max && fill >= 100 ? 'bad' : tone}" style="width:${fill}%"></span></span>
       </summary>
-      ${renderRowSources(meta, key, items)}
+      ${renderRowSources(row, items)}
     </details>`;
-  }).join('');
+  }).join('') + '<p class="s26-hint">Tik op een regel om te zien welke producten meetellen. Hoort een product niet in een vak? Meld het via "Klopt niet?" bij het product.</p>';
 }
 
 function scoreFromMetas(metas, totals, outsideShare = 0) {
