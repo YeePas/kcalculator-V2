@@ -1,9 +1,10 @@
-/* ── Micronutrient Dashboard (AI + heuristic estimation) ──── */
+/* ── Micronutrient Dashboard (NEVO data + heuristic estimate) ── */
 
-import { localData, currentDate, goals, cfg } from '../state.js';
-import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
-import { emptyDay, dayTotals } from '../utils.js';
-import { aiCall, hasAiAvailable } from '../ai/providers.js';
+import { localData, currentDate, nevoData } from '../state.js';
+import { MEAL_NAMES } from '../constants.js';
+import { emptyDay, esc } from '../utils.js';
+import { loadDay } from '../supabase/data.js';
+import { matchItemToNevo, scaleMicros } from '../products/matcher.js';
 
 export const RDA = {
   vitamine_d_ug: { naam: 'Vitamine D', doel: 10, unit: '\u00b5g', bronnen: 'Vette vis (zalm, makreel), eieren, verrijkte zuivel' },
@@ -165,88 +166,82 @@ function estimateGram(item) {
   return 100; // default fallback
 }
 
-const CACHE_PREFIX = 'kcalc_micro_';
-
-function getCached(dateStr) {
-  try {
-    const raw = sessionStorage.getItem(CACHE_PREFIX + dateStr);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+function microWords(value) {
+  return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .split(/[^a-z0-9]+/).filter(word => word.length > 1);
 }
 
-function setCache(dateStr, data) {
-  try { sessionStorage.setItem(CACHE_PREFIX + dateStr, JSON.stringify(data)); } catch {}
+// The NEVO product whose name or synonym holds every word of the logged name (in any order, also
+// as part of a compound), shortest first: "Halfvolle melk" -> "Melk halfvolle", "Havermout" ->
+// "Vlokken haver-" (synonym Havermout). Without a match, trailing words are dropped one by one
+// ("Tonijn in olijfolie" -> "Tonijn in olie blik").
+let nevoMicroIndex = null;
+function findNevoWithMicros(name) {
+  const words = microWords(name).map(word => word.replace(/(en|s)$/, '')).filter(word => word.length > 1);
+  if (!words.length || !Array.isArray(nevoData?.items)) return null;
+  if (!nevoMicroIndex || nevoMicroIndex.source !== nevoData) {
+    nevoMicroIndex = {
+      source: nevoData,
+      texts: nevoData.items.filter(item => item.src === 'rivm' && item.m)
+        .flatMap(item => [item.n, ...String(item.s || '').split('/')].filter(Boolean)
+          .map(text => ({ item, length: text.length, words: microWords(text) })))
+        .sort((a, b) => a.length - b.length),
+    };
+  }
+  for (let count = words.length; count >= 1; count--) {
+    const wanted = words.slice(0, count);
+    const hit = nevoMicroIndex.texts.find(entry =>
+      wanted.every(word => entry.words.some(candidate => candidate.startsWith(word) || candidate.endsWith(word))));
+    if (hit) return hit.item;
+  }
+  return null;
 }
 
-export async function getMicroAdvies() {
+/**
+ * Micronutrients for a day from the data: NEVO values stored on the item, else those of the
+ * NEVO product the item matches, else the category estimate above.
+ */
+export function microFromDay(day) {
+  const items = MEAL_NAMES.flatMap(meal => day?.[meal] || []);
+  const measured = [];
+  const estimated = [];
+  const perItem = items.map(item => {
+    if (item._micro) {
+      measured.push(item.naam);
+      return item;
+    }
+    // A brand product (Open Food Facts) has no micronutrients: then take the closest NEVO product
+    const matched = matchItemToNevo({ foodName: item.naam, gram: null, count: 1, unit: null });
+    const product = matched?.m ? matched : findNevoWithMicros(item.naam);
+    const micros = product ? scaleMicros(product.m, estimateGram(item) / 100) : null;
+    if (micros) {
+      measured.push(item.naam);
+      return { ...item, _micro: micros };
+    }
+    estimated.push(item.naam);
+    return item;
+  });
+  return { totals: estimateMicroHeuristic(perItem), measured, estimated };
+}
+
+export async function renderMicroAnalyse() {
   const body = document.getElementById('advies-body');
   if (!body) return;
-
-  if (!hasAiAvailable()) throw new Error('AI niet beschikbaar');
-
-  const day = localData[currentDate] || emptyDay();
-  const allItems = MEAL_NAMES.flatMap(m => (day[m] || []).map(i => ({ ...i, maaltijd: m })));
-
-  if (!allItems.length) {
+  const day = localData[currentDate] || await loadDay(currentDate) || emptyDay();
+  const { totals, measured, estimated } = microFromDay(day);
+  if (!measured.length && !estimated.length) {
     body.innerHTML = '<div class="advies-content"><p style="color:var(--muted);font-style:italic">Nog geen items vandaag \u2014 voeg eerst wat toe.</p></div>';
     return;
   }
-
-  // Check cache
-  const cached = getCached(currentDate);
-  if (cached) {
-    renderMicroDashboard(body, cached);
-    return;
-  }
-
-  body.innerHTML = '<div class="advies-loading"><span class="spin">\u23f3</span> Micronutri\u00ebnten schatten\u2026</div>';
-
-  const itemList = allItems.map(i =>
-    `${i.naam}${i.portie ? ' (' + i.portie + ')' : ''}: ${i.kcal} kcal, ${i.koolhydraten_g || 0}g kh, ${i.vetten_g || 0}g vet, ${i.eiwitten_g || 0}g eiwit`
-  ).join('\n');
-
-  const provider = cfg.adviesProvider || cfg.provider || 'claude';
-  const origModel = cfg.model;
-  if (cfg.adviesModel) cfg.model = cfg.adviesModel;
-
-  try {
-    const text = await aiCall(provider, 'Je bent een Nederlandse voedingsdeskundige. Antwoord ALLEEN met valide JSON, geen tekst eromheen.', `Schat de totale micronutri\u00ebnten voor deze voedingsmiddelen die vandaag gegeten zijn. Gebruik de hoeveelheden/porties om een realistische inschatting te maken.
-
-Gegeten vandaag:
-${itemList}
-
-Schat per micronutri\u00ebnt het TOTAAL voor de hele dag. Antwoord ALLEEN met valide JSON:
-{"vitamine_d_ug":X,"ijzer_mg":X,"calcium_mg":X,"vitamine_b12_ug":X,"vitamine_c_mg":X,"zink_mg":X,"magnesium_mg":X,"foliumzuur_ug":X}
-
-Richtlijnen: Vitamine D ADH=10\u00b5g, IJzer ADH=13mg, Calcium ADH=950mg, B12 ADH=2.8\u00b5g, Vit C ADH=75mg, Zink ADH=9mg, Magnesium ADH=350mg, Foliumzuur ADH=300\u00b5g.
-Geef realistische getallen (niet te laag, niet te hoog). Geen ranges, alleen getallen.`, 500, false);
-
-    const data = parseAiMicroResponse(text);
-    if (!data) throw new Error('Kon geen micronutri\u00ebnten uit AI-antwoord halen');
-    setCache(currentDate, data);
-    renderMicroDashboard(body, data);
-  } finally {
-    cfg.model = origModel;
-  }
+  renderMicroDashboard(body, totals, 'Berekend uit je invoer', true);
+  const note = document.createElement('div');
+  note.className = 'micro-disclaimer';
+  note.innerHTML = `<strong>${measured.length}</strong> van ${measured.length + estimated.length} producten met waarden uit NEVO.`
+    + (estimated.length ? ` Geschat op productcategorie: ${esc(estimated.slice(0, 5).join(', '))}${estimated.length > 5 ? '\u2026' : ''}.` : '');
+  body.appendChild(note);
 }
 
-function parseAiMicroResponse(text) {
-  try {
-    const jsonMatch = text.match(/\{[^{}]*\}/);
-    if (!jsonMatch) return null;
-    const parsed = JSON.parse(jsonMatch[0]);
-    const result = {};
-    for (const key of Object.keys(RDA)) {
-      const val = Number(parsed[key]);
-      result[key] = Number.isFinite(val) && val >= 0 ? Math.round(val * 10) / 10 : 0;
-    }
-    return result;
-  } catch {
-    return null;
-  }
-}
-
-export function renderMicroDashboard(container, data, label = 'AI-schatting', showSources = false) {
+export function renderMicroDashboard(container, data, label = 'Schatting', showSources = false) {
   let html = '<div class="micro-grid">';
 
   for (const [key, meta] of Object.entries(RDA)) {
@@ -260,13 +255,13 @@ export function renderMicroDashboard(container, data, label = 'AI-schatting', sh
       <div class="micro-row">
         <div class="micro-name">${meta.naam}</div>
         <div class="micro-bar"><div class="micro-bar-fill" style="width:${barPct}%;background:${color}"></div></div>
-        <div class="micro-val">${val}${meta.unit}/${meta.doel}</div>
+        <div class="micro-val">${val >= 100 ? Math.round(val) : val}${meta.unit}/${meta.doel}</div>
         <div class="micro-pct" style="color:${color}">${pct}%</div>
       </div>${lowSource}
     </div>`;
   }
 
   html += '</div>';
-  html += `<div class="micro-disclaimer">${label} op basis van productcategorie \u2014 geen medisch advies.</div>`;
+  html += `<div class="micro-disclaimer">${label} \u2014 geen medisch advies.</div>`;
   container.innerHTML = html;
 }

@@ -222,7 +222,7 @@ const NEVO_MICRO_KEYS = {
   vitc: 'vitamine_c_mg', zn: 'zink_mg', mg: 'magnesium_mg', fol: 'foliumzuur_ug',
 };
 
-function scaleMicros(micros, factor) {
+export function scaleMicros(micros, factor) {
   const result = {};
   for (const [key, value] of Object.entries(micros || {})) {
     if (NEVO_MICRO_KEYS[key] && Number.isFinite(value)) {

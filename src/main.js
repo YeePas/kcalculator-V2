@@ -693,7 +693,7 @@ function initEventListeners() {
     });
   });
   document.getElementById('advies-refresh-btn')?.addEventListener('click', () => {
-    if (activeAdviesTab === 'schijf') showAdviesContent();
+    if (activeAdviesTab !== 'avond') showAdviesContent();
     else runAdvies(activeAdviesTab);
   });
   document.getElementById('advies-back-btn')?.addEventListener('click', closeAdviesPage);

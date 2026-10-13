@@ -361,7 +361,7 @@ body {
     <p>Voor de meeste acties in Kcalculator heb je geen AI Provider nodig. Maar als je een gerecht wilt herkennen, een foto wilt uploaden of een diepere analyse wilt gebruiken, dan heb je wel een AI Provider met API-key nodig. In <strong>Instellingen → AI</strong> kies je per onderdeel welke provider Kcalculator standaard gebruikt.</p>
     <ol class="steps">
       <li><strong>Invullen</strong> wordt gebruikt voor algemene AI-invulacties in de app.</li>
-      <li><strong>Analyse</strong> wordt gebruikt voor advies, avondeten-suggesties, daganalyse en AI Week.</li>
+      <li><strong>Analyse</strong> wordt gebruikt voor de avondeten-suggesties.</li>
       <li><strong>Gerechten</strong> wordt gebruikt voor Slimme Import, gerecht-herkenning, recepten en URL-import.</li>
       <li>De provider kies je centraal in Instellingen, maar het model selecteer je op de betreffende pagina zelf.</li>
     </ol>
@@ -382,7 +382,7 @@ body {
         <p><a href="https://docs.anthropic.com/en/docs/quickstart" target="_blank" rel="noopener noreferrer">API key / quickstart</a><br><a href="https://www.anthropic.com/pricing" target="_blank" rel="noopener noreferrer">Officiële pricing</a></p>
       </div>
     </div>
-    <div class="tip"><strong>Kostenindicatie:</strong> onderstaande bedragen zijn grove schattingen voor een normale tekst-call in Kcalculator. Eenvoudige acties kosten meestal minder dan 1 cent, maar foto-analyse, URL-import en lange dag- of weekanalyses kunnen hoger uitvallen doordat er meer input en output wordt verwerkt.</div>
+    <div class="tip"><strong>Kostenindicatie:</strong> onderstaande bedragen zijn grove schattingen voor een normale tekst-call in Kcalculator. Eenvoudige acties kosten meestal minder dan 1 cent, maar foto-analyse en URL-import kunnen hoger uitvallen doordat er meer input en output wordt verwerkt.</div>
     <div class="card-grid">
       <div class="card">
         <div class="card-title"><span class="emoji">💸</span> Gemini</div>
@@ -642,12 +642,16 @@ body {
         <p>Bekijk trends over 7, 30 of 90 dagen met interactieve grafieken en sparklines.</p>
       </div>
       <div class="card">
-        <div class="card-title"><span class="emoji">🤖</span> AI Adviezen</div>
-        <p>Ontvang persoonlijke voedingsadviezen op basis van je dag- of weekpatronen, inclusief de Schijf van Vijf analyse.</p>
+        <div class="card-title"><span class="emoji">🥗</span> Schijf van Vijf</div>
+        <p>Zie per dag en per week hoe je eet volgens de Schijf van Vijf (2026): wat je haalt, wat nog mist, ruilsuggesties, en welke producten buiten de Schijf vallen. Berekend uit je invoer, zonder AI.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="emoji">🍽️</span> Avondeten</div>
+        <p>Laat AI een avondeten voorstellen dat past bij wat je vandaag nog over hebt. Werkt het best met een betaalde AI Provider.</p>
       </div>
       <div class="card">
         <div class="card-title"><span class="emoji">🔬</span> Micronutriënten</div>
-        <p>Schatting van je vitamine- en mineralenintake (o.a. vitamine D, ijzer, calcium, B12).</p>
+        <p>Je vitamine- en mineralenintake (vitamine D, ijzer, calcium, B12, vitamine C, zink, magnesium en foliumzuur), berekend met de gemeten waarden uit NEVO. Producten zonder NEVO-gegevens worden geschat; de app laat zien welke dat zijn.</p>
       </div>
     </div>
   </div>
