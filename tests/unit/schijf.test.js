@@ -105,6 +105,8 @@ describe('Schijf van Vijf 2026', () => {
     ['Olijfolie', 'vetten_olie'],
     ['Tonijn in Olijfolie', 'vis'],
     ['Linzen gekookt', 'plant_eiwit'],
+    ['Basilicum vers', 'groente'],
+    ['Peterselie', 'groente'],
   ])('%s counts as %s', (naam, bucket) => {
     expect(bucketOf(naam)).toBe(bucket);
   });
@@ -125,5 +127,16 @@ describe('Schijf van Vijf 2026 upper bounds', () => {
     expect(isAboveAdvice({ key: 'kaas', boven: 40 }, { kaas: 30 })).toBe(false);
     expect(isAboveAdvice({ key: 'kaas', boven: 40 }, { kaas: 60 })).toBe(true);
     expect(isAboveAdvice({ key: 'groente' }, { groente: 900 })).toBe(false);
+  });
+});
+
+describe('Schijf van Vijf 2026 herbs and spices', () => {
+  it('lists dried herbs and spices as fitting the Schijf without counting', async () => {
+    setNevoData(products); setNevoReady(true);
+    const { collectDay } = await import('../../src/pages/schijf-2026.js');
+    const { items } = collectDay({ avondeten: [{ naam: 'Oregano gedroogd', kcal: 3, _gram: 1 }] });
+    expect(items.ignored[0]?.reason).toMatch(/passen in de Schijf/);
+    const pesto = collectDay({ lunch: [{ naam: 'Pesto basilicum', kcal: 100, _gram: 20 }] });
+    expect(pesto.items.groente).toEqual([]);
   });
 });

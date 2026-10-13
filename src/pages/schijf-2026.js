@@ -39,6 +39,10 @@ const FAT_PATTERN = /\b(olijfolie|zonnebloemolie|koolzaadolie|lijnzaadolie|marga
 const WHOLEGRAIN_PATTERN = /\b(volkoren|wholegrain|whole grain|havermout|muesli|rogge|spelt)\b/i;
 const GRAIN_POTATO_PATTERN = /\b(aardappel|aardappelen|krieltje|zilvervlies|bruine rijst|quinoa|bulgur|boekweit|pasta|rijst)\b/i;
 const FRUIT_PATTERN = /\b(appel|peer|banaan|kiwi|aardbei|blauwe bes|druif|druiven|mandarijn|sinaasappel|mango|perzik|pruim|nectarine|ananas|meloen|fruit)\b/i;
+// Fresh herbs are unprocessed plant parts: vegetables in the Schijf (in small amounts).
+// Dried herbs and spices fit the Schijf too, but count toward no box.
+const FRESH_HERB_PATTERN = /\b(basilicum|peterselie|koriander|dille|bieslook|munt|rozemarijn|tijm|oregano|dragon|kervel|salie|citroengras|lavas|selderijblad)\b/i;
+const DRIED_HERB_PATTERN = /\b(gedroogd|gedroogde|poeder|gemalen|specerij|specerijen|kruidenmix|peper|kaneel|paprikapoeder|kerrie|komijn|nootmuskaat)\b/i;
 const VEG_PATTERN = /\b(groente|broccoli|spinazie|sla|komkommer|paprika|tomaat|wortel|courgette|bloemkool|boerenkool|andijvie|prei|sperziebonen|snijbonen|aubergine|raapstelen|asperges)\b/i;
 
 function normalizeName(value) {
@@ -95,6 +99,13 @@ function classifyItem(item) {
   // Hard fats such as roomboter are outside whichever bucket they would land in
   if (schijfOutsideCheck(item.naam, match) || schijfOutsideCheck(item.naam, match, 'vet')) return outside;
   if (WATER_DRINK_PATTERN.test(name) || group === 'Niet-alcoholische dranken') return { ...entry, bucket: 'dranken' };
+  const herbName = normalizeSchijfName(item.naam);
+  if (group === 'Kruiden en specerijen' || FRESH_HERB_PATTERN.test(herbName) || DRIED_HERB_PATTERN.test(herbName)) {
+    if (FRESH_HERB_PATTERN.test(herbName) && !DRIED_HERB_PATTERN.test(herbName) && !/pesto|saus|olie|dressing|thee|boter|kaas/.test(herbName)) return { ...entry, bucket: 'groente' };
+    if (group === 'Kruiden en specerijen' || DRIED_HERB_PATTERN.test(herbName)) {
+      return { ...entry, bucket: 'ignored', reason: 'Kruiden en specerijen passen in de Schijf, maar tellen niet mee voor een vak.' };
+    }
+  }
   if (group === 'Groente' || VEG_PATTERN.test(name)) return { ...entry, bucket: 'groente' };
   if (group === 'Fruit' || FRUIT_PATTERN.test(name)) return { ...entry, bucket: 'fruit' };
   if (CHEESE_PATTERN.test(name) || group === 'Kaas') return { ...entry, bucket: 'kaas' };
