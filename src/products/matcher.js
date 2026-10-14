@@ -164,6 +164,26 @@ function normalizeCandidateName(name) {
 let _customCache = null;
 let _customCacheTime = 0;
 
+// Name-only matches (analysis pages) are looked up often for the same names; remember them
+// until the product data or the supermarket filter changes.
+const nameMatchCache = new Map();
+let nameMatchSource = null;
+let nameMatchFilter = '';
+
+export function matchNameToNevo(name) {
+  const filter = JSON.stringify(cfg?.supermarketExclusions || []);
+  if (nameMatchSource !== nevoData || nameMatchFilter !== filter) {
+    nameMatchCache.clear();
+    nameMatchSource = nevoData;
+    nameMatchFilter = filter;
+  }
+  const key = String(name || '').toLowerCase().trim();
+  if (!nameMatchCache.has(key)) {
+    nameMatchCache.set(key, matchItemToNevo({ foodName: name, gram: null, count: 1, unit: null }));
+  }
+  return nameMatchCache.get(key);
+}
+
 export function matchItemToNevo(parsedItem) {
   const rawCandidates = [
     parsedItem.foodName,

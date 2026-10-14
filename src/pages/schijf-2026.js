@@ -1,10 +1,10 @@
 /* ── Schijf van Vijf 2026 Analysis ────────────────────────── */
 
-import { currentDate, localData } from '../state.js';
+import { currentDate, localData, nevoData } from '../state.js';
 import { MEAL_LABELS, MEAL_NAMES } from '../constants.js';
-import { dateKey, dayTotals, esc, r1 } from '../utils.js';
-import { loadDay } from '../supabase/data.js';
-import { PORTION_ALIASES, matchItemToNevo } from '../products/matcher.js';
+import { dateKey, dayTotals, emptyDay, esc, r1 } from '../utils.js';
+import { loadDay, getCachedDay, refreshDayRange } from '../supabase/data.js';
+import { PORTION_ALIASES, matchNameToNevo } from '../products/matcher.js';
 import { schijfOutsideCheck, schijfProductGroup, REFINED_NAME_PATTERN, normalizeSchijfName, renderItemList } from './schijf.js';
 import { RDA, microFromDay, microDashboardHTML } from './micronutrients.js';
 
@@ -87,7 +87,7 @@ function parseLoggedItemAmount(item, matchedProduct) {
 }
 
 function classifyItem(item) {
-  const match = matchItemToNevo({ foodName: item.naam, gram: null, count: 1, unit: null });
+  const match = matchNameToNevo(item.naam);
   const group = schijfProductGroup(match);
   const name = normalizeName(`${item.naam} ${match?.n || ''}`);
   const amount = parseLoggedItemAmount(item, match);
@@ -140,7 +140,25 @@ function emptyTotals(keys) {
   return Object.fromEntries(keys.map(key => [key, 0]));
 }
 
+// Days are analysed again and again (main page, Schijf page, data page, week); remember the
+// result per day content
+const collectCache = new Map();
+function daySignature(day) {
+  return MEAL_NAMES.map(meal => (day?.[meal] || []).map(item => [item.naam, item._gram, item.ml, item.portie, item.kcal].join('|')).join(';')).join('#');
+}
+
 export function collectDay(day) {
+  const signature = daySignature(day);
+  const cached = collectCache.get(signature);
+  // Only valid for the product data it was made with (it may not have loaded yet)
+  if (cached && cached.source === nevoData) return cached.result;
+  const result = collectDayUncached(day);
+  if (collectCache.size > 200) collectCache.clear();
+  collectCache.set(signature, { source: nevoData, result });
+  return result;
+}
+
+function collectDayUncached(day) {
   const dayKeys = ['groente', 'fruit', 'volkoren_brood', 'graan_aardappel', 'zuivel_alt', 'kaas', 'vetten_olie', 'noten', 'dranken'];
   const weekKeys = Object.keys(WEEK_TARGETS_2026);
   const totals = emptyTotals([...dayKeys, ...weekKeys]);
@@ -442,9 +460,14 @@ function getWeekKeys(baseKey) {
   });
 }
 
+// The week as stored on this device: no waiting for the server (refreshWeekInBackground checks it)
+function cachedWeekDays(keys) {
+  return keys.map(key => localData[key] || getCachedDay(key) || emptyDay());
+}
+
 async function loadWeekCollections() {
   const keys = getWeekKeys(currentDate);
-  const days = await Promise.all(keys.map(async key => localData[key] || await loadDay(key)));
+  const days = cachedWeekDays(keys);
   const totals = emptyTotals(Object.keys(WEEK_TARGETS_2026));
   const items = Object.fromEntries([...Object.keys(WEEK_TARGETS_2026), 'outside', 'ignored'].map(key => [key, []]));
   let analysedCalories = 0;
@@ -515,12 +538,36 @@ export function schijfDaySnapshot(day) {
   };
 }
 
-export async function renderSchijf2026Analyse() {
+// Prepare the Schijf of this week while the app is idle, so the page opens without waiting:
+// analyse the stored days and fetch the week from the server once in one request
+const refreshedWeeks = new Set();
+export function prewarmSchijfWeek() {
+  const idle = globalThis.requestIdleCallback || (fn => setTimeout(fn, 300));
+  idle(() => {
+    const keys = getWeekKeys(currentDate);
+    for (const day of cachedWeekDays(keys)) {
+      collectDay(day);
+      microFromDay(day);
+    }
+    refreshWeekInBackground(keys).catch(() => {});
+  });
+}
+
+async function refreshWeekInBackground(keys) {
+  if (refreshedWeeks.has(keys[0])) return false;
+  refreshedWeeks.add(keys[0]);
+  const { changed } = await refreshDayRange(keys[0], keys[keys.length - 1]);
+  return changed;
+}
+
+export async function renderSchijf2026Analyse({ refresh = true } = {}) {
   const body = document.getElementById('advies-body');
   if (!body) return;
-  body.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--muted)">Schijf van Vijf analyseren...</div>';
+  if (!body.querySelector('.schijf2026-kpis')) {
+    body.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--muted)">Schijf van Vijf analyseren...</div>';
+  }
 
-  const day = localData[currentDate] || await loadDay(currentDate);
+  const day = localData[currentDate] || getCachedDay(currentDate) || await loadDay(currentDate);
   const dayCollected = collectDay(day);
   const weekCollected = await loadWeekCollections();
   const dayOutsideShare = dayCollected.analysedCalories ? dayCollected.outsideCalories / dayCollected.analysedCalories : 0;
@@ -589,4 +636,14 @@ export async function renderSchijf2026Analyse() {
       ${micro.day.measured.length + micro.day.estimated.length ? `<div class="micro-disclaimer"><strong>${micro.day.measured.length}</strong> van ${micro.day.measured.length + micro.day.estimated.length} producten met waarden uit NEVO.${micro.day.estimated.length ? ` Geschat op productcategorie: ${esc(micro.day.estimated.slice(0, 5).join(', '))}${micro.day.estimated.length > 5 ? '…' : ''}.` : ''}</div>` : ''}
     </section>
   `;
+
+  // Days changed on another device: show them once the server has answered
+  if (refresh) {
+    const shownDate = currentDate;
+    refreshWeekInBackground(weekCollected.keys).then(changed => {
+      if (changed && shownDate === currentDate && document.getElementById('advies-body')?.isConnected) {
+        renderSchijf2026Analyse({ refresh: false });
+      }
+    }).catch(() => {});
+  }
 }

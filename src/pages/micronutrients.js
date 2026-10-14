@@ -2,7 +2,7 @@
 
 import { nevoData } from '../state.js';
 import { MEAL_NAMES } from '../constants.js';
-import { matchItemToNevo, scaleMicros } from '../products/matcher.js';
+import { matchNameToNevo, scaleMicros } from '../products/matcher.js';
 
 export const RDA = {
   vitamine_d_ug: { naam: 'Vitamine D', doel: 10, unit: '\u00b5g', bronnen: 'Vette vis (zalm, makreel), eieren, verrijkte zuivel' },
@@ -176,10 +176,20 @@ function microWords(value) {
 // "Vlokken haver-" (synonym Havermout). Without a match, trailing words are dropped one by one
 // ("Tonijn in olijfolie" -> "Tonijn in olie blik").
 let nevoMicroIndex = null;
+const nevoMicroMatches = new Map();
 function findNevoWithMicros(name) {
+  const key = String(name || '').toLowerCase().trim();
+  if (nevoMicroIndex?.source === nevoData && nevoMicroMatches.has(key)) return nevoMicroMatches.get(key);
+  const found = findNevoWithMicrosUncached(name);
+  nevoMicroMatches.set(key, found);
+  return found;
+}
+
+function findNevoWithMicrosUncached(name) {
   const words = microWords(name).map(word => word.replace(/(en|s)$/, '')).filter(word => word.length > 1);
   if (!words.length || !Array.isArray(nevoData?.items)) return null;
   if (!nevoMicroIndex || nevoMicroIndex.source !== nevoData) {
+    nevoMicroMatches.clear();
     nevoMicroIndex = {
       source: nevoData,
       texts: nevoData.items.filter(item => item.src === 'rivm' && item.m)
@@ -201,13 +211,24 @@ function findNevoWithMicros(name) {
  * Micronutrients for a day from the data: NEVO values stored on the item, else those of the
  * NEVO product the item matches, else the category estimate above.
  */
+const microDayCache = new Map();
 export function microFromDay(day) {
+  const items = MEAL_NAMES.flatMap(meal => day?.[meal] || []);
+  const signature = items.map(item => [item.naam, item._gram, item.ml, item.portie, item.kcal, item._micro ? Object.keys(item._micro).length : 0].join('|')).join(';');
+  if (microDayCache.has(signature) && microDayCache.get(signature).source === nevoData) return microDayCache.get(signature).result;
+  const result = microFromDayUncached(day);
+  if (microDayCache.size > 200) microDayCache.clear();
+  microDayCache.set(signature, { source: nevoData, result });
+  return result;
+}
+
+function microFromDayUncached(day) {
   const items = MEAL_NAMES.flatMap(meal => day?.[meal] || []);
   const measured = [];
   const estimated = [];
   const nevoMicros = item => {
     // A brand product (Open Food Facts) has no micronutrients: then take the closest NEVO product
-    const matched = matchItemToNevo({ foodName: item.naam, gram: null, count: 1, unit: null });
+    const matched = matchNameToNevo(item.naam);
     const product = matched?.m ? matched : findNevoWithMicros(item.naam);
     return product ? scaleMicros(product.m, estimateGram(item) / 100) : null;
   };
