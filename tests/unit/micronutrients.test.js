@@ -60,3 +60,28 @@ describe('microFromDay with everyday names', () => {
     expect(measured).toEqual(['Halfvolle melk', 'Havermout', 'Banaan']);
   });
 });
+
+describe('omega-3 from NEVO', () => {
+  beforeAll(() => {
+    setCfg({ supermarketExclusions: [] });
+    setNevoData(products);
+    setNevoReady(true);
+  });
+
+  it('counts EPA + DHA of fish in mg', () => {
+    const nevo = products.items.find(item => item.src === 'rivm' && item.n === 'Zalm kweek- rauw');
+    const { totals } = microFromDay({ avondeten: [{ naam: 'Zalm kweek- rauw', kcal: 250, _gram: 125 }] });
+    expect(totals.omega3_mg).toBeCloseTo((nevo.m.epa + nevo.m.dha) * 1250, -1);
+  });
+
+  it('adds omega-3 to entries logged before it was in the data', () => {
+    const { totals } = microFromDay({ avondeten: [{ naam: 'Zalm kweek- rauw', kcal: 250, _gram: 125, _micro: { calcium_mg: 10 } }] });
+    expect(totals.calcium_mg).toBe(10);
+    expect(totals.omega3_mg).toBeGreaterThan(1000);
+  });
+
+  it('has none in chicken', () => {
+    const { totals } = microFromDay({ avondeten: [{ naam: 'Kipfilet', kcal: 160, _gram: 125 }] });
+    expect(totals.omega3_mg).toBeLessThan(50);
+  });
+});

@@ -13,6 +13,8 @@ export const RDA = {
   zink_mg: { naam: 'Zink', doel: 9, unit: 'mg', bronnen: 'Rood vlees, kaas, noten, peulvruchten, volkoren brood' },
   magnesium_mg: { naam: 'Magnesium', doel: 350, unit: 'mg', bronnen: 'Noten, zaden, peulvruchten, havermout, donkere groenten' },
   foliumzuur_ug: { naam: 'Foliumzuur', doel: 300, unit: '\u00b5g', bronnen: 'Bladgroenten, peulvruchten, broccoli, ei, volkoren' },
+  // EPA + DHA; the advice (about 450 mg a day) is met by one portion of oily fish a week, so read it as a week average
+  omega3_mg: { naam: 'Omega-3 (vis)', doel: 450, unit: 'mg', weekly: true, bronnen: 'Vette vis zoals zalm, makreel, haring of sardines, 1\u00d7 per week' },
 };
 
 /* ── Heuristic micro estimation per 100g of food category ── */
@@ -203,15 +205,23 @@ export function microFromDay(day) {
   const items = MEAL_NAMES.flatMap(meal => day?.[meal] || []);
   const measured = [];
   const estimated = [];
-  const perItem = items.map(item => {
-    if (item._micro) {
-      measured.push(item.naam);
-      return item;
-    }
+  const nevoMicros = item => {
     // A brand product (Open Food Facts) has no micronutrients: then take the closest NEVO product
     const matched = matchItemToNevo({ foodName: item.naam, gram: null, count: 1, unit: null });
     const product = matched?.m ? matched : findNevoWithMicros(item.naam);
-    const micros = product ? scaleMicros(product.m, estimateGram(item) / 100) : null;
+    return product ? scaleMicros(product.m, estimateGram(item) / 100) : null;
+  };
+  const perItem = items.map(item => {
+    if (item._micro) {
+      measured.push(item.naam);
+      // Logged before omega-3 was added to the data: look that one up
+      if (!('omega3_mg' in item._micro)) {
+        const omega3 = nevoMicros(item)?.omega3_mg;
+        if (omega3 !== undefined) return { ...item, _micro: { ...item._micro, omega3_mg: omega3 } };
+      }
+      return item;
+    }
+    const micros = nevoMicros(item);
     if (micros) {
       measured.push(item.naam);
       return { ...item, _micro: micros };
@@ -226,7 +236,7 @@ export function renderMicroDashboard(container, data, label = 'Schatting', showS
   container.innerHTML = microDashboardHTML(data, label, showSources);
 }
 
-export function microDashboardHTML(data, label = 'Schatting', showSources = false) {
+export function microDashboardHTML(data, label = 'Schatting', showSources = false, weeklyLabel = '') {
   let html = '<div class="micro-grid">';
 
   for (const [key, meta] of Object.entries(RDA)) {
@@ -234,7 +244,8 @@ export function microDashboardHTML(data, label = 'Schatting', showSources = fals
     const pct = Math.min(Math.round((val / meta.doel) * 100), 200);
     const barPct = Math.min(pct, 100);
     const color = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--warning, #e6b94f)' : 'var(--danger)';
-    const lowSource = showSources && pct < 60 ? `<div class="micro-source">💡 ${meta.bronnen}</div>` : '';
+    const lowSource = (meta.weekly && weeklyLabel ? `<div class="micro-source">📅 ${weeklyLabel}</div>` : '')
+      + (showSources && pct < 60 ? `<div class="micro-source">💡 ${meta.bronnen}</div>` : '');
 
     html += `<div>
       <div class="micro-row">

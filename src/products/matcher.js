@@ -229,6 +229,10 @@ export function scaleMicros(micros, factor) {
       result[NEVO_MICRO_KEYS[key]] = Math.round(value * factor * 100) / 100;
     }
   }
+  // Omega-3 from fish: EPA + DHA, given by NEVO in g per 100 g
+  if (Number.isFinite(micros?.epa) || Number.isFinite(micros?.dha)) {
+    result.omega3_mg = Math.round(((micros.epa || 0) + (micros.dha || 0)) * 1000 * factor * 10) / 10;
+  }
   return Object.keys(result).length ? result : null;
 }
 

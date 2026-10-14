@@ -136,7 +136,7 @@
 /* ── Micronutrient bars ─────────────────────────────────── */
 .micro-grid { display: grid; gap: 0.35rem; }
 .micro-row { display: flex; align-items: center; gap: 0.4rem; }
-.micro-name { min-width: 70px; font-size: 0.7rem; font-weight: 500; flex-shrink: 0; }
+.micro-name { width: 6.2rem; font-size: 0.7rem; font-weight: 500; flex-shrink: 0; }
 .micro-bar { flex: 1; height: 9px; background: var(--border); border-radius: 5px; overflow: hidden; }
 .micro-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s; }
 .micro-val { min-width: 55px; text-align: right; font-size: 0.63rem; color: var(--muted); flex-shrink: 0; white-space: nowrap; }

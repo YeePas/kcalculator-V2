@@ -40,6 +40,8 @@ MICROS = {
     "zn": "ZN (mg)",
     "mg": "MG (mg)",
     "fol": "FOL (µg)",
+    "epa": "F20:5CN3 (g)",   # omega-3 EPA
+    "dha": "F22:6CN3 (g)",   # omega-3 DHA
 }
 
 

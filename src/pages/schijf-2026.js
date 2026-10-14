@@ -315,7 +315,7 @@ function portionSuggestions(dayCollected, weekCollected, microNotes = []) {
   if (fruitLeft > 0) suggestions.push({ amount: `${Math.round(fruitLeft)}g`, text: 'fruit: meestal 1-2 stuks', scope: 'vandaag' });
   if (drinkLeft > 0) suggestions.push({ amount: `${Math.round(drinkLeft)}ml`, text: 'water, thee of koffie zonder suiker', scope: 'vandaag' });
   if (plantLeft > 0) suggestions.push({ amount: `${Math.round(plantLeft)}g`, text: 'peulvruchten, tofu of tempé', scope: 'deze week' });
-  if (visLeft > 0) suggestions.push({ amount: `${Math.round(visLeft)}g`, text: 'vis, liefst vette vis: anders krijg je weinig omega-3', scope: 'deze week' });
+  if (visLeft > 0) suggestions.push({ amount: `${Math.round(visLeft)}g`, text: 'vis, liefst vette vis (omega-3)', scope: 'deze week' });
   if ((weekCollected.totals.vlees || 0) > 300) suggestions.push({ amount: '−', text: 'vlees zit boven de weekrichtlijn: kies een plantaardige maaltijd als ruil', scope: 'deze week' });
   for (const part of DAY_TARGETS_2026.eiwit_zuivel.parts.concat(DAY_TARGETS_2026.vetten_noten.parts)) {
     if (isAboveAdvice(part, dayCollected.totals)) {
@@ -443,19 +443,27 @@ export function microSummary(day, weekDays = []) {
   const dayMicro = microFromDay(day);
   const logged = weekDays.filter(d => MEAL_NAMES.some(meal => (d?.[meal] || []).length));
   const notes = [];
-  if (logged.length >= 2) {
+  const weekAverage = {};
+  if (logged.length) {
     const sums = Object.fromEntries(Object.keys(RDA).map(key => [key, 0]));
     for (const d of logged) {
       const { totals } = microFromDay(d);
       for (const key of Object.keys(sums)) sums[key] += totals[key] || 0;
     }
+    for (const key of Object.keys(sums)) weekAverage[key] = Math.round((sums[key] / logged.length) * 10) / 10;
+  }
+  if (logged.length >= 2) {
+    const sums = Object.fromEntries(Object.keys(RDA).map(key => [key, weekAverage[key] * logged.length]));
     for (const [key, meta] of Object.entries(RDA)) {
       const pct = Math.round((sums[key] / logged.length / meta.doel) * 100);
       if (pct < 50) notes.push({ pct, amount: `${pct}%`, low: true, text: `${meta.naam.toLowerCase()}: gemiddeld te weinig (${meta.bronnen.toLowerCase()})`, scope: `deze week, ${logged.length} dagen` });
     }
     notes.sort((a, b) => a.pct - b.pct);
   }
-  return { day: dayMicro, notes };
+  // Nutrients advised per week (omega-3: oily fish once a week) are shown as the week's daily average
+  const shown = { ...dayMicro.totals };
+  for (const [key, meta] of Object.entries(RDA)) if (meta.weekly && key in weekAverage) shown[key] = weekAverage[key];
+  return { day: dayMicro, shown, loggedDays: logged.length, notes };
 }
 
 function listEntry(item) {
@@ -532,7 +540,7 @@ export async function renderSchijf2026Analyse() {
     </section>
     <section class="schijf2026-card schijf2026-list">
       <h3>Vitamines en mineralen vandaag</h3>
-      ${micro.day.measured.length + micro.day.estimated.length ? microDashboardHTML(micro.day.totals, 'Berekend uit je invoer', true) : '<div class="schijf2026-empty">Nog niets ingevoerd vandaag.</div>'}
+      ${micro.day.measured.length + micro.day.estimated.length ? microDashboardHTML(micro.shown, 'Berekend uit je invoer', true, `gemiddeld per dag, ${micro.loggedDays} ${micro.loggedDays === 1 ? 'dag' : 'dagen'} deze week`) : '<div class="schijf2026-empty">Nog niets ingevoerd vandaag.</div>'}
       ${micro.day.measured.length + micro.day.estimated.length ? `<div class="micro-disclaimer"><strong>${micro.day.measured.length}</strong> van ${micro.day.measured.length + micro.day.estimated.length} producten met waarden uit NEVO.${micro.day.estimated.length ? ` Geschat op productcategorie: ${esc(micro.day.estimated.slice(0, 5).join(', '))}${micro.day.estimated.length > 5 ? '…' : ''}.` : ''}</div>` : ''}
     </section>
   `;
