@@ -94,7 +94,12 @@ textarea#food-input::placeholder { color: var(--tertiary); }
 
 .main-col { }
 
-.meal-fold-controls { display: flex; justify-content: flex-end; margin: -0.35rem 0 0.85rem; }
+.meal-fold-controls { display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; margin: -0.35rem 0 0.85rem; }
+.avond-idea-btn { margin-right: auto; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.85rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); background: var(--accent-light); color: var(--accent); font-family: var(--font-body); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: background 0.15s, transform 0.15s; }
+.avond-idea-btn:hover { background: color-mix(in srgb, var(--accent) 18%, var(--surface-strong)); transform: translateY(-1px); }
+.avond-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.avond-empty { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 1.2rem 0; }
+#avond-modal .modal { max-height: 88vh; overflow-y: auto; }
 /* Round +/− toggle: minus collapses everything, plus expands again */
 .meal-fold-btn {
   display: inline-flex;

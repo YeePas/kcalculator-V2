@@ -6,6 +6,7 @@ import { dateKey, dayTotals, esc, r1 } from '../utils.js';
 import { loadDay } from '../supabase/data.js';
 import { PORTION_ALIASES, matchItemToNevo } from '../products/matcher.js';
 import { schijfOutsideCheck, schijfProductGroup, REFINED_NAME_PATTERN, normalizeSchijfName, renderItemList } from './schijf.js';
+import { RDA, microFromDay, microDashboardHTML } from './micronutrients.js';
 
 const DAY_TARGETS_2026 = {
   groente_fruit: { icon: '🥬', naam: 'Groente & fruit', doel: 450, unit: 'g', color: '#1f9e4b', parts: [{ key: 'groente', doel: 250, icon: '🥬', naam: 'Groente' }, { key: 'fruit', doel: 200, icon: '🍎', naam: 'Fruit' }] },
@@ -303,7 +304,7 @@ function countVariety(itemsByKey, keys) {
 }
 
 // Missing amounts: { amount, text, scope } so the amount can be shown as a chip
-function portionSuggestions(dayCollected, weekCollected) {
+function portionSuggestions(dayCollected, weekCollected, microNotes = []) {
   const suggestions = [];
   const groenteLeft = Math.max(0, 250 - (dayCollected.totals.groente || 0));
   const fruitLeft = Math.max(0, 200 - (dayCollected.totals.fruit || 0));
@@ -314,14 +315,14 @@ function portionSuggestions(dayCollected, weekCollected) {
   if (fruitLeft > 0) suggestions.push({ amount: `${Math.round(fruitLeft)}g`, text: 'fruit: meestal 1-2 stuks', scope: 'vandaag' });
   if (drinkLeft > 0) suggestions.push({ amount: `${Math.round(drinkLeft)}ml`, text: 'water, thee of koffie zonder suiker', scope: 'vandaag' });
   if (plantLeft > 0) suggestions.push({ amount: `${Math.round(plantLeft)}g`, text: 'peulvruchten, tofu of tempé', scope: 'deze week' });
-  if (visLeft > 0) suggestions.push({ amount: `${Math.round(visLeft)}g`, text: 'vis', scope: 'deze week' });
+  if (visLeft > 0) suggestions.push({ amount: `${Math.round(visLeft)}g`, text: 'vis, liefst vette vis: anders krijg je weinig omega-3', scope: 'deze week' });
   if ((weekCollected.totals.vlees || 0) > 300) suggestions.push({ amount: '−', text: 'vlees zit boven de weekrichtlijn: kies een plantaardige maaltijd als ruil', scope: 'deze week' });
   for (const part of DAY_TARGETS_2026.eiwit_zuivel.parts.concat(DAY_TARGETS_2026.vetten_noten.parts)) {
     if (isAboveAdvice(part, dayCollected.totals)) {
       suggestions.unshift({ amount: `${Math.round(dayCollected.totals[part.key])}${part.key === 'zuivel_alt' ? 'ml' : 'g'}`, over: true, text: `${part.naam.toLowerCase()}: ruim boven de ${part.doel}${part.key === 'zuivel_alt' ? 'ml' : 'g'} die de Schijf adviseert`, scope: 'vandaag' });
     }
   }
-  return suggestions.slice(0, 5);
+  return suggestions.slice(0, 5).concat(microNotes.slice(0, 3));
 }
 
 function swapSuggestions(dayCollected, weekCollected) {
@@ -349,7 +350,7 @@ function statBar(label, pct, tone) {
   </div>`;
 }
 
-function renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsideShare) {
+function renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsideShare, microNotes = []) {
   const dayVariety = countVariety(dayCollected.items, ['groente', 'fruit', 'volkoren_brood', 'graan_aardappel', 'zuivel_alt', 'kaas', 'vetten_olie', 'noten']);
   const weekVariety = countVariety(weekCollected.items, ['plant_eiwit', 'vis', 'eieren', 'vlees']);
   const dayCoverage = dayCollected.totalCalories ? Math.round((dayCollected.analysedCalories / dayCollected.totalCalories) * 100) : 0;
@@ -358,7 +359,7 @@ function renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsid
   const weekLimitNotes = [];
   if ((weekCollected.totals.vlees || 0) > 300) weekLimitNotes.push(`Vlees totaal: ${Math.round(weekCollected.totals.vlees)}g / max. 300g.`);
   if ((weekCollected.totals.rood_vlees || 0) > 100) weekLimitNotes.push(`Rood vlees: ${Math.round(weekCollected.totals.rood_vlees)}g / max. 100g.`);
-  const missing = portionSuggestions(dayCollected, weekCollected);
+  const missing = portionSuggestions(dayCollected, weekCollected, microNotes);
   const swaps = swapSuggestions(dayCollected, weekCollected);
   const outsideTone = pct => pct >= 30 ? 'bad' : pct >= 15 ? 'warn' : 'ok';
 
@@ -367,7 +368,7 @@ function renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsid
       <section class="schijf2026-card s26-insight">
         <h3><span class="s26-icon">🎯</span>Wat mist nog?</h3>
         ${missing.length ? `<ul class="s26-list">${missing.map(item => `<li>
-          <span class="s26-chip${item.over ? ' is-over' : ''}">${item.over ? '' : '+'}${esc(item.amount)}</span>
+          <span class="s26-chip${item.over ? ' is-over' : ''}${item.low ? ' is-low' : ''}">${item.over || item.low ? '' : '+'}${esc(item.amount)}</span>
           <span>${esc(item.text)}<small>${esc(item.scope)}</small></span>
         </li>`).join('')}</ul>` : emptyNote('Geen duidelijke tekorten gevonden.')}
       </section>
@@ -421,7 +422,7 @@ async function loadWeekCollections() {
     analysedCalories += collected.analysedCalories;
     outsideCalories += collected.outsideCalories;
   });
-  return { keys, totals, items, analysedCalories, outsideCalories };
+  return { keys, days, totals, items, analysedCalories, outsideCalories };
 }
 
 function bestNextStep(dayCollected, weekCollected) {
@@ -430,6 +431,31 @@ function bestNextStep(dayCollected, weekCollected) {
   if ((weekCollected.totals.plant_eiwit || 0) < 250) return `Deze week nog ${Math.round(250 - (weekCollected.totals.plant_eiwit || 0))}g peulvruchten, tofu of tempé.`;
   if ((weekCollected.totals.vlees || 0) > 300) return 'Vlees zit deze week boven de 2026-richtlijn; kies de rest van de week plantaardig of vis.';
   return 'Blijf variëren binnen de vakken; vooral volkoren, groente en plantaardige eiwitten zijn goede ankers.';
+}
+
+// The pie has one slice per row, so slices and rows below always match
+function rowMetas(metas) {
+  return Object.fromEntries(rowsFor(metas).map(row => [row.key, row]));
+}
+
+// Micronutrients today, and a week average over the logged days for "Wat mist nog?"
+export function microSummary(day, weekDays = []) {
+  const dayMicro = microFromDay(day);
+  const logged = weekDays.filter(d => MEAL_NAMES.some(meal => (d?.[meal] || []).length));
+  const notes = [];
+  if (logged.length >= 2) {
+    const sums = Object.fromEntries(Object.keys(RDA).map(key => [key, 0]));
+    for (const d of logged) {
+      const { totals } = microFromDay(d);
+      for (const key of Object.keys(sums)) sums[key] += totals[key] || 0;
+    }
+    for (const [key, meta] of Object.entries(RDA)) {
+      const pct = Math.round((sums[key] / logged.length / meta.doel) * 100);
+      if (pct < 50) notes.push({ pct, amount: `${pct}%`, low: true, text: `${meta.naam.toLowerCase()}: gemiddeld te weinig (${meta.bronnen.toLowerCase()})`, scope: `deze week, ${logged.length} dagen` });
+    }
+    notes.sort((a, b) => a.pct - b.pct);
+  }
+  return { day: dayMicro, notes };
 }
 
 function listEntry(item) {
@@ -453,6 +479,7 @@ export async function renderSchijf2026Analyse() {
   const weekScoreColor = weekScore >= 70 ? 'var(--green)' : weekScore >= 40 ? '#e8a020' : 'var(--danger)';
   const coverageColor = dayCoverage >= 70 ? 'var(--green)' : dayCoverage >= 45 ? '#e8a020' : 'var(--danger)';
 
+  const micro = microSummary(day, weekCollected.days);
   body.innerHTML = `
     <div class="schijf2026-kpis">
       <div class="schijf2026-kpi">
@@ -479,12 +506,12 @@ export async function renderSchijf2026Analyse() {
     <div class="schijf2026-grid">
       <section class="schijf2026-card">
         <div class="schijf2026-head"><h3>Vandaag</h3><span>${esc(currentDate)}</span></div>
-        ${renderSchijfVisual(DAY_TARGETS_2026, dayCollected.totals, dayScore)}
+        ${renderSchijfVisual(rowMetas(DAY_TARGETS_2026), dayCollected.totals, dayScore)}
         ${renderRows(DAY_TARGETS_2026, dayCollected.totals, dayCollected.items)}
       </section>
       <section class="schijf2026-card">
         <div class="schijf2026-head"><h3>Deze week</h3><span>${esc(weekCollected.keys[0])} t/m ${esc(weekCollected.keys[6])}</span></div>
-        ${renderSchijfVisual(WEEK_TARGETS_2026, weekCollected.totals, weekScore)}
+        ${renderSchijfVisual(rowMetas(WEEK_TARGETS_2026), weekCollected.totals, weekScore)}
         ${renderRows(WEEK_TARGETS_2026, weekCollected.totals, weekCollected.items)}
       </section>
     </div>
@@ -494,7 +521,7 @@ export async function renderSchijf2026Analyse() {
       <div class="schijf2026-note">Buiten-Schijf aandeel: vandaag ${Math.round(dayOutsideShare * 100)}%, deze week ${Math.round(weekOutsideShare * 100)}% van de herkende calorieën.</div>
       <a class="schijf2026-source-link" href="https://www.voedingscentrum.nl/nl/gezond-eten-met-de-schijf-van-vijf.aspx" target="_blank" rel="noopener noreferrer">Bekijk de Schijf van Vijf bij het Voedingscentrum</a>
     </section>
-    ${renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsideShare)}
+    ${renderInsights(dayCollected, weekCollected, dayOutsideShare, weekOutsideShare, micro.notes)}
     <section class="schijf2026-card schijf2026-list">
       <h3 style="color:${dayCollected.items.outside.length ? 'var(--danger)' : 'var(--green)'}">Buiten Schijf van Vijf</h3>
       ${renderItemList(dayCollected.items.outside.map(listEntry), 'Geen duidelijk buiten-Schijf producten gevonden in de herkende set.')}
@@ -502,6 +529,11 @@ export async function renderSchijf2026Analyse() {
     <section class="schijf2026-card schijf2026-list">
       <h3>Niet meegenomen in analyse</h3>
       ${renderItemList(dayCollected.items.ignored.map(listEntry), 'Alles wat we herkenden viel in de analyse of buiten-Schijf-set.')}
+    </section>
+    <section class="schijf2026-card schijf2026-list">
+      <h3>Vitamines en mineralen vandaag</h3>
+      ${micro.day.measured.length + micro.day.estimated.length ? microDashboardHTML(micro.day.totals, 'Berekend uit je invoer', true) : '<div class="schijf2026-empty">Nog niets ingevoerd vandaag.</div>'}
+      ${micro.day.measured.length + micro.day.estimated.length ? `<div class="micro-disclaimer"><strong>${micro.day.measured.length}</strong> van ${micro.day.measured.length + micro.day.estimated.length} producten met waarden uit NEVO.${micro.day.estimated.length ? ` Geschat op productcategorie: ${esc(micro.day.estimated.slice(0, 5).join(', '))}${micro.day.estimated.length > 5 ? '…' : ''}.` : ''}</div>` : ''}
     </section>
   `;
 }

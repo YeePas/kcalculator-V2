@@ -147,3 +147,15 @@ describe('Schijf van Vijf 2026 herbs and spices', () => {
     expect(pesto.items.groente).toEqual([]);
   });
 });
+
+describe('Schijf van Vijf 2026 micronutrient notes', () => {
+  it('notes nutrients that stay low over the logged days of the week', async () => {
+    setNevoData(products); setNevoReady(true);
+    const { microSummary } = await import('../../src/pages/schijf-2026.js');
+    const day = { ontbijt: [{ naam: 'Iets', kcal: 100, _gram: 100, _micro: { vitamine_c_mg: 100, vitamine_d_ug: 1 } }] };
+    const { notes } = microSummary(day, [day, day]);
+    const names = notes.map(note => note.text);
+    expect(names.some(text => text.startsWith('vitamine d'))).toBe(true);
+    expect(names.some(text => text.startsWith('vitamine c'))).toBe(false);
+  });
+});

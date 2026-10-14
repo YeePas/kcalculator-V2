@@ -3,7 +3,7 @@ import './styles/index.css';
 
 // ── State & Constants ────────────────────────────────────────
 import {
-  cfg, goals, localData, currentDate, selMeal, authUser, activeAdviesTab, setActiveAdviesTab,
+  cfg, goals, localData, currentDate, selMeal, authUser,
   _doCurrentDays, acSelectedIdx, acSelectedItem, setAcResults, setLocalData, setGoals, setSelMeal,
   setCfg, setCurrentDate,
 } from './state.js';
@@ -86,7 +86,7 @@ import {
   renderDataOverzicht,
 } from './pages/data-overview.js';
 import {
-  openAdviesModal, closeAdviesPage, showAdviesContent, runAdvies, initAdviesListeners,
+  openAdviesModal, closeAdviesPage, initAdviesListeners,
 } from './pages/advies.js';
 import {
   openSmartImportPage, closeSmartImportPage, initSmartImportListeners, syncSmartImportProviderSelects,
@@ -685,17 +685,6 @@ function initEventListeners() {
   // Advies
   document.getElementById('advies-btn')?.addEventListener('click', openAdviesModal);
   document.getElementById('advies-header-btn')?.addEventListener('click', openAdviesModal);
-  document.querySelectorAll('.advies-page-tabs .advies-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      setActiveAdviesTab(tab.dataset.tab);
-      document.querySelectorAll('.advies-page-tabs .advies-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === activeAdviesTab));
-      showAdviesContent();
-    });
-  });
-  document.getElementById('advies-refresh-btn')?.addEventListener('click', () => {
-    if (activeAdviesTab !== 'avond') showAdviesContent();
-    else runAdvies(activeAdviesTab);
-  });
   document.getElementById('advies-back-btn')?.addEventListener('click', closeAdviesPage);
   initAdviesListeners();
 

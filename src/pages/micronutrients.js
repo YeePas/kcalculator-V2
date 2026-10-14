@@ -1,9 +1,7 @@
 /* ── Micronutrient Dashboard (NEVO data + heuristic estimate) ── */
 
-import { localData, currentDate, nevoData } from '../state.js';
+import { nevoData } from '../state.js';
 import { MEAL_NAMES } from '../constants.js';
-import { emptyDay, esc } from '../utils.js';
-import { loadDay } from '../supabase/data.js';
 import { matchItemToNevo, scaleMicros } from '../products/matcher.js';
 
 export const RDA = {
@@ -224,24 +222,11 @@ export function microFromDay(day) {
   return { totals: estimateMicroHeuristic(perItem), measured, estimated };
 }
 
-export async function renderMicroAnalyse() {
-  const body = document.getElementById('advies-body');
-  if (!body) return;
-  const day = localData[currentDate] || await loadDay(currentDate) || emptyDay();
-  const { totals, measured, estimated } = microFromDay(day);
-  if (!measured.length && !estimated.length) {
-    body.innerHTML = '<div class="advies-content"><p style="color:var(--muted);font-style:italic">Nog geen items vandaag \u2014 voeg eerst wat toe.</p></div>';
-    return;
-  }
-  renderMicroDashboard(body, totals, 'Berekend uit je invoer', true);
-  const note = document.createElement('div');
-  note.className = 'micro-disclaimer';
-  note.innerHTML = `<strong>${measured.length}</strong> van ${measured.length + estimated.length} producten met waarden uit NEVO.`
-    + (estimated.length ? ` Geschat op productcategorie: ${esc(estimated.slice(0, 5).join(', '))}${estimated.length > 5 ? '\u2026' : ''}.` : '');
-  body.appendChild(note);
+export function renderMicroDashboard(container, data, label = 'Schatting', showSources = false) {
+  container.innerHTML = microDashboardHTML(data, label, showSources);
 }
 
-export function renderMicroDashboard(container, data, label = 'Schatting', showSources = false) {
+export function microDashboardHTML(data, label = 'Schatting', showSources = false) {
   let html = '<div class="micro-grid">';
 
   for (const [key, meta] of Object.entries(RDA)) {
@@ -263,5 +248,5 @@ export function renderMicroDashboard(container, data, label = 'Schatting', showS
 
   html += '</div>';
   html += `<div class="micro-disclaimer">${label} \u2014 geen medisch advies.</div>`;
-  container.innerHTML = html;
+  return html;
 }

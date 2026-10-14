@@ -1,29 +1,16 @@
-/* ── Advies Page (Schijf van 5, Micro, AI avondeten) ──────── */
+/* ── Schijf van Vijf page and the AI "Wat eet ik vanavond?" modal ── */
 
-import {
-  localData, currentDate, goals, cfg,
-  activeAdviesTab, setActiveAdviesTab,
-} from '../state.js';
+import { localData, currentDate, goals, cfg, setActiveAdviesTab } from '../state.js';
 import { MEAL_NAMES, MEAL_LABELS, AI_MODEL_OPTIONS, DEFAULT_PROVIDER_MODELS } from '../constants.js';
-import { emptyDay, r1, dayTotals, esc } from '../utils.js';
+import { emptyDay, r1, dayTotals } from '../utils.js';
 import { saveCfg } from '../storage.js';
 import { aiCall, hasAiAvailable, hasAiProxyConfig, hasLocalSessionAi } from '../ai/providers.js';
 import { schijfDagScore, SCHIJF_CATEGORY_META } from './schijf.js';
 import { renderSchijf2026Analyse } from './schijf-2026.js';
-import { renderMicroAnalyse } from './micronutrients.js';
 import { switchMobileView } from '../ui/misc.js';
 
-const LOCAL_ADVIES_TABS = new Set(['schijf', 'micro']);
-const AI_ADVIES_TABS = new Set(['avond']);
-
-function getSafeAdviesTab(tab) {
-  if (tab === 'schijf2026' || tab === 'dag' || tab === 'week') return 'schijf'; // removed tabs
-  return LOCAL_ADVIES_TABS.has(tab) || AI_ADVIES_TABS.has(tab) ? tab : 'schijf';
-}
-
 export function openAdviesModal() {
-  setActiveAdviesTab(getSafeAdviesTab(activeAdviesTab));
-  updateAdviesModelSelect();
+  setActiveAdviesTab('schijf');
   const layout = document.querySelector('.layout');
   if (!layout) return;
   layout.classList.remove('show-data', 'show-import', 'show-admin');
@@ -47,28 +34,41 @@ export function closeAdviesPage() {
 }
 
 export function showAdviesContent() {
-  const safeTab = getSafeAdviesTab(activeAdviesTab);
-  if (safeTab !== activeAdviesTab) setActiveAdviesTab(safeTab);
-  // Model choice and refresh only matter for the AI tab
-  const toolbar = document.querySelector('.advies-page-toolbar');
-  if (toolbar) toolbar.hidden = !AI_ADVIES_TABS.has(safeTab);
-
-  if (LOCAL_ADVIES_TABS.has(safeTab)) {
-    if (safeTab === 'micro') renderMicroAnalyse();
-    else renderSchijf2026Analyse();
-  } else {
-    showAdviesPrompt();
-  }
+  renderSchijf2026Analyse();
 }
 
-function showAdviesPrompt() {
-  const tabLabels = { avond: '🍽️ Avondeten-suggestie' };
-  document.getElementById('advies-body').innerHTML = `
-    <div style="text-align:center;padding:2rem 1rem">
-      <div style="font-size:2rem;margin-bottom:0.5rem">💡</div>
-      <p style="color:var(--muted);margin-bottom:1rem;font-size:0.88rem">${tabLabels[activeAdviesTab] || 'Advies'} — klik op Genereren om een AI-analyse te starten.</p>
-      <button class="btn-primary" data-action="run-advies" data-tab="${esc(activeAdviesTab)}" style="max-width:200px">🔍 Genereren</button>
-    </div>`;
+/* ── Wat eet ik vanavond? ─────────────────────────────────── */
+
+let avondDate = null;
+
+export function openAvondModal() {
+  updateAdviesModelSelect();
+  const body = document.getElementById('avond-body');
+  // Keep a suggestion made earlier today; otherwise invite to generate one
+  if (body && (avondDate !== currentDate || !body.innerHTML.trim())) {
+    body.innerHTML = '<p class="avond-empty">Tik op <strong>Bedenk iets</strong> voor 2-3 voorstellen.</p>';
+  }
+  document.getElementById('avond-modal')?.classList.add('open');
+}
+
+export function closeAvondModal() {
+  document.getElementById('avond-modal')?.classList.remove('open');
+}
+
+export async function runAvond() {
+  const body = document.getElementById('avond-body');
+  if (!body) return;
+  avondDate = currentDate;
+  body.innerHTML = '<div class="advies-loading"><span class="spin">⏳</span> Genereren…</div>';
+  try {
+    await getAvondAdvies();
+  } catch (e) {
+    body.innerHTML = '';
+    const p = document.createElement('p');
+    p.style.color = 'var(--danger)';
+    p.textContent = 'Fout: ' + (e?.message || 'Onbekende fout');
+    body.appendChild(p);
+  }
 }
 
 export function updateAdviesModelSelect() {
@@ -146,28 +146,6 @@ function sanitizeAdviesHTML(unsafeHtml) {
   return template.innerHTML;
 }
 
-export async function runAdvies(tab) {
-  const safeTab = getSafeAdviesTab(tab);
-  setActiveAdviesTab(safeTab);
-  document.querySelectorAll('.advies-page-tabs .advies-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === safeTab));
-  if (LOCAL_ADVIES_TABS.has(safeTab)) {
-    showAdviesContent();
-    return;
-  }
-  document.getElementById('advies-body').innerHTML = '<div class="advies-loading"><span class="spin">⏳</span> Genereren…</div>';
-  try {
-    await getAvondAdvies();
-  } catch (e) {
-    const body = document.getElementById('advies-body');
-    if (!body) return;
-    body.innerHTML = '';
-    const p = document.createElement('p');
-    p.style.color = 'var(--danger)';
-    p.textContent = 'Fout: ' + (e?.message || 'Onbekende fout');
-    body.appendChild(p);
-  }
-}
-
 const ADVIES_SYSTEM = `Je bent een deskundige, enthousiaste Nederlandse voedingscoach gespecialiseerd in de Schijf van Vijf.
 Je schrijft uitgebreide, gedetailleerde analyses. Elk onderdeel bevat minstens 3-4 alinea's.
 Je noemt ALTIJD specifieke producten bij naam en geeft concrete hoeveelheden.
@@ -185,10 +163,6 @@ async function claudeCall(prompt, maxTokens = 3000) {
   } finally {
     cfg.model = origModel;
   }
-}
-
-function setAdviesHTML(html) {
-  document.getElementById('advies-body').innerHTML = `<div class="advies-content">${sanitizeAdviesHTML(html)}</div>`;
 }
 
 function buildSchijfContext(day) {
@@ -224,7 +198,7 @@ async function getAvondAdvies() {
   const rProt = Math.max(0, (goals.prot || 80) - tot.prot);
   const rFiber = Math.max(0, (goals.fiber || 30) - tot.fiber);
 
-  document.getElementById('advies-body').innerHTML = `
+  document.getElementById('avond-body').innerHTML = `
     <div class="advies-macro-bar">
       <div class="advies-macro-item"><span class="advies-macro-val" style="color:var(--accent)">${rKcal}</span><span class="advies-macro-lbl">kcal over</span></div>
       <div class="advies-macro-item"><span class="advies-macro-val" style="color:var(--blue)">${r1(rCarbs)}g</span><span class="advies-macro-lbl">koolh. over</span></div>
@@ -280,14 +254,17 @@ Schrijf UITGEBREID — minimaal 400 woorden totaal.`, 3500);
 
   if (!r.ok) throw new Error('API fout');
   const res = await r.json();
-  const macroBar = document.getElementById('advies-body').querySelector('.advies-macro-bar').outerHTML;
-  document.getElementById('advies-body').innerHTML = macroBar + `<div class="advies-content">${sanitizeAdviesHTML(res.content[0].text.trim())}</div>`;
+  const avondBody = document.getElementById('avond-body');
+  const macroBar = avondBody.querySelector('.advies-macro-bar').outerHTML;
+  avondBody.innerHTML = macroBar + `<div class="advies-content">${sanitizeAdviesHTML(res.content[0].text.trim())}</div>`;
 }
 
 export function initAdviesListeners() {
-  document.getElementById('advies-body')?.addEventListener('click', e => {
-    const btn = e.target.closest('[data-action="run-advies"]');
-    if (btn) runAdvies(btn.dataset.tab);
+  document.getElementById('avond-idea-btn')?.addEventListener('click', openAvondModal);
+  document.getElementById('avond-run-btn')?.addEventListener('click', runAvond);
+  document.getElementById('avond-close-btn')?.addEventListener('click', closeAvondModal);
+  document.getElementById('avond-modal')?.addEventListener('click', e => {
+    if (e.target?.id === 'avond-modal') closeAvondModal();
   });
   document.getElementById('advies-model-select')?.addEventListener('change', function () {
     _syncAdviesModel();
