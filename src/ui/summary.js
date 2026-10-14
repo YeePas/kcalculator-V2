@@ -1,5 +1,6 @@
 /* ── Summary Rendering ─────────────────────────────────────── */
 
+import { renderSchijfMini } from './schijf-mini.js';
 import { goals } from '../state.js';
 import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
 import { r1, pct, fmtVal, dayTotals } from '../utils.js';
@@ -38,6 +39,7 @@ function setBar(id, val, goal, cls) {
 
 export function renderSummary(day) {
   const { cals, carbs, fat, prot, fiber, water } = dayTotals(day);
+  renderSchijfMini(day).catch(() => {});
 
   const C = 295.3;
   const ringEl = document.getElementById('cal-ring-fill');

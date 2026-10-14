@@ -365,13 +365,13 @@
 </div>
 
 <!-- AVONDETEN MODAL -->
-<div class="modal-overlay" id="avond-modal" role="dialog" aria-modal="true" aria-label="Wat eet ik vanavond?">
+<div class="modal-overlay" id="avond-modal" role="dialog" aria-modal="true" aria-label="Wat zal ik eten?">
   <div class="modal modal-lg">
     <div class="avond-modal-head">
-      <h3>🍽️ Wat eet ik vanavond?</h3>
+      <h3 id="avond-title">🍽️ Wat eet ik vanavond?</h3>
       <button type="button" class="icon-action" id="avond-close-btn" aria-label="Sluiten" title="Sluiten">✕</button>
     </div>
-    <p class="modal-intro">Voorstellen voor het avondeten die passen bij wat je vandaag nog over hebt en de Schijf van Vijf aanvullen. Gebruikt AI; werkt het best met een betaalde AI Provider.</p>
+    <p class="modal-intro">Voorstellen die passen bij wat je vandaag nog over hebt en de Schijf van Vijf aanvullen. Gebruikt AI; werkt het best met een betaalde AI Provider.</p>
     <div class="advies-page-toolbar">
       <select id="advies-model-select" title="Model"></select>
       <button class="btn-primary" id="avond-run-btn">✨ Bedenk iets</button>
@@ -850,7 +850,6 @@ Vet: 3.3g"></textarea>
     </div>
 
     <div class="meal-fold-controls">
-      <button type="button" class="avond-idea-btn" id="avond-idea-btn">🍽️ Wat eet ik vanavond?</button>
       <button type="button" class="meal-fold-btn" id="toggle-all-meals-btn" title="Alles inklappen" aria-label="Alles inklappen"><span class="meal-fold-icon" aria-hidden="true"></span></button>
     </div>
 
@@ -931,6 +930,21 @@ Vet: 3.3g"></textarea>
           <div class="macro-row-header"><span class="macro-row-name">💧 Drinken</span><span class="macro-row-val" id="total-water">0 ml</span></div>
           <div class="bar-track"><div class="bar-fill bar-w" id="bar-w" style="width:0%"></div></div>
         </div>
+      </div>
+    </div>
+
+    <button type="button" class="viz-card schijf-mini" id="schijf-mini" aria-label="Open Schijf van Vijf">
+      <div class="schijf-mini-head"><h3>🥗 Schijf van Vijf</h3><span class="schijf-mini-score" id="schijf-mini-score">–</span></div>
+      <div class="schijf-mini-groups" id="schijf-mini-groups"></div>
+      <div class="schijf-mini-next" id="schijf-mini-next"></div>
+    </button>
+
+    <div class="viz-card meal-idea-card">
+      <h3>🍽️ Wat zal ik eten?</h3>
+      <p>Een voorstel dat past bij wat je vandaag nog over hebt en je Schijf aanvult.</p>
+      <div class="meal-idea-btns">
+        <button type="button" class="btn-secondary" data-idea-meal="lunch">☀️ Lunch</button>
+        <button type="button" class="btn-primary" data-idea-meal="avondeten">🌙 Avondeten</button>
       </div>
     </div>
 

@@ -10,9 +10,9 @@ import { RDA, microFromDay, microDashboardHTML } from './micronutrients.js';
 
 const DAY_TARGETS_2026 = {
   groente_fruit: { icon: '🥬', naam: 'Groente & fruit', doel: 450, unit: 'g', color: '#1f9e4b', parts: [{ key: 'groente', doel: 250, icon: '🥬', naam: 'Groente' }, { key: 'fruit', doel: 200, icon: '🍎', naam: 'Fruit' }] },
-  graan_aardappel: { icon: '🌾', naam: 'Volkoren & aardappel', doel: 400, unit: 'g', color: '#b38a46', parts: [{ key: 'volkoren_brood', doel: 175, icon: '🌾', naam: 'Volkoren' }, { key: 'graan_aardappel', doel: 225, icon: '🥔', naam: 'Aardappel/graan' }] },
-  eiwit_zuivel: { icon: '🥛', naam: 'Zuivel & eiwit', doel: 420, unit: 'g/ml', color: '#4fb58a', parts: [{ key: 'zuivel_alt', doel: 400, boven: 800, icon: '🥛', naam: 'Zuivel' }, { key: 'kaas', doel: 20, boven: 40, icon: '🧀', naam: 'Kaas' }] },
-  vetten_noten: { icon: '🥑', naam: 'Gezonde vetten', doel: 80, unit: 'g', color: '#7fae4d', parts: [{ key: 'vetten_olie', doel: 50, boven: 75, icon: '🥑', naam: 'Vetten/olie' }, { key: 'noten', doel: 30, boven: 60, icon: '🥜', naam: 'Noten' }] },
+  graan_aardappel: { icon: '🌾', naam: 'Brood, graan & aardappel', doel: 400, unit: 'g', color: '#b38a46', parts: [{ key: 'volkoren_brood', doel: 175, icon: '🌾', naam: 'Volkoren' }, { key: 'graan_aardappel', doel: 225, icon: '🥔', naam: 'Aardappel/graan' }] },
+  eiwit_zuivel: { icon: '🥛', naam: 'Zuivel & kaas', doel: 420, unit: 'g/ml', color: '#4fb58a', parts: [{ key: 'zuivel_alt', doel: 400, boven: 800, icon: '🥛', naam: 'Zuivel' }, { key: 'kaas', doel: 20, boven: 40, icon: '🧀', naam: 'Kaas' }] },
+  vetten_noten: { icon: '🥑', naam: 'Vetten & noten', doel: 80, unit: 'g', color: '#7fae4d', parts: [{ key: 'vetten_olie', doel: 50, boven: 75, icon: '🥑', naam: 'Vetten/olie' }, { key: 'noten', doel: 30, boven: 60, icon: '🥜', naam: 'Noten' }] },
   dranken: { icon: '💧', naam: 'Dranken', doel: 1600, unit: 'ml', color: 'var(--blue)', parts: [{ key: 'dranken', doel: 1600, icon: '💧', naam: 'Water/thee/koffie' }] },
 };
 
@@ -210,22 +210,45 @@ function polar(cx, cy, r, deg) {
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
+function arcPath(cx, cy, r, startDeg, endDeg) {
+  const start = polar(cx, cy, r, startDeg);
+  const end = polar(cx, cy, r, endDeg);
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${endDeg - startDeg <= 180 ? 0 : 1} 1 ${end.x} ${end.y}`;
+}
+
+// One slice per row; slices of the same Schijf box sit together, with a wider gap between
+// boxes, a band around them in the box colour and the box emoji outside
 function renderSchijfVisual(metas, totals, score) {
-  const entries = Object.entries(metas);
-  const slice = 360 / entries.length;
-  return `<div class="schijf2026-visual" aria-label="Schijf van Vijf 2026 score ${score}%">
-    <svg viewBox="-18 -18 256 256" role="img">
-      ${entries.map(([key, meta], idx) => {
-        const start = idx * slice;
-        const end = start + slice - 1.2;
-        const ratio = ratioForMeta({ ...meta, key }, totals);
-        const fillRadius = 96 * Math.sqrt(Math.max(0.04, ratio));
-        const labelPoint = polar(110, 110, 70, start + slice / 2);
-        return `
-          <path d="${wedgePath(110, 110, 96, start, end)}" fill="${meta.color}" opacity="0.18"></path>
-          <path d="${wedgePath(110, 110, fillRadius, start, end)}" fill="${meta.color}" opacity="${ratio >= 0.8 ? '0.95' : '0.72'}"></path>
-          <text x="${labelPoint.x}" y="${labelPoint.y}" text-anchor="middle" dominant-baseline="middle" class="schijf2026-slice-label">${Math.round(ratio * 100)}%</text>`;
-      }).join('')}
+  const groups = Object.entries(metas).map(([key, meta]) => ({ key, meta, rows: rowsFor({ [key]: meta }) }));
+  const rowCount = groups.reduce((sum, group) => sum + group.rows.length, 0);
+  const groupGap = groups.length > 1 ? 5 : 0;
+  const rowGap = 1;
+  const perRow = (360 - groupGap * groups.length) / rowCount;
+  let angle = groupGap / 2;
+  const parts = groups.map(group => {
+    const groupStart = angle;
+    const slices = group.rows.map(row => {
+      const start = angle;
+      angle += perRow;
+      const ratio = ratioForMeta({ key: row.key, doel: row.doel, max: row.max, boven: row.boven }, totals);
+      const fillRadius = 96 * Math.sqrt(Math.max(0.04, ratio));
+      const end = angle - rowGap;
+      const labelPoint = polar(110, 110, 70, (start + end) / 2);
+      return `
+        <path d="${wedgePath(110, 110, 96, start, end)}" fill="${row.color}" opacity="0.18"><title>${esc(row.naam)}</title></path>
+        <path d="${wedgePath(110, 110, fillRadius, start, end)}" fill="${row.color}" opacity="${ratio >= 0.8 ? '0.95' : '0.72'}"><title>${esc(row.naam)}</title></path>
+        <text x="${labelPoint.x}" y="${labelPoint.y}" text-anchor="middle" dominant-baseline="middle" class="schijf2026-slice-label">${Math.round(ratio * 100)}%</text>`;
+    }).join('');
+    const groupEnd = angle - rowGap;
+    angle += groupGap;
+    const iconPoint = polar(110, 110, 117, (groupStart + groupEnd) / 2);
+    return `${slices}
+      <path d="${arcPath(110, 110, 102, groupStart, groupEnd)}" fill="none" stroke="${group.meta.color}" stroke-width="3" stroke-linecap="round" opacity="0.8"></path>
+      <text x="${iconPoint.x}" y="${iconPoint.y}" text-anchor="middle" dominant-baseline="central" class="schijf2026-group-icon"><title>${esc(group.meta.naam)}</title>${esc(group.meta.icon || '')}</text>`;
+  }).join('');
+  return `<div class="schijf2026-visual" aria-label="Schijf van Vijf score ${score}%">
+    <svg viewBox="-24 -24 268 268" role="img">
+      ${parts}
       <circle cx="110" cy="110" r="45" fill="var(--surface-strong)" stroke="var(--border)" stroke-width="1"></circle>
       <text x="110" y="106" text-anchor="middle" class="schijf2026-score">${score}%</text>
       <text x="110" y="126" text-anchor="middle" class="schijf2026-score-label">score</text>
@@ -242,6 +265,9 @@ function rowsFor(metas) {
     doel: part.doel || meta.doel,
     color: meta.color,
     max: Boolean(meta.max),
+    group: meta.parts ? key : null,
+    groupNaam: meta.naam,
+    groupIcon: meta.icon,
     boven: part.boven || 0,
     unit: part.key === 'dranken' || part.key === 'zuivel_alt' ? 'ml' : (meta.unit === 'st' ? 'st' : 'g'),
   })));
@@ -265,20 +291,29 @@ function renderRowSources(row, items) {
 }
 
 function renderRows(metas, totals, items = {}) {
+  let lastGroup = null;
   return rowsFor(metas).map(row => {
-    const ratio = Math.round(ratioForMeta({ key: row.key, doel: row.doel, max: row.max, boven: row.boven }, totals) * 100);
-    const above = isAboveAdvice(row, totals);
-    const tone = above ? 'over' : ratio >= 80 ? 'ok' : ratio >= 45 ? 'warn' : 'bad';
-    const fill = Math.min(100, Math.round(((totals[row.key] || 0) / row.doel) * 100));
-    return `<details class="schijf2026-row-details">
-      <summary class="schijf2026-row ${tone}">
-        <span class="s26-row-label"><i style="background:${row.color}"></i><em>${esc(row.icon || '')} ${esc(row.naam)}</em></span>
-        <strong>${above ? '<small class="s26-over">boven advies</small>' : ''}${Math.round(totals[row.key] || 0)}/${amountText(row.doel, row.unit)}${row.max ? ' max' : ''}<b class="s26-chevron" aria-hidden="true"></b></strong>
-        <span class="s26-row-bar"><span class="${row.max && fill >= 100 ? 'bad' : tone}" style="width:${fill}%"></span></span>
-      </summary>
-      ${renderRowSources(row, items)}
-    </details>`;
+    // A small heading per Schijf box groups its rows ("Groente & fruit": Groente, Fruit)
+    const heading = row.group && row.group !== lastGroup
+      ? `<div class="s26-group-head" style="--group-color:${row.color}">${esc(row.groupIcon || '')} ${esc(row.groupNaam)}</div>` : '';
+    lastGroup = row.group;
+    return heading + renderRow(row, totals, items);
   }).join('') + '<p class="s26-hint">Tik op een regel om te zien welke producten meetellen. Hoort een product niet in een vak? Meld het via "Klopt niet?" bij het product.</p>';
+}
+
+function renderRow(row, totals, items) {
+  const ratio = Math.round(ratioForMeta({ key: row.key, doel: row.doel, max: row.max, boven: row.boven }, totals) * 100);
+  const above = isAboveAdvice(row, totals);
+  const tone = above ? 'over' : ratio >= 80 ? 'ok' : ratio >= 45 ? 'warn' : 'bad';
+  const fill = Math.min(100, Math.round(((totals[row.key] || 0) / row.doel) * 100));
+  return `<details class="schijf2026-row-details">
+    <summary class="schijf2026-row ${tone}">
+      <span class="s26-row-label"><i style="background:${row.color}"></i><em>${esc(row.icon || '')} ${esc(row.naam)}</em></span>
+      <strong>${above ? '<small class="s26-over">boven advies</small>' : ''}${Math.round(totals[row.key] || 0)}/${amountText(row.doel, row.unit)}${row.max ? ' max' : ''}<b class="s26-chevron" aria-hidden="true"></b></strong>
+      <span class="s26-row-bar"><span class="${row.max && fill >= 100 ? 'bad' : tone}" style="width:${fill}%"></span></span>
+    </summary>
+    ${renderRowSources(row, items)}
+  </details>`;
 }
 
 function scoreFromMetas(metas, totals, outsideShare = 0) {
@@ -433,11 +468,6 @@ function bestNextStep(dayCollected, weekCollected) {
   return 'Blijf variëren binnen de vakken; vooral volkoren, groente en plantaardige eiwitten zijn goede ankers.';
 }
 
-// The pie has one slice per row, so slices and rows below always match
-function rowMetas(metas) {
-  return Object.fromEntries(rowsFor(metas).map(row => [row.key, row]));
-}
-
 // Micronutrients today, and a week average over the logged days for "Wat mist nog?"
 export function microSummary(day, weekDays = []) {
   const dayMicro = microFromDay(day);
@@ -468,6 +498,25 @@ export function microSummary(day, weekDays = []) {
 
 function listEntry(item) {
   return { ...item, gram: item.bucket === 'eieren' ? null : item.amount };
+}
+
+// Today's highlights for the main page: score, the five boxes and the most useful next step
+export function schijfDaySnapshot(day) {
+  const collected = collectDay(day || {});
+  const outsideShare = collected.analysedCalories ? collected.outsideCalories / collected.analysedCalories : 0;
+  const groups = Object.entries(DAY_TARGETS_2026).map(([key, meta]) => ({
+    key, icon: meta.icon, naam: meta.naam, color: meta.color,
+    pct: Math.round(ratioForMeta({ ...meta, key }, collected.totals) * 100),
+    above: (meta.parts || []).some(part => isAboveAdvice(part, collected.totals)),
+  }));
+  const next = portionSuggestions(collected, { totals: {} }).find(item => item.scope === 'vandaag');
+  const hasItems = MEAL_NAMES.some(meal => (day?.[meal] || []).length);
+  return {
+    hasItems,
+    score: scoreFromMetas(DAY_TARGETS_2026, collected.totals, outsideShare),
+    groups,
+    next: next ? `${next.over ? '' : '+'}${next.amount} ${next.text}` : '',
+  };
 }
 
 export async function renderSchijf2026Analyse() {
@@ -514,12 +563,12 @@ export async function renderSchijf2026Analyse() {
     <div class="schijf2026-grid">
       <section class="schijf2026-card">
         <div class="schijf2026-head"><h3>Vandaag</h3><span>${esc(currentDate)}</span></div>
-        ${renderSchijfVisual(rowMetas(DAY_TARGETS_2026), dayCollected.totals, dayScore)}
+        ${renderSchijfVisual(DAY_TARGETS_2026, dayCollected.totals, dayScore)}
         ${renderRows(DAY_TARGETS_2026, dayCollected.totals, dayCollected.items)}
       </section>
       <section class="schijf2026-card">
         <div class="schijf2026-head"><h3>Deze week</h3><span>${esc(weekCollected.keys[0])} t/m ${esc(weekCollected.keys[6])}</span></div>
-        ${renderSchijfVisual(rowMetas(WEEK_TARGETS_2026), weekCollected.totals, weekScore)}
+        ${renderSchijfVisual(WEEK_TARGETS_2026, weekCollected.totals, weekScore)}
         ${renderRows(WEEK_TARGETS_2026, weekCollected.totals, weekCollected.items)}
       </section>
     </div>

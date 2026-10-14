@@ -1,4 +1,4 @@
-/* ── Schijf van Vijf page and the AI "Wat eet ik vanavond?" modal ── */
+/* ── Schijf van Vijf page and the AI "Wat zal ik eten?" modal (lunch or dinner) ── */
 
 import { localData, currentDate, goals, cfg, setActiveAdviesTab } from '../state.js';
 import { MEAL_NAMES, MEAL_LABELS, AI_MODEL_OPTIONS, DEFAULT_PROVIDER_MODELS } from '../constants.js';
@@ -37,15 +37,28 @@ export function showAdviesContent() {
   renderSchijf2026Analyse();
 }
 
-/* ── Wat eet ik vanavond? ─────────────────────────────────── */
+/* ── Wat zal ik eten? ─────────────────────────────────────── */
 
-let avondDate = null;
+// Which meal the suggestion is for: what has been eaten before it, and its share of what is left
+const MEAL_PLANS = {
+  lunch: { label: 'lunch', title: 'Wat eet ik als lunch?', before: ['ontbijt', 'ochtendsnack'], share: 'De lunch is meestal zo\'n 30-35% van wat er voor de rest van de dag over is; houd ook ruimte voor middagsnack en avondeten.' },
+  avondeten: { label: 'avondeten', title: 'Wat eet ik vanavond?', before: ['ontbijt', 'ochtendsnack', 'lunch', 'middagsnack'], share: 'Het avondeten mag het grootste deel van wat er over is gebruiken; houd een kleine marge voor een avondsnack.' },
+};
+let avondKey = null;
+let avondMeal = 'avondeten';
 
-export function openAvondModal() {
+export function defaultIdeaMeal() {
+  return new Date().getHours() < 14 ? 'lunch' : 'avondeten';
+}
+
+export function openAvondModal(meal = defaultIdeaMeal()) {
+  avondMeal = MEAL_PLANS[meal] ? meal : 'avondeten';
   updateAdviesModelSelect();
+  const title = document.getElementById('avond-title');
+  if (title) title.textContent = `🍽️ ${MEAL_PLANS[avondMeal].title}`;
   const body = document.getElementById('avond-body');
-  // Keep a suggestion made earlier today; otherwise invite to generate one
-  if (body && (avondDate !== currentDate || !body.innerHTML.trim())) {
+  // Keep a suggestion made earlier today for this meal; otherwise invite to generate one
+  if (body && (avondKey !== `${currentDate}|${avondMeal}` || !body.innerHTML.trim())) {
     body.innerHTML = '<p class="avond-empty">Tik op <strong>Bedenk iets</strong> voor 2-3 voorstellen.</p>';
   }
   document.getElementById('avond-modal')?.classList.add('open');
@@ -58,7 +71,7 @@ export function closeAvondModal() {
 export async function runAvond() {
   const body = document.getElementById('avond-body');
   if (!body) return;
-  avondDate = currentDate;
+  avondKey = `${currentDate}|${avondMeal}`;
   body.innerHTML = '<div class="advies-loading"><span class="spin">⏳</span> Genereren…</div>';
   try {
     await getAvondAdvies();
@@ -208,14 +221,15 @@ async function getAvondAdvies() {
     </div>
     <div class="advies-loading"><span class="spin">⏳</span> Advies genereren…</div>`;
 
-  const gegeten = MEAL_NAMES.filter(m => m !== 'avondeten' && m !== 'drinken').map(m => {
+  const plan = MEAL_PLANS[avondMeal];
+  const gegeten = MEAL_NAMES.filter(m => plan.before.includes(m)).map(m => {
     const items = (day[m] || []);
     return items.length ? `${MEAL_LABELS[m]}: ${items.map(i => i.naam + (i.portie ? ' (' + i.portie + ')' : '')).join(', ')}` : null;
   }).filter(Boolean).join('\n');
 
   const schijf = buildSchijfContext(day);
 
-  const alleItemsLijst = MEAL_NAMES.filter(m => m !== 'avondeten' && m !== 'drinken').flatMap(m =>
+  const alleItemsLijst = MEAL_NAMES.filter(m => plan.before.includes(m)).flatMap(m =>
     (day[m] || []).map(i => `  - ${i.naam}${i.portie ? ' (' + i.portie + ')' : ''}: ${i.kcal} kcal, ${i.koolhydraten_g}g kh, ${i.vetten_g}g vet, ${i.eiwitten_g}g eiwit, ${i.vezels_g || 0}g vezel`)
   ).join('\n');
 
@@ -228,14 +242,16 @@ Samenvatting gegeten: ${gegeten || 'Nog niets'}
 
 Macro-totalen tot nu toe: ${Math.round(tot.cals)} kcal | ${r1(tot.carbs)}g koolhydraten | ${r1(tot.fat)}g vet | ${r1(tot.prot)}g eiwit | ${r1(tot.fiber)}g vezels
 Dagdoelen: ${goals.kcal} kcal | ${goals.carbs}g koolhydraten | ${goals.fat}g vet | ${goals.prot}g eiwit | ${goals.fiber}g vezels
-Nog over voor avondeten: ${rKcal} kcal | ${r1(rCarbs)}g koolhydraten | ${r1(rFat)}g vet | ${r1(rProt)}g eiwit | ${r1(rFiber)}g vezels
+Nog over voor de rest van de dag: ${rKcal} kcal | ${r1(rCarbs)}g koolhydraten | ${r1(rFat)}g vet | ${r1(rProt)}g eiwit | ${r1(rFiber)}g vezels
 
 VOEDINGSKWALITEIT (Schijf van Vijf):
 ${schijf.text}
 
 OPDRACHT:
-Geef 2-3 concrete, gedetailleerde Nederlandse avondmaaltijden die:
-1. Precies passen bij de resterende macro's (${rKcal} kcal, ${r1(rProt)}g eiwit, ${r1(rFiber)}g vezel over)
+${plan.share}
+
+Geef 2-3 concrete, gedetailleerde Nederlandse gerechten voor de ${plan.label} die:
+1. Passen bij de resterende macro's van de dag (${rKcal} kcal, ${r1(rProt)}g eiwit, ${r1(rFiber)}g vezel over), naar verhouding voor de ${plan.label}
 2. ${schijf.missing.length ? 'De ontbrekende Schijf van Vijf categorieën aanvullen: ' + schijf.missing.join(', ') : 'De goede Schijf van Vijf score behouden'}
 3. Rekening houden met wat al gegeten is (niet herhalen)
 
@@ -260,7 +276,13 @@ Schrijf UITGEBREID — minimaal 400 woorden totaal.`, 3500);
 }
 
 export function initAdviesListeners() {
-  document.getElementById('avond-idea-btn')?.addEventListener('click', openAvondModal);
+  document.querySelectorAll('[data-idea-meal]').forEach(btn => {
+    // The meal that comes next is the highlighted button
+    btn.classList.toggle('btn-primary', btn.dataset.ideaMeal === defaultIdeaMeal());
+    btn.classList.toggle('btn-secondary', btn.dataset.ideaMeal !== defaultIdeaMeal());
+    btn.addEventListener('click', () => openAvondModal(btn.dataset.ideaMeal));
+  });
+  document.getElementById('schijf-mini')?.addEventListener('click', openAdviesModal);
   document.getElementById('avond-run-btn')?.addEventListener('click', runAvond);
   document.getElementById('avond-close-btn')?.addEventListener('click', closeAvondModal);
   document.getElementById('avond-modal')?.addEventListener('click', e => {
