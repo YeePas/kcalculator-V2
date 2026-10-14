@@ -22,7 +22,7 @@ const MACROS = [
 ];
 
 export function getSummaryStyle() {
-  try { return localStorage.getItem(SUMMARY_STYLE_KEY) === 'bars' ? 'bars' : 'rings'; } catch { return 'rings'; }
+  try { return localStorage.getItem(SUMMARY_STYLE_KEY) === 'rings' ? 'rings' : 'bars'; } catch { return 'bars'; }
 }
 
 export function setSummaryStyle(style) {
