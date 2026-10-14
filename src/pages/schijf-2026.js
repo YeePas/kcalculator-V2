@@ -500,21 +500,17 @@ function listEntry(item) {
   return { ...item, gram: item.bucket === 'eieren' ? null : item.amount };
 }
 
-// Today's highlights for the main page: score, the five boxes and the most useful next step
+// Today's highlights for the main page: the pie with the score and the most useful next step
 export function schijfDaySnapshot(day) {
   const collected = collectDay(day || {});
   const outsideShare = collected.analysedCalories ? collected.outsideCalories / collected.analysedCalories : 0;
-  const groups = Object.entries(DAY_TARGETS_2026).map(([key, meta]) => ({
-    key, icon: meta.icon, naam: meta.naam, color: meta.color,
-    pct: Math.round(ratioForMeta({ ...meta, key }, collected.totals) * 100),
-    above: (meta.parts || []).some(part => isAboveAdvice(part, collected.totals)),
-  }));
   const next = portionSuggestions(collected, { totals: {} }).find(item => item.scope === 'vandaag');
   const hasItems = MEAL_NAMES.some(meal => (day?.[meal] || []).length);
+  const score = scoreFromMetas(DAY_TARGETS_2026, collected.totals, outsideShare);
   return {
     hasItems,
-    score: scoreFromMetas(DAY_TARGETS_2026, collected.totals, outsideShare),
-    groups,
+    score,
+    visual: renderSchijfVisual(DAY_TARGETS_2026, collected.totals, score),
     next: next ? `${next.over ? '' : '+'}${next.amount} ${next.text}` : '',
   };
 }

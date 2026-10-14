@@ -118,18 +118,8 @@
 .schijf-mini:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); transform: translateY(-1px); }
 .schijf-mini-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
 .schijf-mini-head h3 { margin: 0; }
-.schijf-mini-score { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--muted); }
-.schijf-mini-score[data-tone="ok"] { color: var(--green); }
-.schijf-mini-score[data-tone="warn"] { color: #e8a020; }
-.schijf-mini-score[data-tone="bad"] { color: var(--danger); }
-.schijf-mini-groups { display: grid; gap: 0.4rem; }
-.schijf-mini-group { display: grid; grid-template-columns: 1.3rem minmax(0, 8.5rem) 1fr 2.6rem; align-items: center; gap: 0.45rem; font-size: 0.74rem; }
-.schijf-mini-icon { text-align: center; }
-.schijf-mini-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
-.schijf-mini-track { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
-.schijf-mini-track > span { display: block; height: 100%; border-radius: 999px; }
-.schijf-mini-pct { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 700; }
-.schijf-mini-group.is-over .schijf-mini-pct { color: #b98112; }
+.schijf-mini-more { font-size: 0.74rem; font-weight: 700; color: var(--accent); }
+.schijf-mini-groups .schijf2026-visual { max-width: 240px; margin: 0 auto; }
 .schijf-mini-next { margin-top: 0.65rem; font-size: 0.74rem; color: var(--muted); line-height: 1.4; }
 .meal-idea-card p { margin: 0.2rem 0 0.7rem; font-size: 0.76rem; color: var(--muted); line-height: 1.4; }
 .meal-idea-btns { display: flex; gap: 0.5rem; }
