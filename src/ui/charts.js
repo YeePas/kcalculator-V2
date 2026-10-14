@@ -10,53 +10,6 @@ import {
 import { safeParse } from '../storage.js';
 import { refreshDayRange } from '../supabase/data.js';
 
-/* ── Macro Donut ──────────────────────────────────────────── */
-export function renderMacroDonut(carbs, fat, prot) {
-  carbs = Number(carbs) || 0;
-  fat   = Number(fat)   || 0;
-  prot  = Number(prot)  || 0;
-  const svg = document.getElementById('macro-donut-svg');
-  const legend = document.getElementById('donut-legend');
-  const totalEl = document.getElementById('donut-total');
-  if (!svg || !legend || !totalEl) return;
-  const total = Math.round(carbs + fat + prot);
-  totalEl.textContent = total + 'g';
-
-  const data = [
-    { name: 'Koolhydraten', val: carbs, color: 'var(--blue)', hex: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() },
-    { name: 'Vetten', val: fat, color: 'var(--danger)', hex: getComputedStyle(document.documentElement).getPropertyValue('--danger').trim() },
-    { name: 'Eiwitten', val: prot, color: 'var(--green)', hex: getComputedStyle(document.documentElement).getPropertyValue('--green').trim() },
-  ];
-
-  const r = 32, cx = 40, cy = 40;
-  const circumference = 2 * Math.PI * r;
-
-  if (total === 0) {
-    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="10"/>`;
-    legend.innerHTML = data.map(d =>
-      `<div class="macro-legend-item"><div class="macro-legend-dot" style="background:${d.color}"></div><span class="macro-legend-name">${d.name}</span><span class="macro-legend-val">0g</span><span class="macro-legend-pct">—</span></div>`
-    ).join('');
-    return;
-  }
-
-  let offset = 0;
-  const arcs = data.map(d => {
-    const pctVal = d.val / total;
-    const dashLen = pctVal * circumference;
-    const gap = circumference - dashLen;
-    const arc = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.color}" stroke-width="10" stroke-dasharray="${dashLen} ${gap}" stroke-dashoffset="${-offset}" stroke-linecap="butt"/>`;
-    offset += dashLen;
-    return arc;
-  });
-
-  svg.innerHTML = arcs.join('');
-
-  legend.innerHTML = data.map(d => {
-    const pctVal = total > 0 ? Math.round(d.val / total * 100) : 0;
-    return `<div class="macro-legend-item"><div class="macro-legend-dot" style="background:${d.color}"></div><span class="macro-legend-name">${d.name}</span><span class="macro-legend-val">${r1(d.val)}g</span><span class="macro-legend-pct">${pctVal}%</span></div>`;
-  }).join('');
-}
-
 /* ── Week Sparkline ──────────────────────────────────────── */
 export async function renderWeekSpark(options = {}) {
   const { backgroundRefresh = true } = options;

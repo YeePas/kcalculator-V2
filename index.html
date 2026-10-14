@@ -860,6 +860,10 @@ Vet: 3.3g"></textarea>
     <div class="summary-card">
       <div class="summary-card-header">
         <h3>Dagoverzicht</h3>
+        <div class="summary-style-switch" role="group" aria-label="Weergave">
+          <button type="button" data-summary-style="rings" title="Ringen" aria-label="Ringen">◎</button>
+          <button type="button" data-summary-style="bars" title="Ring en balkjes" aria-label="Ring en balkjes">☰</button>
+        </div>
         <button class="summary-card-action" id="summary-goals-btn" type="button" title="Doelen aanpassen" aria-label="Doelen aanpassen">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M6.7 1.2h2.6l.35 1.9a5.5 5.5 0 011.2.7l1.8-.75 1.3 2.25-1.45 1.2c.06.4.06.82 0 1.2l1.45 1.2-1.3 2.25-1.8-.75a5.5 5.5 0 01-1.2.7l-.35 1.9H6.7l-.35-1.9a5.5 5.5 0 01-1.2-.7l-1.8.75L2.05 8.7l1.45-1.2a5.5 5.5 0 010-1.2L2.05 5.1l1.3-2.25 1.8.75c.37-.28.77-.52 1.2-.7l.35-1.9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
@@ -868,40 +872,7 @@ Vet: 3.3g"></textarea>
         </button>
       </div>
 
-      <div class="cal-ring-wrap">
-        <div class="cal-ring">
-          <svg viewBox="0 0 110 110">
-            <circle class="ring-bg" cx="55" cy="55" r="47"/>
-            <circle class="ring-fill green" cx="55" cy="55" r="47" id="cal-ring-fill"
-              stroke-dasharray="295.3" stroke-dashoffset="295.3"/>
-          </svg>
-          <div class="cal-ring-center">
-            <div class="cal-ring-number" id="total-cals">0</div>
-            <div class="cal-ring-label" id="cal-ring-label">kcal</div>
-          </div>
-        </div>
-        <div class="cal-ring-info">
-          <div class="cal-ring-info-row" id="ring-info-rest"></div>
-          <div class="cal-ring-info-row" id="ring-info-carbs"></div>
-          <div class="cal-ring-info-row" id="ring-info-prot"></div>
-          <div class="cal-ring-info-row" id="ring-info-fat"></div>
-          <div class="cal-ring-info-row" id="ring-info-fiber"></div>
-          <div class="cal-ring-info-row ring-info-water" id="ring-info-water"></div>
-        </div>
-      </div>
-
-      <div class="macro-donut-wrap" id="macro-donut-wrap">
-        <div class="macro-donut">
-          <svg viewBox="0 0 80 80" id="macro-donut-svg">
-            <circle cx="40" cy="40" r="32" fill="none" stroke="var(--border)" stroke-width="10"/>
-          </svg>
-          <div class="macro-donut-center">
-            <div class="macro-donut-total" id="donut-total">0g</div>
-            <div class="macro-donut-label">macros</div>
-          </div>
-        </div>
-        <div class="macro-donut-legend" id="donut-legend"></div>
-      </div>
+      <div class="cal-ring-wrap" id="day-summary"></div>
 
     </div>
 

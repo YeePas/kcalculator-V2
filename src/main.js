@@ -52,7 +52,7 @@ import { submit } from './input/submit.js';
 
 // ── UI ───────────────────────────────────────────────────────
 import { renderMeals, _renderDayUI, initMealListeners } from './ui/render.js';
-import { renderSummary } from './ui/summary.js';
+import { renderSummary, setSummaryStyle } from './ui/summary.js';
 import { renderDashboard } from './ui/charts.js';
 import { setSyncStatus } from './ui/sync-status.js';
 import {
@@ -686,6 +686,10 @@ function initEventListeners() {
   document.getElementById('advies-btn')?.addEventListener('click', openAdviesModal);
   document.getElementById('advies-header-btn')?.addEventListener('click', openAdviesModal);
   document.getElementById('advies-back-btn')?.addEventListener('click', closeAdviesPage);
+  document.querySelectorAll('[data-summary-style]').forEach(btn => btn.addEventListener('click', () => {
+    setSummaryStyle(btn.dataset.summaryStyle);
+    renderSummary(localData[currentDate] || emptyDay());
+  }));
   initAdviesListeners();
 
   // Smart import

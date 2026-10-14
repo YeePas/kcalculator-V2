@@ -187,18 +187,6 @@
     gap: 0.45rem;
     padding-top: 0.7rem;
   }
-  .macro-donut-wrap {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.8rem;
-  }
-  .macro-donut {
-    width: 96px;
-    height: 96px;
-  }
-  .macro-legend-pct {
-    display: none;
-  }
   .do-kpi-grid {
     grid-template-columns: 1fr 1fr;
   }

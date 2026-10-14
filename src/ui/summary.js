@@ -2,8 +2,7 @@
 
 import { renderSchijfMini } from './schijf-mini.js';
 import { goals } from '../state.js';
-import { r1, pct, fmtVal, dayTotals } from '../utils.js';
-import { renderMacroDonut } from './charts.js';
+import { pct, dayTotals } from '../utils.js';
 
 function getCalorieOverageTone(goal, calories) {
   if (!goal || calories <= goal) return null;
@@ -13,56 +12,98 @@ function getCalorieOverageTone(goal, calories) {
   return { className: 'red', colorVar: 'var(--danger)' };
 }
 
-function renderGoalDelta(current, goal, unit, label, decimals = 1) {
-  if (!goal) {
-    const value = decimals === 0 ? Math.round(current) : r1(current);
-    return `<strong>${value}${unit}</strong> ${label}`;
-  }
+const SUMMARY_STYLE_KEY = 'kcalculator_summary_style';
+// Kcal gets its own colour so it is not confused with protein (green)
+const KCAL_COLOR = 'var(--fiber)';
+const MACROS = [
+  { key: 'carbs', goal: 'carbs', label: 'Koolhydraten', color: 'var(--blue)' },
+  { key: 'prot', goal: 'prot', label: 'Eiwit', color: 'var(--green)' },
+  { key: 'fat', goal: 'fat', label: 'Vet', color: 'var(--danger)' },
+];
 
-  const diff = goal - current;
-  if (diff >= 0) {
-    const value = decimals === 0 ? Math.round(diff) : r1(diff);
-    return `<strong>${value}${unit}</strong> ${label} over`;
-  }
+export function getSummaryStyle() {
+  try { return localStorage.getItem(SUMMARY_STYLE_KEY) === 'bars' ? 'bars' : 'rings'; } catch { return 'rings'; }
+}
 
-  const value = decimals === 0 ? Math.round(Math.abs(diff)) : r1(Math.abs(diff));
-  return `<span style="color:var(--danger)"><strong>${value}${unit}</strong> ${label} te veel</span>`;
+export function setSummaryStyle(style) {
+  try { localStorage.setItem(SUMMARY_STYLE_KEY, style); } catch {}
+}
+
+// Ring arc for value/goal; well over the goal the ring turns red
+function ringArc(r, value, goal, color, width) {
+  const circumference = 2 * Math.PI * r;
+  const ratio = goal ? Math.min(value / goal, 1) : 0;
+  const stroke = goal && value > goal * 1.1 ? 'var(--danger)' : color;
+  return `<circle cx="65" cy="65" r="${r}" fill="none" stroke="var(--border)" stroke-width="${width}" opacity="0.7"/>`
+    + `<circle cx="65" cy="65" r="${r}" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round"`
+    + ` stroke-dasharray="${circumference}" stroke-dashoffset="${circumference * (1 - ratio)}" class="summary-ring-arc"/>`;
+}
+
+function macroShare(totals) {
+  const sum = totals.carbs + totals.fat + totals.prot;
+  return key => (sum > 0 ? Math.round((totals[key] / sum) * 100) : 0);
+}
+
+function amount(value, goal, unit) {
+  return `<strong>${Math.round(value)}<small>${goal ? ' / ' + goal : ''}${unit}</small></strong>`;
+}
+
+// Rings: kcal outside, then carbs, protein and fat, each filling up to its goal
+function renderRings(totals, overageTone) {
+  const share = macroShare(totals);
+  const kcalColor = overageTone?.colorVar || KCAL_COLOR;
+  return `<div class="summary-rings">
+      <svg viewBox="0 0 130 130" aria-hidden="true">
+        ${ringArc(58, totals.cals, goals.kcal, kcalColor, 10)}
+        ${MACROS.map((macro, idx) => ringArc(45 - idx * 11, totals[macro.key], goals[macro.goal], macro.color, 7)).join('')}
+      </svg>
+    </div>
+    <div class="summary-legend">
+      <div class="summary-legend-row is-kcal"><i style="background:${kcalColor}"></i><span>Kcal</span>${amount(totals.cals, goals.kcal, '')}<em></em></div>
+      ${MACROS.map(macro => `<div class="summary-legend-row"><i style="background:${macro.color}"></i><span>${macro.label}</span>${amount(totals[macro.key], goals[macro.goal], 'g')}<em>${share(macro.key)}%</em></div>`).join('')}
+    </div>`;
+}
+
+// Ring and bars: the kcal ring with the number inside, and a bar per macro
+function renderBars(totals, overageTone) {
+  const share = macroShare(totals);
+  const kcalColor = overageTone?.colorVar || KCAL_COLOR;
+  const label = goals.kcal ? `van ${goals.kcal}` : 'kcal';
+  return `<div class="summary-rings is-single">
+      <svg viewBox="0 0 130 130" aria-hidden="true">${ringArc(56, totals.cals, goals.kcal, kcalColor, 11)}</svg>
+      <div class="summary-ring-center"><strong${overageTone ? ` style="color:${overageTone.colorVar}"` : ''}>${Math.round(totals.cals)}</strong><small>${label}</small></div>
+    </div>
+    <div class="summary-bars">
+      ${MACROS.map(macro => {
+        const goal = goals[macro.goal];
+        const value = totals[macro.key];
+        const over = goal && value > goal * 1.1;
+        return `<div class="summary-bar">
+          <div class="summary-bar-head"><span>${macro.label}</span>${amount(value, goal, 'g')}<em>${share(macro.key)}%</em></div>
+          <div class="summary-bar-track"><span style="width:${pct(value, goal || Math.max(value, 1))}%;background:${over ? 'var(--danger)' : macro.color}"></span></div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 export function renderSummary(day) {
-  const { cals, carbs, fat, prot, fiber, water } = dayTotals(day);
+  const totals = dayTotals(day);
   renderSchijfMini(day).catch(() => {});
 
-  const C = 295.3;
-  const ringEl = document.getElementById('cal-ring-fill');
-  const pctCals = goals.kcal ? Math.min(cals / goals.kcal, 1) : 0;
-  const overageTone = getCalorieOverageTone(goals.kcal, cals);
-  ringEl.style.strokeDashoffset = C * (1 - pctCals);
-  ringEl.setAttribute('class', 'ring-fill ' + (overageTone?.className || (pctCals >= 0.8 ? 'orange' : 'green')));
+  const overageTone = getCalorieOverageTone(goals.kcal, totals.cals);
+  const restKcal = goals.kcal ? goals.kcal - Math.round(totals.cals) : null;
+  renderDayProgress(totals.cals, totals.prot, restKcal, overageTone);
 
-  const calNumEl = document.getElementById('total-cals');
-  calNumEl.textContent = Math.round(cals);
-  calNumEl.className = 'cal-ring-number' + (overageTone ? ' over' : '');
-  calNumEl.style.color = overageTone ? overageTone.colorVar : '';
-
-  const restKcal = goals.kcal ? goals.kcal - Math.round(cals) : null;
-  document.getElementById('cal-ring-label').textContent = goals.kcal ? (restKcal >= 0 ? `van ${goals.kcal}` : 'te veel!') : 'kcal';
-
-  const infoRest = document.getElementById('ring-info-rest');
-  infoRest.innerHTML = goals.kcal
-    ? (restKcal >= 0 ? `<strong>${restKcal}</strong> kcal over` : `<span style="color:${overageTone?.colorVar || 'var(--danger)'}"><strong>${Math.abs(restKcal)}</strong> kcal te veel</span>`)
-    : '';
-  renderDayProgress(cals, prot, restKcal, overageTone);
-  document.getElementById('ring-info-carbs').innerHTML = renderGoalDelta(carbs, goals.carbs, 'g', 'kh');
-  document.getElementById('ring-info-prot').innerHTML = renderGoalDelta(prot, goals.prot, 'g', 'eiwit');
-  document.getElementById('ring-info-fat').innerHTML = renderGoalDelta(fat, goals.fat, 'g', 'vet');
-
-  document.getElementById('ring-info-fiber').innerHTML = renderGoalDelta(fiber, goals.fiber, 'g', 'vezels');
-  // Drinks: amount against the goal with a thin bar, the only place on the main page that shows it
-  document.getElementById('ring-info-water').innerHTML = `💧 ${fmtVal(water, goals.water, 'ml')}`
-    + (goals.water ? `<span class="ring-info-water-track"><span style="width:${pct(water, goals.water)}%"></span></span>` : '');
-
-  renderMacroDonut(carbs, fat, prot);
+  const style = getSummaryStyle();
+  const wrap = document.getElementById('day-summary');
+  if (wrap) {
+    wrap.dataset.style = style;
+    wrap.innerHTML = style === 'bars' ? renderBars(totals, overageTone) : renderRings(totals, overageTone);
+  }
+  document.querySelectorAll('[data-summary-style]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.summaryStyle === style);
+    btn.setAttribute('aria-pressed', String(btn.dataset.summaryStyle === style));
+  });
 }
 
 // Compact remaining-kcal strip above the input on mobile, where the summary lives on another tab.
