@@ -17,11 +17,11 @@ const DAY_TARGETS_2026 = {
 };
 
 const WEEK_TARGETS_2026 = {
-  plant_eiwit: { icon: '🍳', naam: 'Peulvruchten/tofu/tempé', doel: 250, unit: 'g', color: '#4fb58a', max: false },
+  plant_eiwit: { icon: '🫘', naam: 'Peulvruchten/tofu/tempé', doel: 250, unit: 'g', color: '#4fb58a', max: false },
   vis: { icon: '🐟', naam: 'Vis', doel: 100, unit: 'g', color: 'var(--blue)', max: false },
-  eieren: { icon: '🍳', naam: 'Eieren', doel: 3, unit: 'st', color: '#4fb58a', max: false },
-  vlees: { icon: '🍳', naam: 'Vlees totaal', doel: 300, unit: 'g', color: '#d96a93', max: true },
-  rood_vlees: { icon: '⚠', naam: 'Rood vlees', doel: 100, unit: 'g', color: '#e8a020', max: true },
+  eieren: { icon: '🥚', naam: 'Eieren', doel: 3, unit: 'st', color: '#4fb58a', max: false },
+  vlees: { icon: '🍖', naam: 'Vlees totaal', doel: 300, unit: 'g', color: '#d96a93', max: true },
+  rood_vlees: { icon: '🥩', naam: 'Rood vlees', doel: 100, unit: 'g', color: '#e8a020', max: true },
 };
 
 const SUGAR_DRINK_PATTERN = /\b(frisdrank|cola|fanta|sprite|energy|sap|smoothie|limonade|siroop|diksap|chocomel|fristi|milkshake|alcohol|bier|wijn|cocktail)\b/i;
@@ -216,8 +216,8 @@ function arcPath(cx, cy, r, startDeg, endDeg) {
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${endDeg - startDeg <= 180 ? 0 : 1} 1 ${end.x} ${end.y}`;
 }
 
-// One slice per row; slices of the same Schijf box sit together, with a wider gap between
-// boxes, a band around them in the box colour and the box emoji outside
+// One slice per row with its own icon; slices of the same Schijf box sit together, with a
+// wider gap between boxes and a band around them in the box colour
 function renderSchijfVisual(metas, totals, score) {
   const groups = Object.entries(metas).map(([key, meta]) => ({ key, meta, rows: rowsFor({ [key]: meta }) }));
   const rowCount = groups.reduce((sum, group) => sum + group.rows.length, 0);
@@ -233,21 +233,21 @@ function renderSchijfVisual(metas, totals, score) {
       const ratio = ratioForMeta({ key: row.key, doel: row.doel, max: row.max, boven: row.boven }, totals);
       const fillRadius = 96 * Math.sqrt(Math.max(0.04, ratio));
       const end = angle - rowGap;
-      const labelPoint = polar(110, 110, 70, (start + end) / 2);
+      const iconPoint = polar(110, 110, 81, (start + end) / 2);
+      const labelPoint = polar(110, 110, 62, (start + end) / 2);
       return `
         <path d="${wedgePath(110, 110, 96, start, end)}" fill="${row.color}" opacity="0.18"><title>${esc(row.naam)}</title></path>
         <path d="${wedgePath(110, 110, fillRadius, start, end)}" fill="${row.color}" opacity="${ratio >= 0.8 ? '0.95' : '0.72'}"><title>${esc(row.naam)}</title></path>
+        <text x="${iconPoint.x}" y="${iconPoint.y}" text-anchor="middle" dominant-baseline="central" class="schijf2026-slice-icon">${esc(row.icon || '')}<title>${esc(row.naam)}</title></text>
         <text x="${labelPoint.x}" y="${labelPoint.y}" text-anchor="middle" dominant-baseline="middle" class="schijf2026-slice-label">${Math.round(ratio * 100)}%</text>`;
     }).join('');
     const groupEnd = angle - rowGap;
     angle += groupGap;
-    const iconPoint = polar(110, 110, 117, (groupStart + groupEnd) / 2);
     return `${slices}
-      <path d="${arcPath(110, 110, 102, groupStart, groupEnd)}" fill="none" stroke="${group.meta.color}" stroke-width="3" stroke-linecap="round" opacity="0.8"></path>
-      <text x="${iconPoint.x}" y="${iconPoint.y}" text-anchor="middle" dominant-baseline="central" class="schijf2026-group-icon"><title>${esc(group.meta.naam)}</title>${esc(group.meta.icon || '')}</text>`;
+      <path d="${arcPath(110, 110, 102, groupStart, groupEnd)}" fill="none" stroke="${group.meta.color}" stroke-width="3" stroke-linecap="round" opacity="0.8"><title>${esc(group.meta.naam)}</title></path>`;
   }).join('');
   return `<div class="schijf2026-visual" aria-label="Schijf van Vijf score ${score}%">
-    <svg viewBox="-24 -24 268 268" role="img">
+    <svg viewBox="-12 -12 244 244" role="img">
       ${parts}
       <circle cx="110" cy="110" r="45" fill="var(--surface-strong)" stroke="var(--border)" stroke-width="1"></circle>
       <text x="110" y="106" text-anchor="middle" class="schijf2026-score">${score}%</text>
