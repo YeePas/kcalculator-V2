@@ -2,7 +2,6 @@
 
 import { renderSchijfMini } from './schijf-mini.js';
 import { goals } from '../state.js';
-import { MEAL_NAMES, MEAL_LABELS } from '../constants.js';
 import { r1, pct, fmtVal, dayTotals } from '../utils.js';
 import { renderMacroDonut } from './charts.js';
 
@@ -28,13 +27,6 @@ function renderGoalDelta(current, goal, unit, label, decimals = 1) {
 
   const value = decimals === 0 ? Math.round(Math.abs(diff)) : r1(Math.abs(diff));
   return `<span style="color:var(--danger)"><strong>${value}${unit}</strong> ${label} te veel</span>`;
-}
-
-function setBar(id, val, goal, cls) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.style.width = pct(val, goal || Math.max(val, 1)) + '%';
-  el.className = 'bar-fill ' + (goal && val > goal ? 'bar-over' : cls);
 }
 
 export function renderSummary(day) {
@@ -65,20 +57,12 @@ export function renderSummary(day) {
   document.getElementById('ring-info-prot').innerHTML = renderGoalDelta(prot, goals.prot, 'g', 'eiwit');
   document.getElementById('ring-info-fat').innerHTML = renderGoalDelta(fat, goals.fat, 'g', 'vet');
 
+  document.getElementById('ring-info-fiber').innerHTML = renderGoalDelta(fiber, goals.fiber, 'g', 'vezels');
+  // Drinks: amount against the goal with a thin bar, the only place on the main page that shows it
+  document.getElementById('ring-info-water').innerHTML = `💧 ${fmtVal(water, goals.water, 'ml')}`
+    + (goals.water ? `<span class="ring-info-water-track"><span style="width:${pct(water, goals.water)}%"></span></span>` : '');
+
   renderMacroDonut(carbs, fat, prot);
-  renderMealShare(day, cals);
-
-  document.getElementById('total-carbs').innerHTML = fmtVal(carbs, goals.carbs, 'g');
-  document.getElementById('total-fat').innerHTML = fmtVal(fat, goals.fat, 'g');
-  document.getElementById('total-prot').innerHTML = fmtVal(prot, goals.prot, 'g');
-  document.getElementById('total-fiber').innerHTML = fmtVal(fiber, goals.fiber, 'g');
-  document.getElementById('total-water').innerHTML = fmtVal(water, goals.water, 'ml');
-
-  setBar('bar-c', carbs, goals.carbs, 'bar-c');
-  setBar('bar-v', fat, goals.fat, 'bar-v');
-  setBar('bar-e', prot, goals.prot, 'bar-e');
-  setBar('bar-f', fiber, goals.fiber, 'bar-f');
-  setBar('bar-w', water, goals.water, 'bar-w');
 }
 
 // Compact remaining-kcal strip above the input on mobile, where the summary lives on another tab.
@@ -98,41 +82,4 @@ function renderDayProgress(cals, prot, restKcal, overageTone) {
   text.innerHTML = `${kcalPart}${protPart}<span class="day-progress-total">${Math.round(cals)} / ${goals.kcal}</span>`;
   fill.style.width = pct(cals, goals.kcal) + '%';
   fill.style.background = overageTone ? overageTone.colorVar : '';
-}
-
-function renderMealShare(day, totalCals) {
-  const wrapEl = document.getElementById('meal-share-wrap');
-  const listEl = document.getElementById('meal-share-list');
-  const totalEl = document.getElementById('meal-share-total');
-  if (!wrapEl || !listEl || !totalEl) return;
-
-  totalEl.textContent = `${Math.round(totalCals)} kcal`;
-
-  const meals = MEAL_NAMES
-    .map(meal => {
-      const mealCals = (day[meal] || []).reduce((sum, item) => sum + (item.kcal || 0), 0);
-      const pctOfDay = totalCals > 0 ? Math.round((mealCals / totalCals) * 100) : 0;
-      return { meal, label: (MEAL_LABELS[meal] || meal).replace(/^[^\s]+\s/, ''), mealCals, pctOfDay };
-    })
-    .filter(entry => entry.mealCals > 0)
-    .sort((a, b) => b.mealCals - a.mealCals);
-
-  if (!meals.length) {
-    wrapEl.style.display = 'none';
-    listEl.innerHTML = '';
-    return;
-  }
-
-  wrapEl.style.display = '';
-  listEl.innerHTML = meals.map(entry => `
-    <div class="meal-share-item">
-      <div class="meal-share-row">
-        <span class="meal-share-name">${entry.label}</span>
-        <span class="meal-share-values">${entry.pctOfDay}% · ${Math.round(entry.mealCals)} kcal</span>
-      </div>
-      <div class="meal-share-track">
-        <div class="meal-share-fill" style="width:${entry.pctOfDay}%"></div>
-      </div>
-    </div>
-  `).join('');
 }

@@ -117,7 +117,6 @@ export function renderDOMacroChart(a, container) {
   const W = 600, H = 230, padL = 40, padR = 10, padT = 15, padB = 28;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const gap = plotW / n, barW = Math.min(plotW / n * 0.65, 20);
-  const MIN_LABEL_H = 14;
   let maxVal = 100;
   for (const d of days) maxVal = Math.max(maxVal, parseFloat(d.carbs) + parseFloat(d.fat) + parseFloat(d.prot));
   const { axisMax, stepSize } = getRoundedAxis(maxVal, 4);
@@ -130,7 +129,7 @@ export function renderDOMacroChart(a, container) {
     svg += `<text x="${padL - 4}" y="${y + 3}" text-anchor="end" fill="var(--muted)" font-size="8" font-family="var(--font-body)">${val}g</text>`;
   }
   for (let i = 0; i < n; i++) {
-    const d = days[i], x = padL + i * gap + (gap - barW) / 2, cx = x + barW / 2;
+    const d = days[i], x = padL + i * gap + (gap - barW) / 2;
     let yOffset = padT + plotH;
     const parts = [
       { val: parseFloat(d.prot) || 0, color: 'var(--green)', label: 'eiwit' },
@@ -142,9 +141,6 @@ export function renderDOMacroChart(a, container) {
       const h = (part.val / maxVal) * plotH;
       yOffset -= h;
       svg += `<rect x="${x}" y="${yOffset}" width="${barW}" height="${h}" fill="${part.color}" opacity="0.85" rx="1.5"><title>${d.date}: ${Math.round(part.val)}g ${part.label}</title></rect>`;
-      if (h >= MIN_LABEL_H && Math.round(part.val) >= 15) {
-        svg += `<text x="${cx}" y="${yOffset + h / 2}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="6.5" font-weight="600" font-family="var(--font-body)" style="pointer-events:none">${Math.round(part.val)}</text>`;
-      }
     }
   }
   const labelEvery = n <= 14 ? 1 : n <= 60 ? 7 : 30;
@@ -155,43 +151,4 @@ export function renderDOMacroChart(a, container) {
     svg += `<text x="${padL + i * gap + gap / 2}" y="${H - 5}" text-anchor="middle" fill="var(--muted)" font-size="7.5" font-family="var(--font-body)">${label}</text>`;
   }
   container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${svg}</svg>`;
-}
-
-export function renderMacroDonutChart(a, container) {
-  if (!container) return;
-  const totalCarbs = a.avgCarbs * a.activeDays, totalFat = a.avgFat * a.activeDays, totalProt = a.avgProt * a.activeDays;
-  const totalG = totalCarbs + totalFat + totalProt;
-  if (totalG === 0) { container.innerHTML = ''; return; }
-  const slices = [
-    { label: 'Koolhydraten', val: totalCarbs, color: 'var(--blue)' },
-    { label: 'Vetten', val: totalFat, color: 'var(--danger)' },
-    { label: 'Eiwitten', val: totalProt, color: 'var(--green)' },
-  ];
-  const R = 62, r = 38, cx = 70, cy = 70;
-  let svg = '', startAngle = -Math.PI / 2;
-  for (const s of slices) {
-    const pct = s.val / totalG;
-    if (pct < 0.005) continue;
-    const angle = pct * Math.PI * 2, endAngle = startAngle + angle, large = angle > Math.PI ? 1 : 0;
-    const x1o = cx + R * Math.cos(startAngle), y1o = cy + R * Math.sin(startAngle);
-    const x2o = cx + R * Math.cos(endAngle), y2o = cy + R * Math.sin(endAngle);
-    const x1i = cx + r * Math.cos(endAngle), y1i = cy + r * Math.sin(endAngle);
-    const x2i = cx + r * Math.cos(startAngle), y2i = cy + r * Math.sin(startAngle);
-    const d = `M ${x1o} ${y1o} A ${R} ${R} 0 ${large} 1 ${x2o} ${y2o} L ${x1i} ${y1i} A ${r} ${r} 0 ${large} 0 ${x2i} ${y2i} Z`;
-    svg += `<path d="${d}" fill="${s.color}" opacity="0.88"><title>${s.label}: ${Math.round(s.val)}g (${Math.round(pct * 100)}%)</title></path>`;
-    if (pct >= 0.10) {
-      const midAngle = startAngle + angle / 2, labelR = (R + r) / 2;
-      svg += `<text x="${cx + labelR * Math.cos(midAngle)}" y="${cy + labelR * Math.sin(midAngle)}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="7.5" font-weight="600" font-family="var(--font-body)">${Math.round(pct * 100)}%</text>`;
-    }
-    startAngle = endAngle;
-  }
-  svg += `<text x="${cx}" y="${cy - 5}" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700" font-family="var(--font-display)">${Math.round(totalG)}g</text>`;
-  svg += `<text x="${cx}" y="${cy + 10}" text-anchor="middle" fill="var(--muted)" font-size="8" font-family="var(--font-body)">totaal</text>`;
-  let legendHtml = '<div class="do-macro-donut-legend">';
-  for (const s of slices) {
-    const pct = Math.round(s.val / totalG * 100);
-    legendHtml += `<div class="do-macro-donut-item"><span class="do-macro-donut-dot" style="background:${s.color}"></span><span>${s.label}</span><span class="do-macro-donut-val">${Math.round(s.val)}g · ${pct}%</span></div>`;
-  }
-  legendHtml += '</div>';
-  container.innerHTML = `<div class="do-macro-donut"><svg viewBox="0 0 140 140" width="140" height="140">${svg}</svg>${legendHtml}</div>`;
 }

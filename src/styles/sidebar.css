@@ -30,6 +30,9 @@
 .cal-ring-info { flex: 1; font-size: 0.83rem; }
 .cal-ring-info-row { margin-bottom: 0.4rem; color: var(--muted); }
 .cal-ring-info-row strong { color: var(--text); }
+.ring-info-water { margin-top: 0.55rem; padding-top: 0.5rem; border-top: 1px solid var(--border-subtle); }
+.ring-info-water-track { display: block; height: 4px; margin-top: 0.3rem; border-radius: 999px; background: var(--border); overflow: hidden; }
+.ring-info-water-track > span { display: block; height: 100%; border-radius: 999px; background: var(--water, var(--blue)); }
 
 /* ── Macro Toggles ────────────────────────────────────────── */
 
@@ -46,7 +49,6 @@
 
 /* ── Macro Bars ───────────────────────────────────────────── */
 
-.macro-bars { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; padding: 1rem 1.05rem; background: color-mix(in srgb, var(--surface-soft) 86%, var(--surface-strong)); border-radius: calc(var(--radius-md) + 2px); border: 1px solid var(--border); }
 .macro-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.38rem; }
 .macro-row-name { font-size: 0.82rem; color: var(--muted); }
 .macro-row-val  { font-size: 0.8rem; font-weight: 700; }
@@ -76,17 +78,6 @@
 
 /* ── Meal Share ───────────────────────────────────────────── */
 
-.meal-share-wrap { margin-bottom: 1rem; padding: 1rem 1.05rem; background: color-mix(in srgb, var(--surface-soft) 86%, var(--surface-strong)); border-radius: calc(var(--radius-md) + 2px); border: 1px solid var(--border); }
-.meal-share-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.75rem; }
-.meal-share-head h4 { margin: 0; font-size: 0.9rem; font-family: var(--font-display); letter-spacing: -0.02em; }
-.meal-share-head span { font-size: 0.74rem; color: var(--muted); font-weight: 700; }
-.meal-share-list { display: flex; flex-direction: column; gap: 0.55rem; }
-.meal-share-item { display: flex; flex-direction: column; gap: 0.25rem; }
-.meal-share-row { display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; font-size: 0.77rem; }
-.meal-share-name { color: var(--text); font-weight: 700; }
-.meal-share-values { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.meal-share-track { height: 8px; background: var(--surface-muted); border-radius: 999px; overflow: hidden; }
-.meal-share-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 82%, white), var(--green)); min-width: 6px; transition: width 0.45s ease; }
 
 /* ── Week Sparkline ───────────────────────────────────────── */
 
