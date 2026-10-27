@@ -83,7 +83,13 @@ Daarna geldt:
 
 ## Supabase keep-alive
 
-Gratis Supabase-projecten pauzeren na 7 dagen zonder databaseactiviteit. De workflow [.github/workflows/supabase-keepalive.yml](.github/workflows/supabase-keepalive.yml) doet daarom elke maandag en donderdag een kleine query. Hij gebruikt de bestaande secrets `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY`, en je kunt hem ook handmatig starten via de Actions-tab.
+Gratis Supabase-projecten worden gepauzeerd als Supabase geen activiteit ziet. Een leesverzoek via de REST-API bleek niet genoeg (in oktober 2026 binnen 4 dagen na een ping gepauzeerd). De workflow [.github/workflows/supabase-keepalive.yml](.github/workflows/supabase-keepalive.yml) draait daarom dagelijks en:
+
+1. controleert de projectstatus via de Supabase Management API;
+2. zet het project terug aan als het toch gepauzeerd is, en wacht tot het weer draait;
+3. voert een echte query uit op de database (`select now()`) en doet daarnaast een REST-verzoek.
+
+Hij gebruikt de secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY`. Handmatig starten kan via de Actions-tab.
 
 ## Productdatabase onderhouden
 

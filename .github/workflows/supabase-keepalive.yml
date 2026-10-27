@@ -1,10 +1,12 @@
 name: Supabase keep-alive
 
-# Free-tier Supabase projects pause after 7 days without database activity.
-# A small query twice a week keeps the project awake.
+# Free-tier Supabase projects get paused when Supabase sees no activity. A read through the REST
+# API alone did not prevent that (paused within 4 days of a ping in October 2026), so this runs
+# daily, runs a real query on the database through the Management API, and restores the project
+# when it is paused anyway.
 on:
   schedule:
-    - cron: '17 6 * * 1,4' # Monday and Thursday, 06:17 UTC
+    - cron: '17 6 * * *' # daily, 06:17 UTC
   workflow_dispatch:
 
 permissions:
@@ -13,15 +15,54 @@ permissions:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
     steps:
-      - name: Query database
-        env:
-          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Check project status
+        id: status
+        run: |
+          status=$(curl --silent --show-error --fail-with-body \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -r '.status')
+          echo "Project status: $status" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Restore paused project
+        if: steps.status.outputs.status == 'INACTIVE' || steps.status.outputs.status == 'PAUSED'
+        run: |
+          echo "Project was paused; restoring it." | tee -a "$GITHUB_STEP_SUMMARY"
+          curl --silent --show-error --fail-with-body -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/restore" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN"
+          echo
+          for i in $(seq 1 30); do
+            sleep 20
+            status=$(curl --silent "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -r '.status')
+            echo "Status: $status"
+            [ "$status" = "ACTIVE_HEALTHY" ] && break
+          done
+          echo "Status after restore: $status" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$status" = "ACTIVE_HEALTHY" ]
+
+      - name: Query the database
+        run: |
+          curl --silent --show-error --fail-with-body --retry 3 --retry-delay 10 -X POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "select now() as keepalive"}'
+          echo
+
+      - name: Query through the REST API
         run: |
           curl --fail-with-body --silent --show-error --retry 3 --retry-delay 10 \
             "$SUPABASE_URL/rest/v1/issue_reports?select=id&limit=1" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY"
           echo
-          echo "Supabase responded OK"
+          echo "Supabase responded OK" | tee -a "$GITHUB_STEP_SUMMARY"
